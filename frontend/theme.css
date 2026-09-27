@@ -397,9 +397,12 @@ html[data-theme] #dashboardPage .dashboard-card.card {
   border-radius: 12px !important;
 }
 
-html[data-theme] #appTopbar.card {
+html[data-theme] #appTopbar.card,
+#appTopbar {
   flex-direction: row;
-  overflow: visible;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 60 !important;
 }
 
 html[data-theme] #appTopbar .app-title,
@@ -458,9 +461,18 @@ html[data-theme] #appTopbar #serverMemberSelect.form-select {
   margin-right: 0 !important;
 }
 
-html[data-theme] .container .workspace-subbar.card {
+html[data-theme] .container .workspace-subbar.card,
+.workspace-subbar {
   flex-direction: row;
   flex-wrap: wrap;
+  position: relative !important;
+  z-index: 50 !important;
+  overflow: visible !important;
+}
+
+.workspace-subbar.has-open-menu,
+.workspace-subbar:has(.toolbar-more[open]) {
+  z-index: 120 !important;
 }
 
 html[data-theme] .workspace-subbar .search-container {
@@ -507,13 +519,13 @@ html[data-theme] .workspace-subbar .toolbar-btn.btn {
   transform: none !important;
 }
 
-html[data-theme] .workspace-subbar :is(#toolbarPublish, #toolbarDashboard) {
+html[data-theme] .workspace-subbar :is(#toolbarPublish, #toolbarDashboard, .toolbar-more summary) {
   background: var(--ui-button-bg) !important;
   border: 1px solid transparent !important;
   color: var(--ui-button-text) !important;
 }
 
-html[data-theme] .workspace-subbar :is(#toolbarPublish, #toolbarDashboard):hover {
+html[data-theme] .workspace-subbar :is(#toolbarPublish, #toolbarDashboard, .toolbar-more summary):hover {
   background: var(--ui-button-hover) !important;
   color: var(--ui-button-text) !important;
 }
@@ -898,14 +910,30 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
+    position: relative !important;
+    overflow: visible !important;
   }
-  html[data-theme] .workspace-subbar .toolbar-buttons .toolbar-btn {
+  html[data-theme] .workspace-subbar .toolbar-buttons .toolbar-btn,
+  html[data-theme] .workspace-subbar .toolbar-more summary {
     width: 100% !important;
     justify-content: center !important;
     padding: 8px 10px !important;
     font-size: 0.85rem !important;
     min-height: 38px !important;
     white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+  html[data-theme] .workspace-subbar .toolbar-more {
+    width: 100% !important;
+    position: relative !important;
+  }
+  html[data-theme] .workspace-subbar .toolbar-buttons .toolbar-btn.toolbar-btn-full {
+    grid-column: 1 / -1 !important;
+  }
+  html[data-theme] .workspace-subbar .toolbar-more-menu {
+    right: 0 !important;
+    min-width: 160px !important;
+    max-width: calc(100vw - 32px) !important;
   }
 }
 
@@ -2571,38 +2599,147 @@ html.light .dashboard-risk-meta {
   outline-offset: 2px;
 }
 
-.toolbar-more { position: relative; flex: 0 0 auto; }
-.toolbar-more summary {
-  list-style: none;
-  cursor: pointer;
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  border: 1px solid var(--ui-border);
-  border-radius: 8px;
-  background: var(--ui-surface);
-  color: var(--ui-text-muted);
-  font-weight: 600;
+.toolbar-buttons {
+  position: relative !important;
+  overflow: visible !important;
 }
-.toolbar-more summary::-webkit-details-marker { display: none; }
-.toolbar-more summary::after { content: ' ▾'; padding-left: 6px; }
+
+.toolbar-more {
+  position: relative !important;
+  flex: 0 0 auto !important;
+}
+
+.toolbar-more[open] {
+  z-index: 120 !important;
+}
+
+/* 数据操作下拉触发按钮：与前三个按钮（新建备忘录、任务发布、研发大屏）保持高度和谐一致 */
+.toolbar-more summary,
+html[data-theme] .workspace-subbar .toolbar-more summary,
+html[data-theme] .workspace-subbar .toolbar-more summary.toolbar-btn {
+  list-style: none !important;
+  cursor: pointer !important;
+  min-height: 39px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 8px 14px !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  background: var(--ui-button-bg) !important;
+  color: var(--ui-button-text) !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.4 !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+  transform: none !important;
+  user-select: none !important;
+  transition: background-color 0.2s ease, opacity 0.2s ease !important;
+}
+
+.toolbar-more summary::-webkit-details-marker,
+.toolbar-more summary::marker {
+  display: none !important;
+}
+
+.toolbar-more summary::after {
+  content: none !important;
+  display: none !important;
+}
+
+.toolbar-more summary:hover,
+html[data-theme] .workspace-subbar .toolbar-more summary:hover {
+  background: var(--ui-button-hover) !important;
+  color: var(--ui-button-text) !important;
+}
+
+.toolbar-more summary .toolbar-more-caret {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.75rem !important;
+  margin-left: 2px !important;
+  transition: transform 0.2s ease !important;
+}
+
+.toolbar-more[open] summary .toolbar-more-caret {
+  transform: rotate(180deg) !important;
+}
+
+/* 数据操作下拉浮层：高层叠、精细阴影、平滑动画，绝不被后续卡片遮挡 */
 .toolbar-more-menu {
-  position: absolute;
-  z-index: 40;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 180px;
-  display: grid;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid var(--ui-border);
-  border-radius: 10px;
-  background: var(--ui-surface);
-  box-shadow: var(--ui-shadow);
+  position: absolute !important;
+  z-index: 1000 !important;
+  top: calc(100% + 6px) !important;
+  right: 0 !important;
+  min-width: 175px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  padding: 6px !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 10px !important;
+  background: var(--ui-surface) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  transform-origin: top right !important;
+  animation: toolbarMenuSlideIn 0.18s ease-out !important;
 }
-.toolbar-more:not([open]) .toolbar-more-menu { display: none; }
-.toolbar-more-menu .toolbar-btn { width: 100%; justify-content: flex-start; }
+
+@keyframes toolbarMenuSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toolbar-more:not([open]) .toolbar-more-menu {
+  display: none !important;
+}
+
+/* 下拉菜单内的操作项：扁平、高质感、左对齐列表项 */
+html[data-theme] .workspace-subbar .toolbar-more-menu :is(#toolbarExport, #toolbarImport),
+.toolbar-more-menu .toolbar-btn {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--ui-text) !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  padding: 8px 12px !important;
+  font-size: 0.88rem !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  min-height: 36px !important;
+  transform: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+html[data-theme] .workspace-subbar .toolbar-more-menu :is(#toolbarExport, #toolbarImport):hover,
+.toolbar-more-menu .toolbar-btn:hover {
+  background: var(--ui-surface-hover) !important;
+  color: var(--ui-accent) !important;
+}
+
+html[data-theme] .workspace-subbar .toolbar-more-menu #toolbarExport .tabler-icon,
+.toolbar-more-menu #toolbarExport i {
+  color: var(--ui-success, #2ea043) !important;
+}
+
+html[data-theme] .workspace-subbar .toolbar-more-menu #toolbarImport .tabler-icon,
+.toolbar-more-menu #toolbarImport i {
+  color: var(--ui-accent, #206bc4) !important;
+}
 
 .operation-feedback {
   width: 100%;

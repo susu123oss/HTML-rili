@@ -4217,6 +4217,7 @@ function applyRoleScopedUi() {
   });
   setElementVisible('toolbarExport', state.user?.role === 'admin');
   setElementVisible('toolbarMore', visible);
+  $('toolbarNewMemo')?.classList.toggle('toolbar-btn-full', !visible);
   if (!visible) state.activeView = 'calendar';
   applyMainView();
   const toolbarButtons = document.querySelector('.toolbar-buttons');
@@ -7193,21 +7194,57 @@ function decorateTablerUI() {
     toolbarButtons.prepend(newMemo);
     addTablerIcon(newMemo, 'plus');
   }
-  if (toolbarButtons && !$('toolbarMore')) {
-    const more = document.createElement('details');
+  let more = $('toolbarMore');
+  if (toolbarButtons && !more) {
+    more = document.createElement('details');
     more.id = 'toolbarMore';
     more.className = 'toolbar-more';
     const summary = document.createElement('summary');
-    summary.textContent = '数据操作';
+    summary.className = 'toolbar-btn toolbar-btn-primary btn btn-primary toolbar-more-trigger';
+    summary.innerHTML = '<span class="tabler-icon" data-icon="database" aria-hidden="true"></span><span>数据操作</span><span class="toolbar-more-caret"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>';
     more.append(summary);
     const menu = document.createElement('div');
     menu.className = 'toolbar-more-menu';
     ['toolbarExport', 'toolbarImport'].forEach((id) => {
       const button = $(id);
-      if (button) menu.append(button);
+      if (button) {
+        button.classList.add('toolbar-more-item');
+        menu.append(button);
+      }
     });
     more.append(menu);
     toolbarButtons.append(more);
+
+    // 动态同步父级容器层叠权重
+    more.addEventListener('toggle', () => {
+      more.closest('.workspace-subbar')?.classList.toggle('has-open-menu', more.open);
+    });
+
+    // 点击外部自动收起下拉
+    document.addEventListener('click', (e) => {
+      const el = $('toolbarMore');
+      if (el && el.open && !el.contains(e.target)) {
+        el.open = false;
+        el.closest('.workspace-subbar')?.classList.remove('has-open-menu');
+      }
+    });
+
+    // 点击菜单内按钮后自动收起下拉
+    menu.addEventListener('click', (e) => {
+      if (e.target.closest('button, .toolbar-btn')) {
+        const el = $('toolbarMore');
+        if (el) {
+          el.open = false;
+          el.closest('.workspace-subbar')?.classList.remove('has-open-menu');
+        }
+      }
+    });
+  } else if (more) {
+    const summary = more.querySelector('summary');
+    if (summary && !summary.classList.contains('toolbar-more-trigger')) {
+      summary.className = 'toolbar-btn toolbar-btn-primary btn btn-primary toolbar-more-trigger';
+      summary.innerHTML = '<span class="tabler-icon" data-icon="database" aria-hidden="true"></span><span>数据操作</span><span class="toolbar-more-caret"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>';
+    }
   }
   ['toolbarPublish', 'toolbarDashboard', 'toolbarExport'].forEach((id) => {
     $(id)?.classList.remove('toolbar-btn-primary', 'toolbar-btn-success', 'btn-primary', 'btn-success');
