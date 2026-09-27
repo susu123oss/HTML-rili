@@ -7,6 +7,7 @@ import { usersRouter } from './routes/users.js';
 import { memosRouter } from './routes/memos.js';
 import { exportsRouter } from './routes/exports.js';
 import { opsRouter } from './routes/ops.js';
+import { notificationsRouter } from './routes/notifications.js';
 
 const app = express();
 
@@ -22,10 +23,11 @@ app.use('/api/users', usersRouter);
 app.use('/api/memos', memosRouter);
 app.use('/api/exports', exportsRouter);
 app.use('/api/ops', opsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 app.use((error, req, res, next) => {
   console.error(error);
-  res.status(500).json({ message: '服务器内部错误' });
+  res.status(error.status || 500).json({ message: error.message || '服务器内部错误' });
 });
 
 await initDatabase();

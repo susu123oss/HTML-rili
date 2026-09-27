@@ -1,0 +1,2999 @@
+/* Radix Colors 3.0.0 supplies the light/dark scales; see vendor/README.md. */
+@import url('./vendor/radix-colors/slate.css');
+@import url('./vendor/radix-colors/slate-dark.css');
+@import url('./vendor/radix-colors/blue.css');
+@import url('./vendor/radix-colors/blue-dark.css');
+@import url('./vendor/radix-colors/green.css');
+@import url('./vendor/radix-colors/green-dark.css');
+@import url('./vendor/radix-colors/amber.css');
+@import url('./vendor/radix-colors/amber-dark.css');
+@import url('./vendor/radix-colors/red.css');
+@import url('./vendor/radix-colors/red-dark.css');
+
+/* Semantic colors are shared by both themes and retain the legacy aliases. */
+:root {
+  color-scheme: light;
+  --ui-page: var(--slate-1);
+  --ui-surface: #ffffff;
+  --ui-surface-soft: var(--slate-2);
+  --ui-surface-hover: var(--slate-3);
+  --ui-text: var(--slate-12);
+  --ui-text-muted: var(--slate-11);
+  --ui-border: var(--slate-6);
+  --ui-border-strong: var(--slate-7);
+  --ui-accent: var(--blue-11);
+  --ui-accent-soft: var(--blue-3);
+  --ui-focus-ring: var(--blue-7);
+  --ui-success: var(--green-11);
+  --ui-warning: var(--amber-11);
+  --ui-danger: var(--red-11);
+  --ui-button-bg: var(--blue-11);
+  --ui-button-text: #ffffff;
+  --ui-button-hover: var(--blue-10);
+  --ui-success-bg: var(--green-10);
+  --ui-success-soft: var(--green-3);
+  --ui-success-border: var(--green-7);
+  --ui-danger-bg: var(--red-9);
+  --ui-shell-shadow: 0 3px 16px rgba(28, 32, 36, 0.06);
+  --ui-shadow: 0 18px 48px rgba(28, 32, 36, 0.14);
+  --primary-color: var(--ui-accent);
+  --secondary-color: var(--blue-10);
+  --accent-color: var(--blue-9);
+  --dark-color: var(--ui-text);
+  --light-color: var(--ui-surface);
+  --success-color: var(--ui-success);
+  --warning-color: var(--ui-warning);
+  --danger-color: var(--ui-danger);
+}
+
+html[data-theme='dark'],
+html.dark {
+  color-scheme: dark !important;
+  --ui-surface: var(--slate-2);
+  --ui-surface-soft: var(--slate-3);
+  --ui-surface-hover: var(--slate-4);
+  --ui-button-bg: var(--blue-9);
+  --ui-button-text: var(--slate-1);
+  --ui-button-hover: var(--blue-10);
+  --ui-success-bg: var(--green-9);
+  --ui-danger-bg: var(--red-9);
+  --ui-shell-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  --ui-shadow: 0 20px 55px rgba(0, 0, 0, 0.42);
+}
+
+html[data-theme='light'],
+html.light {
+  color-scheme: light !important;
+}
+
+/* Force dark color-scheme on form controls so native datepickers & menus render dark */
+html[data-theme='dark'] :is(input, select, textarea) {
+  color-scheme: dark !important;
+}
+
+html[data-theme='light'] :is(input, select, textarea) {
+  color-scheme: light !important;
+}
+
+/* Chrome autofill dark background override */
+html[data-theme='dark'] input:-webkit-autofill,
+html[data-theme='dark'] input:-webkit-autofill:hover,
+html[data-theme='dark'] input:-webkit-autofill:focus,
+html[data-theme='dark'] textarea:-webkit-autofill,
+html[data-theme='dark'] textarea:-webkit-autofill:hover,
+html[data-theme='dark'] textarea:-webkit-autofill:focus,
+html[data-theme='dark'] select:-webkit-autofill,
+html[data-theme='dark'] select:-webkit-autofill:hover,
+html[data-theme='dark'] select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--ui-surface, #18191b) inset !important;
+  -webkit-text-fill-color: var(--ui-text, #edeef0) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Native date/time picker calendar icons - custom crisp Tabler SVG vectors */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2370b8ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12'/%3E%3Cpath d='M16 3v4'/%3E%3Cpath d='M8 3v4'/%3E%3Cpath d='M4 11h16'/%3E%3Cpath d='M11 15h1'/%3E%3Cpath d='M12 15v3'/%3E%3C/svg%3E") !important;
+  background-position: center !important;
+  background-size: 18px 18px !important;
+  background-repeat: no-repeat !important;
+  cursor: pointer !important;
+  filter: none !important;
+  opacity: 1 !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 2px !important;
+  border-radius: 4px;
+  transition: background-image 0.15s, opacity 0.15s;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2370b8ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0'/%3E%3Cpath d='M12 7v5l3 3'/%3E%3C/svg%3E") !important;
+  background-position: center !important;
+  background-size: 18px 18px !important;
+  background-repeat: no-repeat !important;
+  cursor: pointer !important;
+  filter: none !important;
+  opacity: 1 !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 2px !important;
+  border-radius: 4px;
+  transition: background-image 0.15s, opacity 0.15s;
+}
+
+html[data-theme='dark'] input[type="date"]::-webkit-calendar-picker-indicator:hover,
+html[data-theme='dark'] input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+html[data-theme='dark'] input[type="month"]::-webkit-calendar-picker-indicator:hover,
+html[data-theme='dark'] input[type="week"]::-webkit-calendar-picker-indicator:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12'/%3E%3Cpath d='M16 3v4'/%3E%3Cpath d='M8 3v4'/%3E%3Cpath d='M4 11h16'/%3E%3Cpath d='M11 15h1'/%3E%3Cpath d='M12 15v3'/%3E%3C/svg%3E") !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme='dark'] input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0'/%3E%3Cpath d='M12 7v5l3 3'/%3E%3C/svg%3E") !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme='light'] input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-theme='light'] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+html[data-theme='light'] input[type="month"]::-webkit-calendar-picker-indicator,
+html[data-theme='light'] input[type="week"]::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2360646c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12'/%3E%3Cpath d='M16 3v4'/%3E%3Cpath d='M8 3v4'/%3E%3Cpath d='M4 11h16'/%3E%3Cpath d='M11 15h1'/%3E%3Cpath d='M12 15v3'/%3E%3C/svg%3E") !important;
+}
+
+html[data-theme='light'] input[type="time"]::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2360646c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0'/%3E%3Cpath d='M12 7v5l3 3'/%3E%3C/svg%3E") !important;
+}
+
+html[data-theme='light'] input[type="date"]::-webkit-calendar-picker-indicator:hover,
+html[data-theme='light'] input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+html[data-theme='light'] input[type="month"]::-webkit-calendar-picker-indicator:hover,
+html[data-theme='light'] input[type="week"]::-webkit-calendar-picker-indicator:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23006adc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12'/%3E%3Cpath d='M16 3v4'/%3E%3Cpath d='M8 3v4'/%3E%3Cpath d='M4 11h16'/%3E%3Cpath d='M11 15h1'/%3E%3Cpath d='M12 15v3'/%3E%3C/svg%3E") !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-theme='light'] input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23006adc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath stroke='none' d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0'/%3E%3Cpath d='M12 7v5l3 3'/%3E%3C/svg%3E") !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Checkbox & Radio native high-contrast polish */
+html[data-theme='dark'] input[type="checkbox"],
+html[data-theme='dark'] input[type="radio"] {
+  accent-color: var(--ui-accent);
+}
+
+/* Tabler component pilot: keep the existing modal behavior and share Radix tokens. */
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) .modal-content,
+html[data-theme] #reminderModal .reminder-content {
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--ui-shadow) !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.modal-header, .modal-footer, .reminder-header, .reminder-footer) {
+  background: var(--ui-surface) !important;
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.modal-body, .reminder-list) {
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.modal-title, .reminder-title) {
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.close-modal, .close-reminder) {
+  color: var(--ui-text-muted) !important;
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 9px !important;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.close-modal, .close-reminder):hover {
+  color: var(--ui-text) !important;
+  background: var(--ui-surface-hover) !important;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal) .form-group label {
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal) .form-control {
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: 9px !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal) .form-control:focus-visible {
+  border-color: var(--ui-accent) !important;
+  outline: 2px solid var(--ui-focus-ring) !important;
+  outline-offset: 1px;
+}
+
+html[data-theme] :is(#functionsModal, #memoModal) .form-control::placeholder {
+  color: var(--ui-text-muted) !important;
+  opacity: 1;
+}
+
+html[data-theme] #functionsModal .tabs {
+  display: flex;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  gap: 5px;
+  padding: 5px;
+  margin-bottom: 18px;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 11px;
+  background: var(--ui-surface-soft) !important;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border-strong) transparent;
+}
+
+#functionsModal .tabs::-webkit-scrollbar { height: 5px; }
+#functionsModal .tabs::-webkit-scrollbar-track { background: transparent; }
+#functionsModal .tabs::-webkit-scrollbar-thumb {
+  background: var(--ui-border-strong);
+  border-radius: 999px;
+}
+
+html[data-theme] #functionsModal .tab {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 37px;
+  padding: 8px 11px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--ui-text-muted) !important;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+html[data-theme] #functionsModal .tab:hover {
+  background: var(--ui-surface-hover) !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #functionsModal .tab.active {
+  background: var(--ui-surface) !important;
+  color: var(--ui-accent) !important;
+  box-shadow: 0 1px 4px rgba(28, 32, 36, 0.13) !important;
+}
+
+html[data-theme] #functionsModal .tab::after {
+  display: none !important;
+}
+
+html[data-theme] #functionsModal .tab:focus-visible {
+  outline: 2px solid var(--ui-focus-ring) !important;
+  outline-offset: -2px;
+}
+
+html[data-theme] #functionsModal .tab-content h3 {
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #functionsModal #dataManagementTab > p {
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #functionsModal .task-publish-info,
+html[data-theme] #functionsModal .export-info,
+html[data-theme] #functionsModal .task-assignee-panel {
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #functionsModal .task-publish-info :is(h4, strong),
+html[data-theme] #functionsModal .export-info :is(h4, strong) {
+  color: var(--ui-text) !important;
+}
+
+/* Tabler Icons 3.48.0, local SVG masks; the button labels stay readable. */
+#functionsModal .tabler-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  background-color: currentColor;
+  -webkit-mask: var(--tabler-icon) center / contain no-repeat;
+  mask: var(--tabler-icon) center / contain no-repeat;
+}
+
+#functionsModal [data-tab='taskPublish'] .tabler-icon { --tabler-icon: url('./vendor/tabler-icons/send.svg'); }
+#functionsModal [data-tab='dataManagement'] .tabler-icon { --tabler-icon: url('./vendor/tabler-icons/database.svg'); }
+#functionsModal [data-tab='userManagement'] .tabler-icon { --tabler-icon: url('./vendor/tabler-icons/users.svg'); }
+#functionsModal [data-tab='opsMonitor'] .tabler-icon { --tabler-icon: url('./vendor/tabler-icons/activity.svg'); }
+#functionsModal [data-tab='reminderSettings'] .tabler-icon { --tabler-icon: url('./vendor/tabler-icons/bell.svg'); }
+
+@media (max-width: 640px) {
+  html[data-theme] #functionsModal .tab {
+    min-height: 42px;
+    padding: 9px 10px !important;
+  }
+}
+
+/* ========================================================
+   现代化极简滚动条系统 (Global & Day Memos Scrollbar System)
+   ======================================================== */
+
+/* 1. 日历格内备忘录：完全隐形滚动条，保持完整鼠标滚轮/触控滑动体验，彻底杜绝箭头与挤压内容 */
+.day-memos,
+.calendar-day .day-memos {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.day-memos::-webkit-scrollbar,
+.calendar-day .day-memos::-webkit-scrollbar,
+.day-memos::-webkit-scrollbar-button,
+.calendar-day .day-memos::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 2. 全局通用浮动滚动条（针对弹窗列表、长内容区域）：超细、圆角胶囊、无上下箭头 */
+::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ui-border-strong, rgba(140, 145, 155, 0.4)) !important;
+  border-radius: 9999px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-text-muted, rgba(100, 105, 115, 0.7)) !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border-strong, rgba(140, 145, 155, 0.4)) transparent;
+}
+
+/* Tabler cards now carry the workbench, while the calendar day grid keeps its layout. */
+html[data-theme] #appTopbar.card,
+html[data-theme] .container .workspace-subbar.card,
+html[data-theme] #multiMonthCalendar .month-calendar.card,
+html[data-theme] #dashboardPage .dashboard-card.card {
+  --tblr-card-bg: var(--ui-surface);
+  --tblr-card-border-color: var(--ui-border);
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: var(--ui-shell-shadow) !important;
+  color: var(--ui-text) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] #appTopbar.card {
+  flex-direction: row;
+  overflow: visible;
+}
+
+html[data-theme] #appTopbar .app-title,
+html[data-theme] #appTopbar .topbar-user-badge strong,
+html[data-theme] #appTopbar .current-period {
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #appTopbar :is(.topbar-user-badge, .topbar-nav, .topbar-theme-toggle, .topbar-logout-btn) {
+  background: var(--ui-surface-soft) !important;
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #appTopbar .topbar-nav .nav-button,
+html[data-theme] #appTopbar .topbar-member-selector {
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #appTopbar :is(.topbar-theme-toggle, .topbar-logout-btn):hover,
+html[data-theme] #appTopbar .topbar-nav .nav-button:hover {
+  background: var(--ui-surface-hover) !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #appTopbar .topbar-nav .today-btn {
+  background: var(--ui-button-bg) !important;
+  color: var(--ui-button-text) !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] #appTopbar .topbar-nav .today-btn:hover {
+  background: var(--ui-button-hover) !important;
+  color: var(--ui-button-text) !important;
+}
+
+html[data-theme] #appTopbar #serverMemberSelect.form-select {
+  background-color: var(--ui-surface) !important;
+  border-color: var(--ui-border-strong) !important;
+  color: var(--ui-text) !important;
+}
+
+/* 彻底清除 Tabler 框架对 .toolbar 注入的负外边距与子项边距，消除宽度外扩与左右边距不对齐 */
+:is(.toolbar, .workspace-subbar, html[data-theme] .container .workspace-subbar.card) {
+  --tblr-toolbar-gutter: 0px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+:is(.toolbar, .workspace-subbar) > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+html[data-theme] .container .workspace-subbar.card {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+html[data-theme] .workspace-subbar .search-container {
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 8px !important;
+  color: var(--ui-text) !important;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+html[data-theme] .workspace-subbar #monthCountSelect.form-select {
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 8px !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] .workspace-subbar .search-container:focus-within {
+  border-color: var(--ui-accent) !important;
+  box-shadow: 0 0 0 3px var(--ui-accent-soft) !important;
+}
+
+html[data-theme] .workspace-subbar #searchInput.form-control,
+.tabler-search #searchInput {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--ui-text) !important;
+  padding: 8px 36px 8px 40px !important;
+  min-height: 38px !important;
+  line-height: 1.5 !important;
+}
+
+html[data-theme] .workspace-subbar #searchInput::placeholder { color: var(--ui-text-muted) !important; }
+html[data-theme] .workspace-subbar .month-count-selector { color: var(--ui-text-muted) !important; }
+
+html[data-theme] .workspace-subbar .toolbar-btn.btn {
+  min-height: 39px;
+  padding: 8px 13px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-theme] .workspace-subbar :is(#toolbarPublish, #toolbarDashboard) {
+  background: var(--ui-button-bg) !important;
+  border: 1px solid transparent !important;
+  color: var(--ui-button-text) !important;
+}
+
+html[data-theme] .workspace-subbar :is(#toolbarPublish, #toolbarDashboard):hover {
+  background: var(--ui-button-hover) !important;
+  color: var(--ui-button-text) !important;
+}
+
+html[data-theme] .workspace-subbar #toolbarExport {
+  background: var(--ui-success-soft) !important;
+  border: 1px solid var(--ui-success-border) !important;
+  color: var(--ui-success) !important;
+}
+
+html[data-theme] .workspace-subbar #toolbarImport {
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] .workspace-subbar :is(#toolbarExport, #toolbarImport):hover {
+  background: var(--ui-surface-hover) !important;
+}
+
+html[data-theme] #multiMonthCalendar .month-calendar.card {
+  border-radius: 14px !important;
+  min-width: 0;
+}
+
+html[data-theme] #multiMonthCalendar .month-header.card-header,
+html[data-theme] #dashboardPage .dashboard-card-title.card-header {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--ui-border) !important;
+  background: transparent !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #multiMonthCalendar .month-header.card-header {
+  margin-bottom: 16px;
+}
+
+html[data-theme] #dashboardPage .dashboard-card-title.card-header {
+  margin-bottom: 14px;
+}
+
+html[data-theme] :is(#memoModal, #functionsModal, #dailyDetailModal) .btn {
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-theme] :is(#memoModal, #functionsModal, #dailyDetailModal) .btn-primary {
+  background: var(--ui-button-bg) !important;
+  border: 1px solid transparent !important;
+  color: var(--ui-button-text) !important;
+}
+
+html[data-theme] :is(#memoModal, #functionsModal, #dailyDetailModal) .btn-secondary {
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] :is(#memoModal, #functionsModal, #dailyDetailModal) .btn-success {
+  background: var(--ui-success-soft) !important;
+  border: 1px solid var(--ui-success-border) !important;
+  color: var(--ui-success) !important;
+}
+
+html[data-theme] :is(#memoModal, #functionsModal, #dailyDetailModal) .btn-danger {
+  background: var(--red-3) !important;
+  border: 1px solid var(--red-7) !important;
+  color: var(--ui-danger) !important;
+}
+
+html[data-theme] #dailyDetailModal .daily-quick-add-box.card,
+html[data-theme] #memoModal #markdownPreview.card,
+html[data-theme] #functionsModal :is(.task-publish-info, .export-info, .data-stats-card, .excel-export-panel).card {
+  --tblr-card-bg: var(--ui-surface-soft);
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: none !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #dailyDetailModal #quickMemoTitle.form-control {
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border-strong) !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #dailyDetailModal #quickAddMemo.btn {
+  background: var(--ui-button-bg) !important;
+  color: var(--ui-button-text) !important;
+  border: 1px solid transparent !important;
+}
+
+/* Local Tabler icon masks replace only the legacy icons on decorated controls. */
+.tabler-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  background-color: currentColor;
+  -webkit-mask: var(--tabler-icon) center / contain no-repeat;
+  mask: var(--tabler-icon) center / contain no-repeat;
+}
+
+.tabler-decorated > i.fas,
+.tabler-decorated > i.far { display: none !important; }
+
+.tabler-icon[data-icon='calendar'] { --tabler-icon: url('./vendor/tabler-icons/calendar.svg'); }
+.tabler-icon[data-icon='chart-bar'] { --tabler-icon: url('./vendor/tabler-icons/chart-bar.svg'); }
+.tabler-icon[data-icon='chevron-left'] { --tabler-icon: url('./vendor/tabler-icons/chevron-left.svg'); }
+.tabler-icon[data-icon='chevron-right'] { --tabler-icon: url('./vendor/tabler-icons/chevron-right.svg'); }
+.tabler-icon[data-icon='file-spreadsheet'] { --tabler-icon: url('./vendor/tabler-icons/file-spreadsheet.svg'); }
+.tabler-icon[data-icon='logout'] { --tabler-icon: url('./vendor/tabler-icons/logout.svg'); }
+.tabler-icon[data-icon='plus'] { --tabler-icon: url('./vendor/tabler-icons/plus.svg'); }
+.tabler-icon[data-icon='search'] { --tabler-icon: url('./vendor/tabler-icons/search.svg'); }
+.tabler-icon[data-icon='settings'] { --tabler-icon: url('./vendor/tabler-icons/settings.svg'); }
+.tabler-icon[data-icon='upload'] { --tabler-icon: url('./vendor/tabler-icons/upload.svg'); }
+.tabler-icon[data-icon='send'] { --tabler-icon: url('./vendor/tabler-icons/send.svg'); }
+.tabler-icon[data-icon='bell'] { --tabler-icon: url('./vendor/tabler-icons/bell.svg'); }
+.tabler-icon[data-icon='database'] { --tabler-icon: url('./vendor/tabler-icons/database.svg'); }
+.tabler-icon[data-icon='users'] { --tabler-icon: url('./vendor/tabler-icons/users.svg'); }
+.tabler-icon[data-icon='activity'] { --tabler-icon: url('./vendor/tabler-icons/activity.svg'); }
+
+.tabler-search > i.search-icon { display: none !important; }
+.tabler-search > .tabler-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  z-index: 1;
+  transform: translateY(-50%);
+  color: var(--ui-text-muted);
+  pointer-events: none;
+}
+
+html[data-theme] :is(#prevMonth, #nextMonth, #themeToggleBtn, #calendarPrevMonth, #calendarNextMonth, #floatingReminder, #floatingFunctions).btn-icon {
+  padding: 0 !important;
+}
+
+/* ========================================================
+   日历主区域居中月份切换器 (Centered Calendar Month Nav)
+   ======================================================== */
+.calendar-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+  width: 100% !important;
+  position: relative;
+}
+
+.calendar-container[hidden] {
+  display: none !important;
+}
+
+.calendar-nav-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 4px;
+}
+
+#calendarNavigation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: var(--ui-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.06)) !important;
+}
+
+#calendarNavigation .current-period {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ui-text) !important;
+  padding: 0 14px;
+  min-width: 130px;
+  text-align: center;
+  user-select: none;
+  letter-spacing: 0.5px;
+}
+
+#calendarNavigation .nav-button:not(.today-btn) {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  border: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface-soft) !important;
+  color: var(--ui-text-muted) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  font-size: 0.9rem !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+#calendarNavigation .nav-button:not(.today-btn):hover {
+  background: var(--ui-surface-hover) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-border-strong) !important;
+}
+
+#calendarNavigation :is(.today-btn, #goTodayBtn) {
+  width: auto !important;
+  min-width: 68px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  background: var(--ui-accent) !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+  cursor: pointer;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 8px rgba(0, 106, 220, 0.28) !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+#calendarNavigation :is(.today-btn, #goTodayBtn):hover {
+  filter: brightness(1.1);
+}
+
+.calendar-nav-btn {
+  display: none !important;
+}
+
+/* ========================================================
+   主题切换按钮移动端防卡顿与平滑微动效
+   ======================================================== */
+html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn) {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+
+html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):hover {
+  transform: none !important;
+}
+
+html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
+  transform: scale(0.92) !important;
+}
+
+/* 触控设备专属：全面禁用 hover 状态残留导致的伪类卡顿 */
+@media (hover: none), (pointer: coarse) {
+  html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn, .topbar-logout-btn, .nav-button, .btn) {
+    transform: none !important;
+    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease !important;
+  }
+  html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn, .topbar-logout-btn, .nav-button, .btn):hover {
+    transform: none !important;
+  }
+  html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
+    transform: scale(0.92) !important;
+  }
+}
+
+/* 点击时图标顺畅单次旋转，结束后回到 0deg/360deg，绝不卡住或倾斜 */
+@keyframes themeIconSpin {
+  0% { transform: rotate(0deg) scale(0.8); opacity: 0.6; }
+  100% { transform: rotate(360deg) scale(1); opacity: 1; }
+}
+
+.theme-spin {
+  display: inline-block;
+  animation: themeIconSpin 0.35s ease-out;
+}
+
+/* ========================================================
+   全站与各组件移动端深度自适应体系 (Comprehensive Mobile Responsive System)
+   ======================================================== */
+
+/* 1. iOS / Android 移动端全局输入框防缩放（强制 16px） */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  .form-control,
+  .search-input,
+  .daily-quick-memo-input,
+  .user-edit-grid input,
+  .user-edit-grid select {
+    font-size: 16px !important;
+  }
+}
+
+/* 2. 顶部导航栏 (App Topbar) 移动端自适应 */
+@media (max-width: 768px) {
+  html[data-theme] #appTopbar.card {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    margin-bottom: 10px !important;
+  }
+  html[data-theme] #appTopbar .topbar-left {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    gap: 8px !important;
+  }
+  html[data-theme] #appTopbar .app-brand {
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+  html[data-theme] #appTopbar .app-brand .app-logo {
+    font-size: 1.2rem !important;
+  }
+  html[data-theme] #appTopbar .app-brand .app-title {
+    font-size: 1.05rem !important;
+  }
+  html[data-theme] #appTopbar .topbar-user-badge {
+    font-size: 0.76rem !important;
+    padding: 2px 7px !important;
+    max-width: 110px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  html[data-theme] #appTopbar #serverUserRole {
+    display: none !important;
+  }
+  html[data-theme] #appTopbar .topbar-right {
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+  html[data-theme] #appTopbar .topbar-member-selector label {
+    display: none !important; /* 手机端隐藏“成员：”文本，仅保留下拉框 */
+  }
+  html[data-theme] #appTopbar .topbar-member-selector select {
+    max-width: 92px !important;
+    font-size: 0.82rem !important;
+    padding: 4px 6px !important;
+    height: 32px !important;
+  }
+  html[data-theme] #appTopbar .topbar-theme-toggle {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  html[data-theme] #appTopbar .topbar-logout-btn {
+    height: 32px !important;
+    padding: 0 8px !important;
+  }
+  html[data-theme] #appTopbar .topbar-logout-btn .logout-text {
+    display: none !important; /* 手机端隐藏“退出”文字，仅留精致图标 */
+  }
+}
+
+/* 3. 工具栏与操作按钮 (Toolbar & Buttons) 移动端自适应 */
+@media (max-width: 768px) {
+  html[data-theme] .container .workspace-subbar.card {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+    flex-direction: column !important;
+  }
+  html[data-theme] .workspace-subbar .search-container {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  html[data-theme] .workspace-subbar .month-count-selector {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  html[data-theme] .workspace-subbar .month-count-selector select {
+    flex: 1 !important;
+    margin-left: 8px !important;
+  }
+  html[data-theme] .workspace-subbar .toolbar-buttons {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  html[data-theme] .workspace-subbar .toolbar-buttons .toolbar-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 8px 10px !important;
+    font-size: 0.85rem !important;
+    min-height: 38px !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* 4. 日历居中月份切换器 (Calendar Month Nav) 移动端自适应 */
+@media (max-width: 768px) {
+  .calendar-nav-wrap {
+    margin: 4px 0 10px !important;
+  }
+  #calendarNavigation {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    padding: 4px 10px !important;
+    box-sizing: border-box !important;
+  }
+  #calendarNavigation .current-period {
+    min-width: 0 !important;
+    flex: 1 !important;
+    font-size: 0.96rem !important;
+    padding: 0 6px !important;
+    text-align: center !important;
+  }
+  #calendarNavigation .nav-button:not(.today-btn) {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+  }
+  #calendarNavigation :is(.today-btn, #goTodayBtn) {
+    width: auto !important;
+    min-width: 60px !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 0.82rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    overflow: visible !important;
+  }
+}
+
+/* 5. 竞赛排行榜 (Team Leaderboard) 移动端自适应 */
+@media (max-width: 768px) {
+  html[data-theme] .team-leaderboard {
+    padding: 12px 14px !important;
+    margin-bottom: 14px !important;
+  }
+  html[data-theme] .leaderboard-header {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  html[data-theme] .leaderboard-header h2 {
+    font-size: 1.25rem !important;
+  }
+  html[data-theme] .leaderboard-champion {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  html[data-theme] .leaderboard-card {
+    padding: 8px 10px !important;
+  }
+}
+
+/* 6. 全局模态窗口容器 (Universal Modal Shell) 移动端自适应 */
+@media (max-width: 768px) {
+  .modal,
+  .reminder-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px !important;
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
+    z-index: 2000 !important;
+  }
+  .modal.active,
+  .reminder-modal.active {
+    display: flex !important;
+  }
+  :is(.modal, .reminder-modal) :is(.modal-content, .reminder-content),
+  html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.modal-content, .reminder-content) {
+    width: 100% !important;
+    max-width: min(100%, 540px) !important;
+    max-height: calc(100vh - 40px) !important;
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 20px) !important;
+    margin: auto 0 !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .modal-header,
+  .reminder-header {
+    padding: 10px 14px !important;
+    min-height: 44px !important;
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+  }
+  .modal-title,
+  .reminder-title {
+    font-size: 1.05rem !important;
+    line-height: 1.3 !important;
+  }
+  .close-modal,
+  .close-reminder {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+  }
+  .modal-body,
+  .reminder-body {
+    padding: 12px 14px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+  }
+  .modal-footer,
+  .reminder-actions {
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 48px !important;
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .modal-footer .btn,
+  .reminder-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    padding: 6px 12px !important;
+    font-size: 0.88rem !important;
+    justify-content: center !important;
+  }
+}
+
+/* 7. 备忘录编辑弹窗 (memoModal) 移动端专属细节 */
+@media (max-width: 600px) {
+  #memoModal .form-group {
+    margin-bottom: 8px !important;
+  }
+  #memoModal .form-group label {
+    margin: 2px 0 4px !important;
+    font-size: 0.82rem !important;
+  }
+  #memoModal .form-control {
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    font-size: 0.88rem !important;
+  }
+  .memo-title-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+  .memo-title-completed {
+    padding: 4px 10px !important;
+    min-height: 36px !important;
+    font-size: 0.82rem !important;
+    white-space: nowrap !important;
+  }
+  #memoModal .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  #memoModal #colorOptions {
+    gap: 6px !important;
+    margin-top: 4px !important;
+  }
+  #memoModal .color-option {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  #memoModal .memo-content-header {
+    margin-bottom: 4px !important;
+  }
+  #memoModal .memo-text-editor #memoContent {
+    min-height: 72px !important;
+    height: 75px !important;
+    font-size: 0.88rem !important;
+    padding: 8px 10px !important;
+  }
+  #memoModal .memo-text-toolbar {
+    padding: 4px 6px !important;
+    min-height: 32px !important;
+    gap: 4px !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  #memoModal .memo-text-toolbar::-webkit-scrollbar {
+    display: none !important;
+  }
+  #memoModal .memo-text-tool {
+    min-width: 28px !important;
+    height: 28px !important;
+    font-size: 0.76rem !important;
+  }
+  #memoModal .memo-text-helper {
+    padding: 3px 2px !important;
+    font-size: 0.72rem !important;
+  }
+  #memoModal .markdown-preview {
+    max-height: 120px !important;
+  }
+  /* 弹窗底部操作按钮单行紧凑排布 */
+  #memoModal .modal-footer {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  #memoModal .modal-footer #saveMemo {
+    flex: 1 1 auto !important;
+    order: 3 !important;
+    font-weight: 700 !important;
+    min-height: 38px !important;
+    font-size: 0.9rem !important;
+  }
+  #memoModal .modal-footer #cancelMemo {
+    flex: 0 0 auto !important;
+    order: 1 !important;
+    min-height: 38px !important;
+  }
+  #memoModal .modal-footer #deleteMemo {
+    flex: 0 0 auto !important;
+    order: 2 !important;
+    min-height: 38px !important;
+  }
+}
+
+/* 8. 功能面板弹窗 (functionsModal) 移动端专属细节 */
+@media (max-width: 768px) {
+  html[data-theme] #functionsModal .tabs {
+    padding: 4px 6px !important;
+    margin-bottom: 14px !important;
+    gap: 4px !important;
+  }
+  html[data-theme] #functionsModal .tab {
+    padding: 7px 11px !important;
+    font-size: 0.82rem !important;
+    min-height: 36px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+  }
+  #functionsModal .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  #publishTask {
+    width: 100% !important;
+    min-height: 42px !important;
+    font-size: 0.92rem !important;
+    justify-content: center !important;
+  }
+  .excel-export-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .excel-export-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .excel-export-actions .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    font-size: 0.82rem !important;
+    padding: 8px 6px !important;
+    min-height: 38px !important;
+  }
+  .data-management-buttons {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .data-management-buttons .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    font-size: 0.82rem !important;
+    padding: 8px 6px !important;
+    min-height: 38px !important;
+  }
+  .ops-status-summary {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .ops-card {
+    padding: 10px !important;
+  }
+  .user-management-meta {
+    flex-direction: column !important;
+    gap: 3px !important;
+  }
+  .user-edit-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 9. 每日备忘录详情弹窗 (dailyDetailModal) 移动端专属细节 */
+@media (max-width: 600px) {
+  #dailyDetailModal .modal-title {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
+  #dailyDetailModal #dailyDetailDate {
+    margin-left: 0 !important;
+    font-size: 0.88rem !important;
+    opacity: 0.85 !important;
+  }
+  .daily-quick-add-row {
+    grid-template-columns: minmax(0, 1fr) 68px !important;
+    gap: 8px !important;
+  }
+  .daily-quick-add-btn {
+    padding: 8px 12px !important;
+    min-height: 38px !important;
+    font-size: 0.88rem !important;
+  }
+  #dailyDetailList {
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+  #dailyDetailModal .task-item {
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+  }
+  #dailyDetailModal .task-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  #dailyDetailModal .task-btn {
+    flex: 1 1 auto !important;
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    font-size: 0.82rem !important;
+  }
+  #dailyDetailModal .modal-footer {
+    display: flex !important;
+    gap: 8px !important;
+  }
+  #dailyDetailModal .modal-footer .btn {
+    flex: 1 !important;
+    min-height: 40px !important;
+  }
+}
+
+/* 10. 到期提醒弹窗 (reminderModal) 移动端专属细节 */
+@media (max-width: 600px) {
+  .reminder-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 16px !important;
+  }
+  .reminder-actions .export-buttons-container,
+  .reminder-actions .btn {
+    width: 100% !important;
+    min-height: 40px !important;
+    justify-content: center !important;
+  }
+}
+
+/* ========================================================
+   刷新与加载弹窗主题自适应 (Session & Loading Modal Theming)
+   ======================================================== */
+html[data-theme] #serverSessionOverlay {
+  background: var(--ui-page, #0f172a) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+html[data-theme='light'] #serverSessionOverlay {
+  background: rgba(248, 250, 252, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+html[data-theme='dark'] #serverSessionOverlay {
+  background: rgba(11, 15, 25, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+html[data-theme] .server-session-card {
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: var(--ui-shadow) !important;
+  color: var(--ui-text) !important;
+  border-radius: 20px !important;
+}
+
+html[data-theme] .server-session-card h2 {
+  color: var(--ui-text) !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme] .server-session-card p {
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme='light'] .server-session-spinner {
+  border: 4px solid rgba(67, 97, 238, 0.14) !important;
+  border-top-color: var(--ui-accent, #4361ee) !important;
+}
+
+html[data-theme='light'] .server-session-percent {
+  color: var(--ui-accent, #4361ee) !important;
+}
+
+html[data-theme='light'] .server-session-progress {
+  background: rgba(67, 97, 238, 0.1) !important;
+}
+
+html[data-theme='light'] .server-session-progress-fill {
+  background: linear-gradient(90deg, #4361ee, #06b6d4) !important;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4) !important;
+}
+
+html[data-theme='dark'] .server-session-card {
+  background: rgba(18, 24, 38, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-theme='dark'] .server-session-spinner {
+  border: 4px solid rgba(56, 189, 248, 0.18) !important;
+  border-top-color: #38bdf8 !important;
+}
+
+html[data-theme='dark'] .server-session-percent {
+  color: #38bdf8 !important;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
+}
+
+html[data-theme='dark'] .server-session-progress {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme='dark'] .server-session-progress-fill {
+  background: linear-gradient(90deg, #38bdf8, #10b981) !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+}
+
+html[data-theme] .server-session-actions button {
+  background: var(--ui-button-bg) !important;
+  color: var(--ui-button-text) !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+}
+
+/* ========================================================
+   日历区域文字粗细与排版精细化 (Calendar Typography Refinement)
+   - 彻底解决 Windows 微软雅黑 600/700 导致的字体过粗、笔画油墨粘连与黑坨感
+   - 备忘录条目采用优雅清爽的 400 常规字重 (Regular)，字迹清秀锐利
+   - 已完成事项使用 1px 细致删除线，避免粗墨迹压盖
+   - 启用全局高保真次像素抗锯齿平滑渲染
+   ======================================================== */
+body,
+.calendar-container,
+.month-calendar,
+.calendar-day,
+.day-memo-item,
+.task-item {
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif !important;
+}
+
+/* 日历格中的备忘录条目：统一设定为常规体 400，笔画纤细分明 */
+/* ========================================================
+   日历格排版全量现代化重构 (Calendar Grid Modern Refinement)
+   - 弹性自适应标题 + 责任人微胶囊标签 (Owner Pill Tag)
+   - 日历格头部解耦：日期数字、添加按钮与任务数角标互锁排布，零重叠冲突
+   - 现代今日指示圆环 (Today Indicator)
+   ======================================================== */
+
+/* 1. 日历格头部排版 */
+.calendar-day .day-number,
+html[data-theme] .calendar-day .day-number {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  margin-bottom: 4px !important;
+  position: relative !important;
+  min-height: 22px !important;
+}
+
+.calendar-day .day-number-text,
+html[data-theme] .calendar-day .day-number-text {
+  display: inline-block !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  color: var(--ui-text, #1e293b) !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+  user-select: none !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+}
+
+/* 今日日期数字指示高亮（自然字色加亮，绝不带任何圆圈或外框） */
+.calendar-day.today .day-number-text,
+html[data-theme] .calendar-day.today .day-number-text {
+  background: transparent !important;
+  color: var(--ui-accent, #2563eb) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-weight: 850 !important;
+}
+
+.calendar-day .day-number-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin-left: auto !important;
+}
+
+.calendar-day .day-number-actions .day-add {
+  opacity: 0;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: none !important;
+  background: var(--ui-accent-soft, rgba(37, 99, 235, 0.12)) !important;
+  color: var(--ui-accent, #2563eb) !important;
+  font-size: 10px !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
+  transform: scale(0.9);
+}
+
+.calendar-day:hover .day-number-actions .day-add {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.calendar-day .day-number-actions .day-add:hover {
+  background: var(--ui-accent, #2563eb) !important;
+  color: #ffffff !important;
+  transform: scale(1.15) !important;
+}
+
+/* 任务数角标：优雅静态胶囊，杜绝绝对定位重叠 */
+.calendar-day .memo-count,
+html[data-theme] .calendar-day .memo-count {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  padding: 0 5px !important;
+  border-radius: 999px !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  background: var(--ui-surface-soft, #f1f5f9) !important;
+  color: var(--ui-text-muted, #64748b) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+}
+
+html[data-theme='dark'] .calendar-day .memo-count {
+  background: #162035 !important;
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 2. 备忘录条目：现代弹性双列排版 */
+.calendar-day .day-memo-item,
+html[data-theme] .calendar-day .day-memo-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  padding: 3px 6px !important;
+  font-weight: 400 !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.38 !important;
+  letter-spacing: 0.01em !important;
+  border-radius: 6px !important;
+}
+
+.calendar-day .day-memo-item .memo-color-dot {
+  flex: 0 0 auto !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+}
+
+.calendar-day .day-memo-item .memo-title-text {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-weight: 400 !important;
+}
+
+/* 责任人专属微胶囊标签 (Owner Pill Tag) */
+.calendar-day .day-memo-item .memo-owner-pill {
+  flex: 0 0 auto !important;
+  font-size: 0.66rem !important;
+  line-height: 1.35 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  background: rgba(100, 116, 139, 0.1) !important;
+  color: #64748b !important;
+  margin-left: auto !important;
+  white-space: nowrap !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+}
+
+html[data-theme='dark'] .calendar-day .day-memo-item .memo-owner-pill {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #94a3b8 !important;
+}
+
+/* 已完成条目：仅对标题划线，责任人标签清晰独立，圆点变灰 */
+.calendar-day .day-memo-item.completed,
+html[data-theme] .calendar-day .day-memo-item.completed {
+  opacity: 0.68 !important;
+}
+.calendar-day .day-memo-item.completed .memo-title-text {
+  text-decoration: line-through !important;
+  text-decoration-thickness: 1px !important;
+  text-decoration-color: rgba(148, 163, 184, 0.75) !important;
+}
+.calendar-day .day-memo-item.completed .memo-owner-pill {
+  opacity: 0.72 !important;
+}
+
+/* 已完成条目圆点变灰 (浅色与深色自适应) */
+:is(.calendar-day .day-memo-item.completed, .day-memo-item.completed) .memo-color-dot {
+  background-color: #94a3b8 !important;
+  opacity: 0.7 !important;
+}
+
+html[data-theme='dark'] .calendar-day .day-memo-item.completed {
+  opacity: 0.62 !important;
+}
+html[data-theme='dark'] .calendar-day .day-memo-item.completed .memo-title-text {
+  text-decoration-color: rgba(148, 163, 184, 0.45) !important;
+}
+html[data-theme='dark'] :is(.calendar-day .day-memo-item.completed, .day-memo-item.completed) .memo-color-dot {
+  background-color: #64748b !important;
+  opacity: 0.65 !important;
+}
+
+/* 详情弹窗中的已完成圆点与划线 */
+:is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-color {
+  background-color: #94a3b8 !important;
+  opacity: 0.7 !important;
+}
+:is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-title {
+  text-decoration: line-through !important;
+  opacity: 0.75 !important;
+}
+html[data-theme='dark'] :is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-color {
+  background-color: #64748b !important;
+  opacity: 0.65 !important;
+}
+
+/* 3. 移动端日历格排版：手机端日期居中且绝对不折行、隐藏右上角加号与数量角标、备忘录展示为极简彩点 */
+@media (max-width: 768px) {
+  html[data-theme] .calendar-day .day-number,
+  .calendar-day .day-number {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-height: auto !important;
+    margin-bottom: 2px !important;
+    text-align: center !important;
+  }
+
+  html[data-theme] .calendar-day .day-number-text,
+  .calendar-day .day-number-text,
+  #multiMonthCalendar .day-number-text,
+  #multiMonthCalendar .day-number-text[role='button'] {
+    display: inline-block !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    text-align: center !important;
+    min-width: 0 !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 彻底隐藏手机端日历格右上角加号与数量气泡，杜绝横向挤压导致日期数字变成两行 */
+  html[data-theme] .calendar-day .day-number-actions,
+  .calendar-day .day-number-actions,
+  html[data-theme] .calendar-day .memo-count,
+  .calendar-day .memo-count,
+  html[data-theme] .calendar-day .day-add,
+  .calendar-day .day-add {
+    display: none !important;
+  }
+
+  /* 手机端日历格内条目转为清爽的无边框彩色小圆点 */
+  html[data-theme] .calendar-day .day-memo-item,
+  .calendar-day .day-memo-item {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+    min-height: auto !important;
+    pointer-events: none !important;
+  }
+
+  .calendar-day .day-memo-item .memo-title-text,
+  .calendar-day .day-memo-item .memo-owner-pill {
+    display: none !important;
+  }
+
+  .calendar-day .day-memos {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 3px !important;
+    max-height: 22px !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    padding: 1px !important;
+  }
+
+  .calendar-day .day-memo-item .memo-color-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    margin: 0 !important;
+  }
+}
+
+/* ========================================================
+   首屏空间垂直高度优化 (Workbench Spacing Compression)
+   ======================================================== */
+.container {
+  max-width: 1440px !important;
+  margin: 0 auto !important;
+  padding: 12px 20px !important;
+  box-sizing: border-box !important;
+}
+
+/* 全工作台核心卡片容器左右横向绝对齐平 */
+:is(#appTopbar, .workspace-subbar, .team-leaderboard, #dashboardPage, .calendar-container, html[data-theme] #appTopbar.card, html[data-theme] .container .workspace-subbar.card) {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+header.app-topbar {
+  margin-bottom: 8px !important;
+}
+
+.workspace-subbar {
+  margin-bottom: 8px !important;
+}
+
+.team-leaderboard {
+  border-radius: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+#dashboardPage {
+  border-radius: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.calendar-nav-wrap {
+  margin: 0 0 6px !important;
+}
+
+/* 星期表头与主标题 */
+:is(.month-calendar, html[data-theme] .month-calendar) .weekdays div {
+  font-weight: 600 !important;
+  font-size: 0.82rem !important;
+}
+
+:is(#dailyDetailModal, html[data-theme] #dailyDetailModal) .task-title {
+  font-weight: 600 !important;
+}
+
+/* ========================================================
+   弹窗与组件细节升级 (Modals & Controls Modernization)
+   ======================================================== */
+
+/* 快捷截止时间预设芯片 (Quick Due Chips) */
+.quick-due-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 6px !important;
+}
+
+.quick-due-chip {
+  border: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface-soft) !important;
+  color: var(--ui-text-muted) !important;
+  font-size: 0.75rem !important;
+  padding: 3px 9px !important;
+  border-radius: 999px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
+}
+
+.quick-due-chip:hover {
+  background: var(--ui-surface-hover) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-accent) !important;
+}
+
+.quick-due-chip.active {
+  background: var(--ui-accent) !important;
+  color: #ffffff !important;
+  border-color: var(--ui-accent) !important;
+  font-weight: 600 !important;
+}
+
+/* 备忘录编辑 Markdown 编辑/预览紧凑切换栏 */
+.memo-content-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 6px !important;
+}
+
+.memo-tab-switcher {
+  display: inline-flex !important;
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 8px !important;
+  padding: 2px !important;
+  gap: 2px !important;
+}
+
+.memo-tab-btn {
+  border: none !important;
+  background: transparent !important;
+  color: var(--ui-text-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  padding: 3px 10px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.memo-tab-btn.active {
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+#memoModal #markdownPreview {
+  min-height: 120px !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  padding: 10px 14px !important;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: 9px !important;
+  background: var(--ui-surface-soft) !important;
+  font-size: 0.88rem !important;
+  line-height: 1.6 !important;
+}
+
+/* 全能工具箱：现代胶囊分段选项卡 (Segmented Control Tabs) */
+html[data-theme] #functionsModal .tabs {
+  display: flex !important;
+  gap: 4px !important;
+  padding: 4px !important;
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 10px !important;
+  margin-bottom: 18px !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+}
+
+html[data-theme] #functionsModal .tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+html[data-theme] #functionsModal .tab {
+  border: none !important;
+  background: transparent !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 0.86rem !important;
+  color: var(--ui-text-muted) !important;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+
+html[data-theme] #functionsModal .tab:hover {
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #functionsModal .tab.active {
+  background: var(--ui-surface) !important;
+  color: var(--ui-accent) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+html[data-theme='dark'] #functionsModal .tab.active {
+  background: #1e293b !important;
+  color: #93c5fd !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 浮动按钮未读提醒呼吸微动效 */
+#floatingReminder .badge:not(:empty) {
+  animation: badge-pulse 2s infinite ease-in-out;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+/* 全局 Empty State 精致微拟物优化 */
+.empty-state {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 32px 18px !important;
+  text-align: center !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.empty-state i {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  background: var(--ui-surface-soft) !important;
+  color: var(--ui-accent) !important;
+  font-size: 1.25rem !important;
+  margin-bottom: 10px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+.empty-state p {
+  margin: 0 !important;
+  font-size: 0.88rem !important;
+  color: var(--ui-text-muted) !important;
+}
+
+/* 接收人选择工具栏与快捷操作 */
+.task-assignee-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+}
+
+.task-assignee-quick-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.btn-assignee-quick {
+  background: transparent !important;
+  border: 1px solid var(--ui-border) !important;
+  color: var(--ui-text-muted) !important;
+  font-size: 0.75rem !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-assignee-quick:hover {
+  background: var(--ui-surface-soft) !important;
+  color: var(--ui-accent) !important;
+  border-color: var(--ui-accent) !important;
+}
+
+.task-assignee-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  max-height: 140px !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+}
+
+.task-assignee-tags::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* ========================================================
+   研发大屏 (Dashboard) - 全局与双主题高阶视觉重塑
+   ======================================================== */
+
+/* 1. 暗色模式 (Cyber Executive Dashboard) */
+html[data-theme='dark'] .dashboard-page,
+html.dark .dashboard-page {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(14, 165, 233, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 92% 12%, rgba(99, 102, 241, 0.14) 0%, transparent 45%),
+    radial-gradient(circle at 50% 95%, rgba(20, 184, 166, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #090e1a 0%, #0d1527 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.2) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme='dark'] .dashboard-page::before,
+html.dark .dashboard-page::before {
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px) !important;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.08)) !important;
+}
+
+html[data-theme='dark'] .dashboard-hero,
+html.dark .dashboard-hero {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(26, 38, 64, 0.90) 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.22) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .dashboard-hero::before,
+html.dark .dashboard-hero::before {
+  background: linear-gradient(180deg, #38bdf8, #818cf8) !important;
+}
+
+html[data-theme='dark'] .dashboard-hero::after,
+html.dark .dashboard-hero::after {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.15), transparent 64%) !important;
+}
+
+html[data-theme='dark'] .dashboard-kicker,
+html.dark .dashboard-kicker {
+  color: #38bdf8 !important;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+}
+
+html[data-theme='dark'] .kicker-pulse-dot,
+html.dark .kicker-pulse-dot {
+  background: #38bdf8 !important;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8) !important;
+}
+
+html[data-theme='dark'] #dashboardTitle,
+html.dark #dashboardTitle {
+  color: #ffffff !important;
+  font-weight: 850 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme='dark'] #dashboardSubtitle,
+html.dark #dashboardSubtitle {
+  color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .dashboard-actions .btn-secondary,
+html.dark .dashboard-actions .btn-secondary {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme='dark'] .dashboard-actions .btn-secondary:hover,
+html.dark .dashboard-actions .btn-secondary:hover {
+  background: rgba(45, 60, 88, 0.95) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .dashboard-actions .btn-primary,
+html.dark .dashboard-actions .btn-primary {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  border: 1px solid rgba(56, 189, 248, 0.5) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4) !important;
+}
+
+/* Metric Cards in Dark Mode */
+html[data-theme='dark'] .dashboard-metric,
+html.dark .dashboard-metric {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme='dark'] .dashboard-metric:hover,
+html.dark .dashboard-metric:hover {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 16px rgba(56, 189, 248, 0.15) !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+html[data-theme='dark'] .dashboard-metric-label,
+html.dark .dashboard-metric-label {
+  color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .dashboard-metric-value,
+html.dark .dashboard-metric-value {
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme='dark'] .metric-total.dashboard-metric::before { background: linear-gradient(90deg, #38bdf8, #818cf8) !important; }
+html[data-theme='dark'] .metric-total .dashboard-metric-icon { background: rgba(56, 189, 248, 0.16) !important; color: #38bdf8 !important; }
+html[data-theme='dark'] .metric-total .dashboard-metric-dot { background: #38bdf8 !important; box-shadow: 0 0 6px #38bdf8 !important; }
+
+html[data-theme='dark'] .metric-success.dashboard-metric::before { background: linear-gradient(90deg, #34d399, #10b981) !important; }
+html[data-theme='dark'] .metric-success .dashboard-metric-icon { background: rgba(52, 211, 153, 0.16) !important; color: #34d399 !important; }
+html[data-theme='dark'] .metric-success .dashboard-metric-value { color: #34d399 !important; }
+html[data-theme='dark'] .metric-success .dashboard-metric-dot { background: #34d399 !important; box-shadow: 0 0 6px #34d399 !important; }
+
+html[data-theme='dark'] .metric-pending.dashboard-metric::before { background: linear-gradient(90deg, #fbbf24, #f59e0b) !important; }
+html[data-theme='dark'] .metric-pending .dashboard-metric-icon { background: rgba(251, 191, 36, 0.16) !important; color: #fbbf24 !important; }
+html[data-theme='dark'] .metric-pending .dashboard-metric-value { color: #fde68a !important; }
+html[data-theme='dark'] .metric-pending .dashboard-metric-dot { background: #fbbf24 !important; box-shadow: 0 0 6px #fbbf24 !important; }
+
+html[data-theme='dark'] .metric-danger.dashboard-metric::before { background: linear-gradient(90deg, #f43f5e, #e11d48) !important; }
+html[data-theme='dark'] .metric-danger .dashboard-metric-icon { background: rgba(244, 63, 94, 0.2) !important; color: #f43f5e !important; }
+html[data-theme='dark'] .metric-danger .dashboard-metric-value { color: #f43f5e !important; text-shadow: 0 0 10px rgba(244, 63, 94, 0.3) !important; }
+html[data-theme='dark'] .metric-danger .dashboard-metric-dot { background: #f43f5e !important; box-shadow: 0 0 8px #f43f5e !important; }
+
+html[data-theme='dark'] .metric-warning.dashboard-metric::before { background: linear-gradient(90deg, #fb923c, #f97316) !important; }
+html[data-theme='dark'] .metric-warning .dashboard-metric-icon { background: rgba(251, 146, 60, 0.18) !important; color: #fb923c !important; }
+html[data-theme='dark'] .metric-warning .dashboard-metric-value { color: #fb923c !important; }
+html[data-theme='dark'] .metric-warning .dashboard-metric-dot { background: #fb923c !important; box-shadow: 0 0 6px #fb923c !important; }
+
+html[data-theme='dark'] .metric-today.dashboard-metric::before { background: linear-gradient(90deg, #818cf8, #6366f1) !important; }
+html[data-theme='dark'] .metric-today .dashboard-metric-icon { background: rgba(129, 140, 248, 0.18) !important; color: #818cf8 !important; }
+html[data-theme='dark'] .metric-today .dashboard-metric-value { color: #a5b4fc !important; }
+html[data-theme='dark'] .metric-today .dashboard-metric-dot { background: #818cf8 !important; box-shadow: 0 0 6px #818cf8 !important; }
+
+html[data-theme='dark'] .metric-safe.dashboard-metric::before { background: linear-gradient(90deg, #94a3b8, #64748b) !important; }
+html[data-theme='dark'] .metric-safe .dashboard-metric-icon { background: rgba(148, 163, 184, 0.15) !important; color: #94a3b8 !important; }
+html[data-theme='dark'] .metric-safe .dashboard-metric-dot { background: #94a3b8 !important; }
+
+/* Dashboard Cards in Dark Mode */
+html[data-theme='dark'] :is(.dashboard-card, #dashboardPage .dashboard-card.card),
+html.dark :is(.dashboard-card, #dashboardPage .dashboard-card.card) {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+html[data-theme='dark'] :is(.dashboard-card-title, #dashboardPage .dashboard-card-title.card-header),
+html.dark :is(.dashboard-card-title, #dashboardPage .dashboard-card-title.card-header) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .dashboard-card-title span,
+html.dark .dashboard-card-title span {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .dashboard-card-title i,
+html.dark .dashboard-card-title i {
+  color: #38bdf8 !important;
+}
+
+html[data-theme='dark'] .dashboard-card-title small,
+html.dark .dashboard-card-title small {
+  color: #94a3b8 !important;
+}
+
+/* User Load Rows in Dark Mode */
+html[data-theme='dark'] .dashboard-user-row,
+html.dark .dashboard-user-row {
+  background: rgba(20, 30, 52, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme='dark'] .dashboard-user-row:hover,
+html.dark .dashboard-user-row:hover {
+  background: rgba(30, 46, 78, 0.9) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme='dark'] .dashboard-user-name,
+html.dark .dashboard-user-name {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+html[data-theme='dark'] .user-role-tag,
+html.dark .user-role-tag {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .user-dept-tag,
+html.dark .user-dept-tag {
+  background: rgba(56, 189, 248, 0.12) !important;
+  color: #38bdf8 !important;
+}
+
+html[data-theme='dark'] .dashboard-progress,
+html.dark .dashboard-progress {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-theme='dark'] .dashboard-progress-fill,
+html.dark .dashboard-progress-fill {
+  background: linear-gradient(90deg, #06b6d4, #3b82f6) !important;
+}
+
+html[data-theme='dark'] .fill-complete,
+html.dark .fill-complete {
+  background: linear-gradient(90deg, #10b981, #059669) !important;
+}
+
+html[data-theme='dark'] .fill-overdue,
+html.dark .fill-overdue {
+  background: linear-gradient(90deg, #f59e0b, #ef4444) !important;
+}
+
+html[data-theme='dark'] .stat-pill,
+html.dark .stat-pill {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .pill-completed,
+html.dark .pill-completed {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #6ee7b7 !important;
+  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+}
+
+html[data-theme='dark'] .pill-pending,
+html.dark .pill-pending {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fde68a !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+}
+
+html[data-theme='dark'] .pill-overdue.is-alert,
+html.dark .pill-overdue.is-alert {
+  background: rgba(244, 63, 94, 0.22) !important;
+  color: #fecdd3 !important;
+  border: 1px solid rgba(244, 63, 94, 0.45) !important;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.2) !important;
+}
+
+html[data-theme='dark'] .pill-duesoon.is-alert,
+html.dark .pill-duesoon.is-alert {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fde68a !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+}
+
+html[data-theme='dark'] .dashboard-user-rate,
+html.dark .dashboard-user-rate {
+  color: #38bdf8 !important;
+}
+
+html[data-theme='dark'] .rate-complete,
+html.dark .rate-complete {
+  color: #34d399 !important;
+}
+
+html[data-theme='dark'] .user-rate-label,
+html.dark .user-rate-label {
+  color: #94a3b8 !important;
+}
+
+/* Risk Items in Dark Mode */
+html[data-theme='dark'] .dashboard-risk-item,
+html.dark .dashboard-risk-item {
+  background: rgba(22, 27, 44, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme='dark'] .dashboard-risk-item:hover,
+html.dark .dashboard-risk-item:hover {
+  background: rgba(30, 38, 62, 0.9) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme='dark'] .dashboard-risk-item.risk-danger,
+html.dark .dashboard-risk-item.risk-danger {
+  background: linear-gradient(135deg, rgba(88, 20, 32, 0.7) 0%, rgba(35, 14, 22, 0.8) 100%) !important;
+  border: 1px solid rgba(244, 63, 94, 0.35) !important;
+  border-left: 4px solid #f43f5e !important;
+}
+
+html[data-theme='dark'] .dashboard-risk-item.risk-warning,
+html.dark .dashboard-risk-item.risk-warning {
+  background: linear-gradient(135deg, rgba(78, 42, 12, 0.6) 0%, rgba(30, 20, 12, 0.7) 100%) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+html[data-theme='dark'] .dashboard-risk-item.risk-muted,
+html.dark .dashboard-risk-item.risk-muted {
+  background: rgba(20, 29, 47, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-left: 4px solid #94a3b8 !important;
+}
+
+html[data-theme='dark'] .dashboard-risk-title,
+html.dark .dashboard-risk-title {
+  color: #ffffff !important;
+  font-weight: 750 !important;
+}
+
+html[data-theme='dark'] .badge-danger,
+html.dark .badge-danger {
+  background: #e11d48 !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+html[data-theme='dark'] .badge-warning,
+html.dark .badge-warning {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+  border-color: transparent !important;
+}
+
+html[data-theme='dark'] .badge-muted,
+html.dark .badge-muted {
+  background: #475569 !important;
+  color: #e2e8f0 !important;
+  border-color: transparent !important;
+}
+
+html[data-theme='dark'] .dashboard-risk-meta,
+html.dark .dashboard-risk-meta {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .risk-meta-action,
+html.dark .risk-meta-action {
+  color: #38bdf8 !important;
+}
+
+/* Trend Chart in Dark Mode */
+html[data-theme='dark'] .dashboard-trend-row:hover,
+html.dark .dashboard-trend-row:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-theme='dark'] .trend-date-col,
+html.dark .trend-date-col {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .trend-week,
+html.dark .trend-week {
+  color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .today-chip,
+html.dark .today-chip {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .dashboard-trend-bar,
+html.dark .dashboard-trend-bar {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme='dark'] .dashboard-trend-fill,
+html.dark .dashboard-trend-fill {
+  background: linear-gradient(90deg, #06b6d4, #3b82f6) !important;
+}
+
+html[data-theme='dark'] .dashboard-trend-fill.fill-all-done,
+html.dark .dashboard-trend-fill.fill-all-done {
+  background: linear-gradient(90deg, #10b981, #059669) !important;
+}
+
+html[data-theme='dark'] .trend-badge,
+html.dark .trend-badge {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .trend-badge.badge-done,
+html.dark .trend-badge.badge-done {
+  background: rgba(56, 189, 248, 0.16) !important;
+  color: #38bdf8 !important;
+}
+
+html[data-theme='dark'] .trend-badge.badge-all,
+html.dark .trend-badge.badge-all {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+}
+
+html[data-theme='dark'] .trend-badge.badge-zero,
+html.dark .trend-badge.badge-zero {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #64748b !important;
+}
+
+html[data-theme='dark'] .dashboard-empty,
+html.dark .dashboard-empty {
+  color: #94a3b8 !important;
+}
+
+/* 2. 浅色模式 (Crisp Clean Modern SaaS Dashboard) */
+html[data-theme='light'] .dashboard-page,
+html.light .dashboard-page {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(14, 165, 233, 0.07), transparent 35%),
+    radial-gradient(circle at 92% 10%, rgba(99, 102, 241, 0.06), transparent 35%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .dashboard-hero,
+html.light .dashboard-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .dashboard-kicker,
+html.light .dashboard-kicker {
+  color: #0284c7 !important;
+}
+
+html[data-theme='light'] .kicker-pulse-dot,
+html.light .kicker-pulse-dot {
+  background: #0284c7 !important;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.4) !important;
+}
+
+html[data-theme='light'] #dashboardTitle,
+html.light #dashboardTitle {
+  color: #0f172a !important;
+  font-weight: 850 !important;
+}
+
+html[data-theme='light'] #dashboardSubtitle,
+html.light #dashboardSubtitle {
+  color: #64748b !important;
+}
+
+html[data-theme='light'] .dashboard-actions .btn-secondary,
+html.light .dashboard-actions .btn-secondary {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+html[data-theme='light'] .dashboard-actions .btn-secondary:hover,
+html.light .dashboard-actions .btn-secondary:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .dashboard-actions .btn-primary,
+html.light .dashboard-actions .btn-primary {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  border: 1px solid transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+}
+
+html[data-theme='light'] .dashboard-metric,
+html.light .dashboard-metric {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04) !important;
+}
+
+html[data-theme='light'] .dashboard-metric-label,
+html.light .dashboard-metric-label {
+  color: #64748b !important;
+}
+
+html[data-theme='light'] .dashboard-metric-value,
+html.light .dashboard-metric-value {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+html[data-theme='light'] :is(.dashboard-card, #dashboardPage .dashboard-card.card),
+html.light :is(.dashboard-card, #dashboardPage .dashboard-card.card) {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+html[data-theme='light'] :is(.dashboard-card-title, #dashboardPage .dashboard-card-title.card-header),
+html.light :is(.dashboard-card-title, #dashboardPage .dashboard-card-title.card-header) {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .dashboard-card-title span,
+html.light .dashboard-card-title span {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+html[data-theme='light'] .dashboard-card-title small,
+html.light .dashboard-card-title small {
+  color: #64748b !important;
+}
+
+html[data-theme='light'] .dashboard-user-row,
+html.light .dashboard-user-row {
+  background: #ffffff !important;
+  border: 1px solid #f1f5f9 !important;
+}
+
+html[data-theme='light'] .dashboard-user-row:hover,
+html.light .dashboard-user-row:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
+}
+
+html[data-theme='light'] .dashboard-user-name,
+html.light .dashboard-user-name {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .dashboard-user-rate,
+html.light .dashboard-user-rate {
+  color: #0284c7 !important;
+}
+
+html[data-theme='light'] .dashboard-risk-title,
+html.light .dashboard-risk-title {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .dashboard-risk-meta,
+html.light .dashboard-risk-meta {
+  color: #64748b !important;
+}
+
+/* Server workbench interactions: keep these overrides outside generated HTML. */
+#multiMonthCalendar.grid-1 {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+}
+
+#multiMonthCalendar .day-number-text[role='button'] {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 4px;
+}
+
+#multiMonthCalendar :is(.day-memo-item, .memo-count, .stat-item) {
+  appearance: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+#multiMonthCalendar .day-memo-item { text-align: left; }
+#multiMonthCalendar :is(.day-number-text[role='button'], .day-memo-item, .memo-count, .stat-item):focus-visible,
+:is(.mobile-agenda-item, .toolbar-more summary, .reminder-item):focus-visible {
+  outline: 2px solid var(--ui-focus-ring) !important;
+  outline-offset: 2px;
+}
+
+.toolbar-more { position: relative; flex: 0 0 auto; }
+.toolbar-more summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-text-muted);
+  font-weight: 600;
+}
+.toolbar-more summary::-webkit-details-marker { display: none; }
+.toolbar-more summary::after { content: ' ▾'; padding-left: 6px; }
+.toolbar-more-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow);
+}
+.toolbar-more:not([open]) .toolbar-more-menu { display: none; }
+.toolbar-more-menu .toolbar-btn { width: 100%; justify-content: flex-start; }
+
+.operation-feedback {
+  width: 100%;
+  padding: 9px 12px;
+  margin: 8px 0;
+  border: 1px solid var(--red-7);
+  border-radius: 8px;
+  background: var(--red-3);
+  color: var(--red-11);
+  white-space: pre-line;
+  max-height: 180px;
+  overflow: auto;
+  font-size: 0.88rem;
+}
+.operation-feedback[hidden] { display: none !important; }
+#memoModal .modal-footer { flex-wrap: wrap; }
+#memoSaveFeedback { flex: 1 0 100%; }
+
+#reminderList .reminder-group { margin-bottom: 14px; }
+#reminderList .reminder-group h3 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 6px;
+  color: var(--ui-text);
+  font-size: 0.9rem;
+}
+#reminderList .reminder-item {
+  width: 100%;
+  display: block;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+#reminderList .reminder-item-details { display: block; }
+
+#mobileAgenda { display: none; }
+@media (max-width: 768px) {
+  #mobileAgenda {
+    display: block;
+    padding: 14px;
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    background: var(--ui-surface);
+  }
+  .mobile-agenda-header, .mobile-agenda-header > div {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .mobile-agenda-header { justify-content: space-between; margin-bottom: 10px; }
+  .mobile-agenda-kicker, .mobile-agenda-count { color: var(--ui-text-muted); font-size: 0.78rem; }
+  .mobile-agenda-header strong { color: var(--ui-text); }
+  .mobile-agenda-header .btn { min-height: 36px; }
+  .mobile-agenda-list { display: grid; gap: 6px; }
+  .mobile-agenda-item {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    background: var(--ui-surface-soft);
+    color: var(--ui-text);
+    text-align: left;
+    cursor: pointer;
+  }
+  .mobile-agenda-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .mobile-agenda-item-text { flex: 1; min-width: 0; }
+  .mobile-agenda-item-text strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-agenda-item-text small, .mobile-agenda-status { color: var(--ui-text-muted); font-size: 0.75rem; }
+  .mobile-agenda-item.completed strong { text-decoration: line-through; }
+  .mobile-agenda-empty { padding: 12px; color: var(--ui-text-muted); }
+  #multiMonthCalendar .calendar-day.agenda-selected { outline: 2px solid var(--ui-accent) !important; outline-offset: -2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] *, html[data-theme] *::before, html[data-theme] *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================================
+   提醒中心：多选、一键完成、催办下发现代化交互样式
+   ======================================================== */
+.reminder-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reminder-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.reminder-tab:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+
+.reminder-tab.active {
+  background: var(--ui-accent);
+  color: #fff;
+  border-color: var(--ui-accent);
+}
+
+.reminder-tab .tab-count {
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.reminder-tab.active .tab-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.reminder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reminder-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-left: 4px solid var(--ui-warning, #f59e0b);
+  border-radius: 10px;
+  transition: all 0.18s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reminder-item-row:hover {
+  background: var(--ui-surface-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.reminder-item-row.is-selected {
+  background: rgba(79, 124, 255, 0.08);
+  border-color: var(--ui-accent);
+  border-left-color: var(--ui-accent);
+}
+
+.reminder-item-row.is-overdue {
+  border-left-color: var(--ui-danger, #ef4444);
+}
+
+.reminder-item-row.is-urged {
+  border-left-color: #f97316;
+  background: rgba(249, 115, 22, 0.04);
+}
+
+.reminder-item-checkbox-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 4px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.reminder-item-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--ui-accent);
+}
+
+.reminder-item-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reminder-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reminder-item-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ui-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reminder-badge-urged {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: urgePulse 1.8s infinite ease-in-out;
+}
+
+@keyframes urgePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.05); }
+}
+
+.reminder-item-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+}
+
+.reminder-due-tag {
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.reminder-due-tag.overdue {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.reminder-due-tag.duesoon {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.reminder-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 16px !important;
+  background: var(--ui-surface-soft) !important;
+  border-top: 1px solid var(--ui-border) !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+
+.reminder-selection-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reminder-select-all-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ui-text);
+  margin: 0;
+  user-select: none;
+}
+
+.reminder-select-all-label input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--ui-accent);
+  cursor: pointer;
+}
+
+.reminder-selected-count {
+  font-size: 0.82rem;
+  color: var(--ui-text-muted);
+}
+
+.reminder-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reminder-btn-group .btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.reminder-btn-group .btn-warning {
+  background: #f59e0b;
+  color: #fff;
+}
+.reminder-btn-group .btn-warning:hover {
+  background: #d97706;
+}
+
+.reminder-btn-group .btn-success {
+  background: #10b981;
+  color: #fff;
+}
+.reminder-btn-group .btn-success:hover {
+  background: #059669;
+}
+
+/* 工程师客户端催办浮动通知条 */
+.engineer-urge-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 30px;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  animation: bannerSlideDown 0.35s ease, bannerPulse 2.5s infinite;
+  max-width: 90vw;
+}
+
+@keyframes bannerSlideDown {
+  from { transform: translate(-50%, -40px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+@keyframes bannerPulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 8px 32px rgba(239, 68, 68, 0.7); }
+}
+
+.engineer-urge-banner .close-banner {
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-left: 6px;
+}
+
+
+
+
+
+
+

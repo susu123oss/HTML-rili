@@ -63,8 +63,8 @@ DEFAULT_PUBLIC_PORT = '8090'
 
 SKIP_DIRS = {'node_modules', '.git', 'dist', 'build', '__pycache__'}
 SKIP_FILES = {'.DS_Store'}
-FRONTEND_FILES = ['index.html', 'styles.css', 'app.js', 'nginx.conf', 'Dockerfile']
-FRONTEND_ASSET_DIRS = ['css', 'libs', 'marked', 'webfonts']
+FRONTEND_FILES = ['index.html', 'styles.css', 'theme.css', 'theme-init.js', 'app.js', 'nginx.conf', 'Dockerfile']
+FRONTEND_ASSET_DIRS = ['css', 'libs', 'marked', 'webfonts', 'vendor']
 
 
 def safe_print(text='', end='\n'):
@@ -210,6 +210,13 @@ def upload_frontend(sftp, project_root, remote_dir):
             upload_tree(sftp, local_path, remote_path, project_root)
 
 
+def upload_backend(sftp, project_root, remote_dir):
+    local_backend = project_root / 'backend'
+    remote_backend = posixpath.join(remote_dir, 'backend')
+    ensure_remote_dir(sftp, remote_backend)
+    upload_tree(sftp, local_backend, remote_backend, project_root)
+
+
 def patch_remote_compose(sftp, remote_dir, public_port, patch_secret):
     remote_compose = posixpath.join(remote_dir, 'docker-compose.yml')
     with sftp.open(remote_compose, 'r') as file:
@@ -304,15 +311,17 @@ def deploy(args):
                     )
                 upload_tree(sftp, project_root, args.remote_dir)
                 patch_remote_compose(sftp, args.remote_dir, args.public_port, patch_secret=True)
+            elif args.mode == 'backend':
+                upload_backend(sftp, project_root, args.remote_dir)
             else:
                 upload_frontend(sftp, project_root, args.remote_dir)
         finally:
             sftp.close()
 
-        service = 'frontend' if args.mode == 'frontend' else ''
+        service = args.mode if args.mode in ('frontend', 'backend') else ''
         run(client, f'cd {args.remote_dir} && COMPOSE_ANSI=never COMPOSE_PROGRESS=plain docker compose up -d --build {service}'.rstrip())
         run(client, f'cd {args.remote_dir} && docker compose ps')
-        run(client, f'curl -fsS http://127.0.0.1:{args.public_port}/api/health')
+        run(client, f'for i in $(seq 1 15); do curl -fsS http://127.0.0.1:{args.public_port}/api/health && break || sleep 1; done')
     finally:
         client.close()
 
@@ -323,7 +332,7 @@ def deploy(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='部署智能工作日历服务器版')
-    parser.add_argument('--mode', choices=['frontend', 'all'], default='frontend', help='frontend 只部署前端；all 全量部署')
+    parser.add_argument('--mode', choices=['frontend', 'backend', 'all'], default='frontend', help='frontend 只部署前端；backend 只部署后端；all 全量部署')
     parser.add_argument('--host', default=os.environ.get('DEPLOY_HOST', DEFAULT_HOST), help='服务器 IP')
     parser.add_argument('--port', type=int, default=int(os.environ.get('DEPLOY_PORT', str(DEFAULT_PORT))), help='SSH 端口')
     parser.add_argument('--user', default=os.environ.get('DEPLOY_USER', DEFAULT_USER), help='SSH 用户名')

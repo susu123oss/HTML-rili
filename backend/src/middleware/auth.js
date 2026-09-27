@@ -34,7 +34,25 @@ export async function authRequired(req, res, next) {
   }
 }
 
-export function canAccessUser(currentUser, targetUserId) {
+export function canAccessUser(currentUser, targetUserId, targetDepartmentId = null) {
+  if (!currentUser) return false;
   if (currentUser.role === 'admin') return true;
-  return Number(targetUserId) === Number(currentUser.id);
+  if (Number(targetUserId) === Number(currentUser.id)) return true;
+  if (targetDepartmentId !== null && Number(targetDepartmentId) === Number(currentUser.departmentId)) return true;
+  return false;
 }
+
+export function canViewMemo(currentUser, memoOwnerId, memoDepartmentId = null) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'admin') return true;
+  if (Number(memoOwnerId) === Number(currentUser.id)) return true;
+  if (memoDepartmentId !== null && Number(memoDepartmentId) === Number(currentUser.departmentId)) return true;
+  // All authenticated team members can view shared calendar tasks
+  return true;
+}
+
+export function canEditMemo(currentUser, memoOwnerId) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'admin') return true;
+  return Number(memoOwnerId) === Number(currentUser.id);
+}

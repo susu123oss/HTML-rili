@@ -26,6 +26,14 @@
 docker compose up -d --build
 ```
 
+## 明暗主题
+
+`frontend/theme.css` 使用随项目交付的 Radix Colors 色阶定义背景、文字、边框和状态色；`frontend/theme-init.js` 在页面显示前应用保存的浅色、深色或跟随系统设置。顶栏、工作台工具栏、月历卡片、常用弹窗和功能面板已接入 Tabler 组件与图标，资源及许可证见 `frontend/vendor/README.md`。修改主题时优先调整 `theme.css` 中的语义变量。
+
+手机端点选日期后，月历下方会列出当天事项。提醒中心独立读取未完成事项，按逾期、三天内到期和普通待办分组；本次接口改动需使用全量部署。
+
+从本机版重新生成 `frontend/index.html` 时，`scripts/build_frontend_from_local.py` 会补回主题脚本和样式表引用。
+
 ## 常用部署脚本
 
 部署脚本已保留在：
@@ -40,7 +48,7 @@ scripts/deploy.py
 pip install -r scripts/requirements.txt
 ```
 
-只部署前端，适合改 UI、修 `frontend/index.html`、`frontend/styles.css`、`frontend/app.js` 后使用：
+只部署前端，适合修改 `frontend/index.html`、`frontend/app.js`、`frontend/theme.css` 和本地视觉资源后使用：
 
 ```bat
 cmd /c "set DEPLOY_HOST=服务器IP&& set DEPLOY_USER=root&& set DEPLOY_PASSWORD=你的密码&& python scripts\deploy.py --mode frontend --verify-public"

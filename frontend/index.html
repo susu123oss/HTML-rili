@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <script src="./theme-init.js"></script>
     <title>工作日历备忘录</title>
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"> -->
@@ -12,12 +14,16 @@
     <link rel="stylesheet" href="libs/highlight.js/11.9.0/styles/github.min.css">
     <script src="marked/marked.min.js"></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="./vendor/tabler-core/tabler.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         :root {
@@ -106,7 +112,9 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            margin-bottom: 25px;
+            margin: 0 0 25px 0;
+            width: 100%;
+            box-sizing: border-box;
             padding: 15px 20px;
             background: white;
             border-radius: var(--border-radius);
@@ -453,22 +461,9 @@
         /* 根据月份数量动态调整网格列数 */
         .multi-month-calendar.grid-1 {
             grid-template-columns: 1fr;
-			max-width: 100%; /* 新增：最大宽度为90% */
-			margin: 0 auto; /* 新增：水平居中 */
-			width: 100%; /* 新增：宽度为90% */
-			
-            white-space: normal; /* 允许换行 */
-            height: auto; /* 自动高度 */
-            min-height: 18px; /* 最小高度 */
-            max-height: 54px; /* 最大3行 */
-            /* overflow: hidden; */
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 3; /* 最多显示3行 */
-            -webkit-box-orient: vertical;
-            line-height: 1.3;
-            padding: 3px 6px;
-            font-size: 0.8rem;
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
         }
 
         .multi-month-calendar.grid-2 {
@@ -930,6 +925,7 @@
             background-color: rgba(255, 255, 255, 0.7);
             border-left: 3px solid var(--memo-color);
             font-size: 0.75rem;
+            font-weight: 400;
             height: 18px;
             width: 100%;
             box-sizing: border-box;
@@ -950,6 +946,7 @@
             line-height: 1.3;
             padding: 3px 6px;
             font-size: 0.8rem;
+            font-weight: 400;
         }
 
         .day-memo-item:hover {
@@ -959,8 +956,10 @@
         }
 
         .day-memo-item.completed {
-            opacity: 0.6;
+            opacity: 0.65;
+            font-weight: 400;
             text-decoration: line-through;
+            text-decoration-thickness: 1px;
         }
 
         .memo-count {
@@ -2048,23 +2047,29 @@
             color: var(--success-color);
         }
 
-        /* 滚动条样式 */
+        /* 滚动条样式：极细悬浮圆角胶囊，禁用原生上下箭头 */
         ::-webkit-scrollbar {
-            width: 5px;
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-button {
+            display: none;
+            width: 0;
+            height: 0;
         }
 
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 3px;
+            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 3px;
+            background: rgba(140, 145, 155, 0.4);
+            border-radius: 999px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
+            background: rgba(100, 105, 115, 0.7);
         }
 
         /* 导入文件输入 */
@@ -2527,7 +2532,9 @@
         .team-leaderboard {
             margin: 0 0 22px;
             padding: 18px;
-            border-radius: 18px;
+            border-radius: 12px;
+            width: 100%;
+            box-sizing: border-box;
             background:
                 radial-gradient(circle at 12% 20%, rgba(255, 193, 7, 0.22), transparent 26%),
                 radial-gradient(circle at 90% 12%, rgba(76, 201, 240, 0.22), transparent 28%),
@@ -2816,19 +2823,22 @@
             }
         }
 
-        /* 日历日期的备忘录列表滚动容器 */
+        /* 日历日期的备忘录列表滚动容器：隐藏滚动条，保持完整滚轮滚动 */
+        .day-memos {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        
         .day-memos::-webkit-scrollbar {
-            width: 3px;
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
-        
-        .day-memos::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 3px;
-        }
-        
-        .day-memos::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 3px;
+
+        .day-memos::-webkit-scrollbar-button {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
         
         /* 日历日期的备忘录颜色标记 */
@@ -2859,17 +2869,15 @@
 
         .dashboard-page {
             margin-bottom: 25px;
-            padding: 18px;
-            border-radius: 22px;
-            background:
-                radial-gradient(circle at 12% 8%, rgba(14, 165, 233, 0.10), transparent 30%),
-                radial-gradient(circle at 92% 10%, rgba(99, 102, 241, 0.08), transparent 32%),
-                linear-gradient(145deg, #f8fbff 0%, #eef4fb 100%);
+            padding: 20px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
             border: 1px solid rgba(148, 163, 184, 0.22);
-            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10);
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
             color: #1f2937;
             position: relative;
             overflow: hidden;
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .dashboard-page::before {
@@ -2877,10 +2885,10 @@
             position: absolute;
             inset: 0;
             background-image:
-                linear-gradient(rgba(100, 116, 139, 0.07) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(100, 116, 139, 0.07) 1px, transparent 1px);
-            background-size: 34px 34px;
-            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.58), rgba(0,0,0,0.08));
+                linear-gradient(rgba(100, 116, 139, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 116, 139, 0.06) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.05));
             pointer-events: none;
         }
 
@@ -2898,13 +2906,13 @@
             align-items: center;
             justify-content: space-between;
             gap: 18px;
-            padding: 22px 24px;
+            padding: 22px 26px;
             margin-bottom: 16px;
-            border-radius: 18px;
-            color: #0f172a;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 249, 0.88));
-            border: 1px solid rgba(148, 163, 184, 0.26);
-            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+            border-radius: 16px;
+            color: inherit;
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
             position: relative;
             overflow: hidden;
         }
@@ -2916,43 +2924,60 @@
             top: 0;
             bottom: 0;
             width: 4px;
-            background: linear-gradient(180deg, #0ea5e9, #14b8a6);
+            background: linear-gradient(180deg, #0284c7, #06b6d4);
         }
 
         .dashboard-hero::after {
             content: '';
             position: absolute;
             inset: -120px -80px auto auto;
-            width: 300px;
-            height: 300px;
+            width: 320px;
+            height: 320px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(14, 165, 233, 0.12), transparent 64%);
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.10), transparent 65%);
             pointer-events: none;
         }
 
         .dashboard-kicker {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
             margin-bottom: 8px;
             color: #0284c7;
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             font-weight: 800;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
+        }
+
+        @keyframes kickerPulse {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        .kicker-pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            background: #0284c7;
+            box-shadow: 0 0 6px rgba(2, 132, 199, 0.6);
+            animation: kickerPulse 2s infinite ease-in-out;
         }
 
         .dashboard-hero h2 {
             margin: 0 0 8px;
-            font-size: 2rem;
-            letter-spacing: 0.02em;
-            color: #0f172a;
+            font-size: 1.85rem;
+            font-weight: 850;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
         }
 
         .dashboard-hero p {
             margin: 0;
             color: #64748b;
-            line-height: 1.6;
+            font-size: 0.88rem;
+            line-height: 1.5;
         }
 
         .dashboard-actions {
@@ -2964,16 +2989,20 @@
         }
 
         .dashboard-actions .btn {
-            border: 1px solid rgba(148, 163, 184, 0.30);
-            background: rgba(255, 255, 255, 0.84);
-            color: #334155;
-            box-shadow: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .dashboard-actions .btn-primary {
-            background: linear-gradient(135deg, #2563eb, #0ea5e9);
-            color: #ffffff;
-            border-color: transparent;
+        #dashboardRefresh:hover i {
+            transform: rotate(180deg);
+            transition: transform 0.4s ease;
         }
 
         .dashboard-metrics {
@@ -2984,59 +3013,109 @@
         }
 
         .dashboard-metric {
+            position: relative;
             padding: 16px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid rgba(148, 163, 184, 0.24);
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+            border-radius: 14px;
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dashboard-metric:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+        }
+
+        .dashboard-metric::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3.5px;
+            background: #94a3b8;
+        }
+
+        .dashboard-metric.metric-total::before { background: linear-gradient(90deg, #0284c7, #6366f1); }
+        .dashboard-metric.metric-success::before { background: linear-gradient(90deg, #10b981, #059669); }
+        .dashboard-metric.metric-pending::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .dashboard-metric.metric-danger::before { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .dashboard-metric.metric-warning::before { background: linear-gradient(90deg, #f97316, #ea580c); }
+        .dashboard-metric.metric-today::before { background: linear-gradient(90deg, #6366f1, #4f46e5); }
+        .dashboard-metric.metric-safe::before { background: linear-gradient(90deg, #94a3b8, #64748b); }
+
+        .dashboard-metric-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
         }
 
         .dashboard-metric-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
             color: #64748b;
-            font-size: 0.76rem;
-            margin-bottom: 10px;
-            letter-spacing: 0.08em;
         }
+
+        .dashboard-metric-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            background: rgba(148, 163, 184, 0.12);
+            color: #64748b;
+        }
+
+        .metric-total .dashboard-metric-icon { background: rgba(2, 132, 199, 0.12); color: #0284c7; }
+        .metric-success .dashboard-metric-icon { background: rgba(16, 185, 129, 0.12); color: #059669; }
+        .metric-pending .dashboard-metric-icon { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+        .metric-danger .dashboard-metric-icon { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+        .metric-warning .dashboard-metric-icon { background: rgba(249, 115, 22, 0.12); color: #ea580c; }
+        .metric-today .dashboard-metric-icon { background: rgba(99, 102, 241, 0.12); color: #4f46e5; }
 
         .dashboard-metric-value {
-            font-size: 1.9rem;
+            font-size: 1.95rem;
             font-weight: 900;
-            color: #0f172a;
-            line-height: 1;
+            line-height: 1.1;
             font-variant-numeric: tabular-nums;
+            margin-bottom: 8px;
         }
+
+        .metric-success .dashboard-metric-value { color: #059669; }
+        .metric-danger .dashboard-metric-value { color: #dc2626; }
+        .metric-warning .dashboard-metric-value { color: #d97706; }
 
         .dashboard-metric-sub {
-            margin-top: 9px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.74rem;
             color: #94a3b8;
-            font-size: 0.76rem;
         }
 
-        .dashboard-metric.danger {
-            border-color: rgba(244, 63, 94, 0.24);
-            background: linear-gradient(145deg, #fff7f7, rgba(255, 255, 255, 0.94));
+        .dashboard-metric-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #94a3b8;
+            flex-shrink: 0;
         }
 
-        .dashboard-metric.warning {
-            border-color: rgba(245, 158, 11, 0.26);
-            background: linear-gradient(145deg, #fffaf0, rgba(255, 255, 255, 0.94));
-        }
-
-        .dashboard-metric.success {
-            border-color: rgba(20, 184, 166, 0.24);
-        }
-
-        .dashboard-metric.danger .dashboard-metric-value {
-            color: #e11d48;
-        }
-
-        .dashboard-metric.warning .dashboard-metric-value {
-            color: #d97706;
-        }
-
-        .dashboard-metric.success .dashboard-metric-value {
-            color: #0d9488;
-        }
+        .metric-total .dashboard-metric-dot { background: #0284c7; }
+        .metric-success .dashboard-metric-dot { background: #10b981; }
+        .metric-pending .dashboard-metric-dot { background: #f59e0b; }
+        .metric-danger .dashboard-metric-dot { background: #ef4444; }
+        .metric-warning .dashboard-metric-dot { background: #f97316; }
+        .metric-today .dashboard-metric-dot { background: #6366f1; }
 
         .dashboard-grid {
             display: grid;
@@ -3045,12 +3124,13 @@
         }
 
         .dashboard-card {
-            background: rgba(255, 255, 255, 0.94);
-            border-radius: 18px;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
-            padding: 18px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+            padding: 18px 20px;
             min-height: 280px;
-            border: 1px solid rgba(148, 163, 184, 0.24);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            transition: all 0.2s ease;
         }
 
         .dashboard-card-wide {
@@ -3061,9 +3141,10 @@
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            align-items: flex-start;
-            margin-bottom: 14px;
-            color: #0f172a;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
             font-weight: 850;
         }
 
@@ -3071,154 +3152,332 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-size: 1rem;
         }
 
         .dashboard-card-title i {
-            color: #0ea5e9;
+            color: #0284c7;
         }
 
         .dashboard-card-title small {
             color: #94a3b8;
             font-weight: 500;
+            font-size: 0.78rem;
             text-align: right;
         }
 
+        /* User load rows */
         .dashboard-user-row {
             display: grid;
-            grid-template-columns: minmax(150px, 1fr) 2fr auto;
-            gap: 12px;
+            grid-template-columns: minmax(160px, 1.1fr) 2fr auto;
+            gap: 14px;
             align-items: center;
-            padding: 13px 10px;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.96);
+            padding: 12px 14px;
             border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.85);
+            margin-bottom: 8px;
             cursor: pointer;
-            transition: background 0.18s ease, border-color 0.18s ease;
-        }
-
-        .dashboard-user-row:last-child {
-            border-bottom: 0;
+            transition: all 0.2s ease;
         }
 
         .dashboard-user-row:hover {
-            background: rgba(241, 245, 249, 0.86);
+            transform: translateX(3px);
+            border-color: rgba(2, 132, 199, 0.4);
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
         }
 
-        .dashboard-user-row:hover .dashboard-user-name {
-            color: #0284c7;
+        .user-row-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .user-row-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 800;
+            flex-shrink: 0;
+            color: #ffffff;
+        }
+
+        .avatar-normal { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+        .avatar-complete { background: linear-gradient(135deg, #10b981, #059669); }
+        .avatar-overdue { background: linear-gradient(135deg, #f43f5e, #dc2626); }
+
+        .user-row-info {
+            min-width: 0;
         }
 
         .dashboard-user-name {
-            font-weight: 850;
-            color: #0f172a;
-            margin-bottom: 4px;
+            font-weight: 800;
+            font-size: 0.94rem;
+            line-height: 1.3;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .dashboard-user-role {
-            color: #64748b;
-            font-size: 0.8rem;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .user-role-tag,
+        .user-dept-tag {
+            font-size: 0.72rem;
+            padding: 1px 6px;
+            border-radius: 5px;
+            line-height: 1.4;
+        }
+
+        .user-role-tag { background: #f1f5f9; color: #475569; }
+        .user-dept-tag { background: #e0f2fe; color: #0284c7; }
+
+        .user-row-center {
+            min-width: 0;
         }
 
         .dashboard-progress {
-            height: 8px;
+            height: 7px;
             border-radius: 999px;
             background: #e2e8f0;
             overflow: hidden;
             margin-bottom: 7px;
-            border: 1px solid rgba(203, 213, 225, 0.72);
         }
 
         .dashboard-progress-fill {
             height: 100%;
             width: var(--dashboard-rate, 0%);
             border-radius: inherit;
-            background: linear-gradient(90deg, #0ea5e9, #14b8a6);
+            background: linear-gradient(90deg, #0284c7, #14b8a6);
+            transition: width 0.3s ease;
         }
+
+        .fill-complete { background: linear-gradient(90deg, #10b981, #059669); }
+        .fill-overdue { background: linear-gradient(90deg, #f59e0b, #ef4444); }
 
         .dashboard-user-stats {
             display: flex;
-            gap: 12px;
+            gap: 6px;
             flex-wrap: wrap;
-            color: #64748b;
-            font-size: 0.8rem;
+            align-items: center;
+        }
+
+        .stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.73rem;
+            padding: 2px 7px;
+            border-radius: 6px;
+            line-height: 1.3;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .pill-completed { background: #ecfdf5; color: #047857; }
+        .pill-pending { background: #fffbeb; color: #b45309; }
+        .pill-overdue.is-alert { background: #fff1f2; color: #be123c; font-weight: 700; border: 1px solid #fecdd3; }
+        .pill-duesoon.is-alert { background: #fffbeb; color: #b45309; font-weight: 700; border: 1px solid #fde68a; }
+
+        .user-row-rate {
+            text-align: right;
+            min-width: 58px;
         }
 
         .dashboard-user-rate {
-            min-width: 62px;
-            text-align: right;
-            font-size: 1.12rem;
+            font-size: 1.25rem;
             font-weight: 900;
             color: #0284c7;
             font-variant-numeric: tabular-nums;
+            line-height: 1;
         }
 
+        .rate-complete { color: #059669; }
+
+        .user-rate-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        /* Risk items */
         .dashboard-risk-item {
-            padding: 12px;
+            padding: 12px 14px;
             border-radius: 12px;
-            background: #f8fafc;
-            border: 1px solid rgba(226, 232, 240, 0.96);
-            border-left: 3px solid #f59e0b;
-            margin-bottom: 10px;
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-left: 4px solid #f59e0b;
+            margin-bottom: 9px;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .dashboard-risk-item.danger {
-            border-left-color: #e11d48;
-            background: linear-gradient(135deg, #fff7f7, #f8fafc);
+        .dashboard-risk-item:hover {
+            transform: translateX(3px);
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
         }
 
-        .dashboard-risk-item.warning {
+        .dashboard-risk-item.risk-danger {
+            border-left-color: #ef4444;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+            border-color: #fee2e2;
+        }
+
+        .dashboard-risk-item.risk-warning {
             border-left-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+            border-color: #fef3c7;
         }
 
-        .dashboard-risk-item.muted {
+        .dashboard-risk-item.risk-muted {
             border-left-color: #94a3b8;
         }
 
+        .dashboard-risk-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .risk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            line-height: 1.3;
+        }
+
+        .badge-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .badge-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .badge-muted { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
         .dashboard-risk-title {
-            font-weight: 800;
-            margin-bottom: 5px;
+            font-weight: 750;
+            font-size: 0.91rem;
+            line-height: 1.4;
             color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .dashboard-risk-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             color: #64748b;
-            font-size: 0.8rem;
-            line-height: 1.5;
+            font-size: 0.78rem;
         }
 
+        .risk-meta-action {
+            margin-left: auto;
+            color: #0284c7;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Trend chart */
         .dashboard-trend-row {
             display: grid;
-            grid-template-columns: 58px minmax(0, 1fr) 42px;
+            grid-template-columns: 78px minmax(0, 1fr) 42px;
             gap: 10px;
             align-items: center;
-            margin-bottom: 11px;
-            color: #64748b;
-            font-size: 0.84rem;
+            margin-bottom: 9px;
+            padding: 3px 5px;
+            border-radius: 8px;
+            transition: background 0.15s ease;
         }
 
-        .dashboard-trend-row strong {
-            color: #334155;
-            font-variant-numeric: tabular-nums;
+        .dashboard-trend-row:hover {
+            background: rgba(148, 163, 184, 0.08);
+        }
+
+        .trend-date-col {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .trend-week {
+            font-size: 0.73rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .today-chip {
+            background: #0284c7;
+            color: #ffffff;
+            font-size: 0.68rem;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-weight: 700;
         }
 
         .dashboard-trend-bar {
-            height: 9px;
+            height: 8px;
             border-radius: 999px;
             background: #e2e8f0;
             overflow: hidden;
-            border: 1px solid rgba(203, 213, 225, 0.72);
         }
 
         .dashboard-trend-fill {
             height: 100%;
             width: var(--trend-rate, 0%);
-            background: linear-gradient(90deg, #14b8a6, #2563eb);
+            border-radius: inherit;
+            background: linear-gradient(90deg, #0284c7, #2563eb);
+            transition: width 0.3s ease;
         }
 
+        .dashboard-trend-fill.fill-all-done {
+            background: linear-gradient(90deg, #10b981, #059669);
+        }
+
+        .trend-stat-col {
+            text-align: right;
+        }
+
+        .trend-badge {
+            display: inline-block;
+            min-width: 28px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .trend-badge.badge-done { background: #eff6ff; color: #1d4ed8; }
+        .trend-badge.badge-all { background: #ecfdf5; color: #047857; }
+        .trend-badge.badge-zero { background: #f8fafc; color: #cbd5e1; }
+
         .dashboard-empty {
-            padding: 28px 12px;
+            padding: 32px 14px;
             color: #94a3b8;
             text-align: center;
             line-height: 1.6;
+            font-size: 0.9rem;
         }
 
         @media (max-width: 1100px) {
@@ -3639,6 +3898,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="./theme.css">
 </head>
 <body>
     <div class="container">
@@ -3655,19 +3915,6 @@
                 </div>
             </div>
 
-            <!-- 顶部日历周期切换与一键回到今天 -->
-            <div class="topbar-nav" id="calendarNavigation">
-                <button class="nav-button prev-btn" id="prevMonth" title="前一个月">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <div class="current-period" id="currentPeriod">加载中...</div>
-                <button class="nav-button next-btn" id="nextMonth" title="后一个月">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-                <button class="nav-button today-btn" id="goTodayBtn" title="返回今天">
-                    今天
-                </button>
-            </div>
 
             <!-- 右侧工具：成员筛选、主题配色、退出登录 -->
             <div class="topbar-right" id="serverUserBar">
@@ -3689,7 +3936,7 @@
         <div class="toolbar workspace-subbar">
             <div class="search-container">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" id="searchInput" placeholder="搜索备忘录...">
+                <input type="text" class="search-input" id="searchInput" autocomplete="off" placeholder="搜索备忘录...">
                 <button class="clear-search" id="clearSearch" title="清除搜索">
                     <i class="fas fa-times"></i>
                 </button>
@@ -3731,7 +3978,7 @@
         <section class="dashboard-page" id="dashboardPage" hidden>
             <div class="dashboard-hero">
                 <div>
-                    <div class="dashboard-kicker"><i class="fas fa-chart-line"></i> 研发数据大屏</div>
+                    <div class="dashboard-kicker"><span class="kicker-pulse-dot"></span><i class="fas fa-chart-line"></i> 研发数据大屏</div>
                     <h2 id="dashboardTitle">研发进度总览</h2>
                     <p id="dashboardSubtitle">基于当前显示月份，聚合研发任务、人员负载和风险提醒。</p>
                 </div>
@@ -3798,7 +4045,23 @@
 
         <!-- 多个月份日历容器 -->
         <div class="calendar-container">
-            <button class="calendar-nav-btn prev-month" id="calendarPrevMonth" title="前一个月">
+            <!-- 日历主区域顶部居中月份切换器 -->
+            <div class="calendar-nav-wrap">
+                <div class="calendar-main-nav" id="calendarNavigation">
+                    <button class="nav-button prev-btn" id="prevMonth" title="前一个月">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="current-period" id="currentPeriod">加载中...</div>
+                    <button class="nav-button next-btn" id="nextMonth" title="后一个月">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="today-btn" id="goTodayBtn" title="返回今天">
+                        今天
+                    </button>
+                </div>
+            </div>
+
+            <button class="calendar-nav-btn prev-month" id="calendarPrevMonth" title="前一个月" style="display: none;">
                 <i class="fas fa-chevron-left"></i>
             </button>
             
@@ -3806,7 +4069,7 @@
                 <!-- 多个月份日历将通过JS动态生成 -->
             </div>
             
-            <button class="calendar-nav-btn next-month" id="calendarNextMonth" title="后一个月">
+            <button class="calendar-nav-btn next-month" id="calendarNextMonth" title="后一个月" style="display: none;">
                 <i class="fas fa-chevron-right"></i>
             </button>
         </div>
@@ -3833,40 +4096,33 @@
                 <button class="close-reminder" id="closeReminderModal">&times;</button>
             </div>
             <div class="reminder-body">
-                <section class="reminder-section">
-                    <div class="reminder-section-title">
-                        <i class="fas fa-bell"></i>
-                        <span>到期提醒</span>
+                <div class="reminder-filter-tabs" id="reminderFilterTabs">
+                    <button class="reminder-tab active" data-filter="all" type="button">全部 <span class="tab-count" id="reminderCountAll">0</span></button>
+                    <button class="reminder-tab" data-filter="overdue" type="button">逾期 <span class="tab-count" id="reminderCountOverdue">0</span></button>
+                    <button class="reminder-tab" data-filter="duesoon" type="button">三天内到期 <span class="tab-count" id="reminderCountDueSoon">0</span></button>
+                    <button class="reminder-tab" data-filter="urged" type="button">已催办 <span class="tab-count" id="reminderCountUrged">0</span></button>
+                </div>
+                <div class="reminder-list" id="reminderList">
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <p>暂无未完成事项</p>
                     </div>
-                    <div class="reminder-list" id="reminderList">
-                        <div class="empty-state">
-                            <i class="fas fa-bell-slash"></i>
-                            <p>暂无到期提醒</p>
-                        </div>
-                    </div>
-                </section>
-                <section class="reminder-section">
-                    <div class="reminder-section-title">
-                        <i class="fas fa-tasks"></i>
-                        <span>最近任务</span>
-                        <small>按最近更新排序</small>
-                    </div>
-                    <div class="task-list" id="recentTasksList">
-                        <div class="empty-state">
-                            <i class="fas fa-clipboard-list"></i>
-                            <p>暂无任务，点击日历上的日期添加新任务</p>
-                        </div>
-                    </div>
-                </section>
+                </div>
             </div>
             <div class="reminder-actions">
-                <div class="reminder-settings">
-                    <input type="checkbox" id="autoCloseReminder" >
-                    <label for="autoCloseReminder">10秒后自动关闭</label>
+                <div class="reminder-selection-control">
+                    <label class="reminder-select-all-label">
+                        <input type="checkbox" id="reminderSelectAll">
+                        <span id="reminderSelectAllText">全选</span>
+                    </label>
+                    <span class="reminder-selected-count" id="reminderSelectedCount">已选 0 项</span>
                 </div>
-                <div class="export-buttons-container">
-                    <button class="btn btn-primary" id="markAllAsRead">
-                        <i class="fas fa-check-double"></i> 全部标记已读
+                <div class="reminder-btn-group">
+                    <button class="btn btn-warning" id="reminderUrgeBtn" type="button" title="向相关工程师客户端下发催办消息提醒">
+                        <i class="fas fa-bullhorn"></i> 批量催办
+                    </button>
+                    <button class="btn btn-success" id="reminderBatchCompleteBtn" type="button" title="将选中的事项标记为已完成">
+                        <i class="fas fa-check-double"></i> 一键完成
                     </button>
                 </div>
             </div>
@@ -3881,11 +4137,11 @@
                 <button class="close-modal" id="closeMemoModal">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="memoForm">
+                <form id="memoForm" autocomplete="off">
                     <div class="form-group memo-title-group">
                         <label for="memoTitle">标题</label>
                         <div class="memo-title-row">
-                            <input type="text" class="form-control" id="memoTitle" required>
+                            <input type="text" class="form-control" id="memoTitle" autocomplete="off" required>
                             <label class="memo-title-completed">
                                 <input type="checkbox" id="memoCompleted"> 标记为已完成
                             </label>
@@ -3901,6 +4157,12 @@
                         <div class="form-group">
                             <label for="memoDueTime">截止时间 <span aria-hidden="true">*</span></label>
                             <input type="datetime-local" class="form-control" id="memoDueTime" required aria-required="true">
+                            <div class="quick-due-chips" id="quickDueChips">
+                                <button type="button" class="quick-due-chip" data-preset="today-end">今日 18:00</button>
+                                <button type="button" class="quick-due-chip" data-preset="tomorrow-end">明日 18:00</button>
+                                <button type="button" class="quick-due-chip" data-preset="this-friday">周五 18:00</button>
+                                <button type="button" class="quick-due-chip" data-preset="next-monday">下周一 18:00</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>备忘录颜色</label>
@@ -3911,7 +4173,13 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="memoContent">内容 (支持Markdown语法)</label>
+                        <div class="memo-content-header">
+                            <label for="memoContent" style="margin-bottom: 0;">内容 (支持Markdown语法)</label>
+                            <div class="memo-tab-switcher">
+                                <button type="button" class="memo-tab-btn active" id="memoTabEdit">编辑</button>
+                                <button type="button" class="memo-tab-btn" id="memoTabPreview">实时预览</button>
+                            </div>
+                        </div>
                         <div class="memo-text-editor">
                             <div class="memo-text-toolbar" id="memoTextToolbar" aria-label="文字处理工具栏">
                                 <button class="memo-text-tool" type="button" data-format="h1" title="一级标题">H1</button>
@@ -3926,17 +4194,13 @@
                                 <button class="memo-text-tool icon-only" type="button" data-format="task" title="任务项" aria-label="任务项"><span class="memo-list-icon task" aria-hidden="true"><span></span><span></span><span></span></span></button>
                             </div>
                             <textarea class="form-control" id="memoContent" rows="5" placeholder="输入备忘录内容，支持Markdown语法..."></textarea>
-                            <div class="memo-text-helper">
-                                <span>工具栏只插入 Markdown 文本</span>
-                                <span>保存字段不变</span>
+                            <div class="markdown-preview" id="markdownPreview" style="display: none;">
+                                预览将在这里显示...
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>预览</label>
-                        <div class="markdown-preview" id="markdownPreview">
-                            预览将在这里显示...
+                            <div class="memo-text-helper">
+                                <span>支持标准 Markdown 语法排版</span>
+                                <span id="memoContentWordCount">0 字</span>
+                            </div>
                         </div>
                     </div>
 
@@ -3971,7 +4235,7 @@
                     <h3 style="margin-bottom: 15px;"><i class="fas fa-bullhorn"></i> 发布新任务</h3>
                     <div class="form-group">
                         <label for="taskTitle">任务标题</label>
-                        <input type="text" class="form-control" id="taskTitle" placeholder="请输入任务标题">
+                        <input type="text" class="form-control" id="taskTitle" autocomplete="off" placeholder="请输入任务标题">
                     </div>
                     
                     <div class="form-group">
@@ -3986,6 +4250,10 @@
                                 <div class="task-assignee-modes" role="group" aria-label="接收人选择模式">
                                     <button class="task-assignee-mode active" type="button" data-mode="multi">多选</button>
                                     <button class="task-assignee-mode" type="button" data-mode="single">单选</button>
+                                </div>
+                                <div class="task-assignee-quick-actions">
+                                    <button type="button" class="btn-assignee-quick" id="btnSelectAllAssignees">全选</button>
+                                    <button type="button" class="btn-assignee-quick" id="btnClearAssignees">清空</button>
                                 </div>
                                 <div class="task-assignee-summary" id="taskAssigneeSummary">已选择 0 人</div>
                             </div>
@@ -4226,7 +4494,7 @@
                         <i class="fas fa-plus-circle"></i> 快速添加备忘录
                     </div>
                     <div class="daily-quick-add-row">
-                        <input type="text" class="daily-quick-memo-input" id="quickMemoTitle" placeholder="输入备忘录标题...">
+                        <input type="text" class="daily-quick-memo-input" id="quickMemoTitle" autocomplete="off" placeholder="输入备忘录标题...">
                         <button class="daily-quick-add-btn" id="quickAddMemo">添加</button>
                     </div>
                 </div>

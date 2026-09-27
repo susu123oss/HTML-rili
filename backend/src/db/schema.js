@@ -47,6 +47,21 @@ export async function initDatabase() {
     ADD COLUMN IF NOT EXISTS job_title TEXT NOT NULL DEFAULT '技术员'
   `);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      memo_id INTEGER REFERENCES memos(id) ON DELETE CASCADE,
+      type TEXT NOT NULL DEFAULT 'urge',
+      title TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      sender_name TEXT NOT NULL DEFAULT '管理员',
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
   await query('CREATE INDEX IF NOT EXISTS idx_memos_owner_date ON memos(owner_id, date)');
   await query('CREATE INDEX IF NOT EXISTS idx_memos_date ON memos(date)');
   await query('CREATE INDEX IF NOT EXISTS idx_memos_date_owner_id ON memos(date, owner_id, id)');
@@ -54,6 +69,8 @@ export async function initDatabase() {
   await query('CREATE INDEX IF NOT EXISTS idx_memos_completed ON memos(completed)');
   await query('CREATE INDEX IF NOT EXISTS idx_users_department_id ON users(department_id)');
   await query('CREATE INDEX IF NOT EXISTS idx_users_job_title ON users(job_title)');
+  await query('CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read, created_at)');
+  await query('CREATE INDEX IF NOT EXISTS idx_notifications_memo_id ON notifications(memo_id)');
 
   await query(
     `INSERT INTO departments(name) VALUES($1) ON CONFLICT(name) DO NOTHING`,

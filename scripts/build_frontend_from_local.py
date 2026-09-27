@@ -28,6 +28,12 @@ def main():
 
     html = text.split(MARKER)[0]
     html = html.replace('libs/highlight.js/11.8.0/', 'libs/highlight.js/11.9.0/')
+    if '<meta name="color-scheme"' not in html:
+        html = html.replace('<head>', '<head>\n    <meta name="color-scheme" content="light dark">', 1)
+    if '<style>' not in html or '</head>' not in html:
+        raise RuntimeError('本机版 HTML 缺少样式或 head，无法插入服务器主题资源')
+    html = html.replace('<style>', '<script src="./theme-init.js"></script>\n    <link rel="stylesheet" href="./vendor/tabler-core/tabler.min.css">\n    <style>', 1)
+    html = html.replace('</head>', '    <link rel="stylesheet" href="./theme.css">\n</head>', 1)
     html += '    <script src="./app.js"></script>\n</body>\n</html>\n'
     SERVER_INDEX.write_text(html, encoding='utf-8', newline='\n')
     print(f'已生成：{SERVER_INDEX}')
