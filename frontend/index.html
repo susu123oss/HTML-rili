@@ -1271,12 +1271,12 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 7px;
             min-height: 42px;
             margin: 0;
-            padding: 9px 12px;
+            padding: 9px 14px;
             border: 1px solid #dfe5ef;
-            border-radius: 6px;
+            border-radius: 8px;
             color: #495057;
             background: #f8f9fa;
             font-size: 0.9rem;
@@ -1284,12 +1284,13 @@
             line-height: 1;
             white-space: nowrap;
             cursor: pointer;
-            transition: var(--transition);
+            user-select: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .memo-title-completed input {
-            width: 15px;
-            height: 15px;
+            width: 16px;
+            height: 16px;
             margin: 0;
             accent-color: var(--primary-color);
             cursor: pointer;
@@ -1299,6 +1300,13 @@
             border-color: rgba(67, 97, 238, 0.35);
             background: rgba(67, 97, 238, 0.06);
             color: var(--primary-color);
+        }
+
+        .memo-title-completed.is-completed,
+        .memo-title-completed:has(input:checked) {
+            background-color: rgba(16, 185, 129, 0.12);
+            border-color: #10b981;
+            color: #059669;
         }
 
         .close-modal {
@@ -1985,6 +1993,16 @@
 
         .btn-success:hover {
             background-color: #388e3c;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #d97706;
             transform: translateY(-2px);
         }
 
@@ -4197,7 +4215,7 @@
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="fas fa-list"></i> 每日备忘录详情
-                    <span style="font-size: 1.1rem; color: white; opacity: 0.9; margin-left: 12px; font-weight: normal;" id="dailyDetailDate">2023年10月1日</span>
+                    <span style="font-size: 1.1rem; opacity: 0.9; margin-left: 12px; font-weight: normal;" id="dailyDetailDate">2023年10月1日</span>
                 </div>
                 <button class="close-modal" id="closeDailyDetailModal">&times;</button>
             </div>

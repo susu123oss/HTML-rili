@@ -1267,49 +1267,858 @@ function injectServerCss() {
       line-height: 1.6;
     }
 
-    /* ---------------- 浅色模式 (Light Mode) ---------------- */
+    /* ========================================================
+       通用新增微组件与卡片基础
+       ======================================================== */
+    .daily-quick-add-box {
+      margin-bottom: 20px;
+      padding: 16px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+    .daily-quick-add-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .daily-quick-add-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+    .daily-quick-memo-input {
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .daily-quick-add-btn {
+      padding: 0 22px;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+    .daily-quick-add-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+    .data-stats-card {
+      margin-top: 20px;
+      padding: 16px 18px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+    .data-stats-card h4 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rank-crown-mini {
+      font-size: 0.95rem;
+      margin-left: 4px;
+    }
+    .stat-completed {
+      color: #10b981;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .stat-pending {
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ========================================================
+       1. 浅色模式 (Light Mode) - 优雅质感与层次优化
+       ======================================================== */
     html[data-theme="light"] body {
-      background: #f1f5f9 !important;
+      background: #f4f6fa !important;
       color: #0f172a !important;
     }
+    /* 浅色模式：顶栏全新升级为高阶微磨砂纯净底色（告别生硬深蓝） */
     html[data-theme="light"] header.app-topbar {
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-      color: white !important;
-      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.18) !important;
+      background: rgba(255, 255, 255, 0.94) !important;
+      backdrop-filter: blur(16px) !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 20px -4px rgba(15, 23, 42, 0.03) !important;
     }
+    html[data-theme="light"] .app-brand .app-title {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="light"] .topbar-user-badge {
+      background: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .topbar-user-badge strong {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .topbar-nav {
+      background: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+    html[data-theme="light"] .topbar-nav .nav-button {
+      color: #475569 !important;
+    }
+    html[data-theme="light"] .topbar-nav .nav-button:hover {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .topbar-nav .current-period {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="light"] .topbar-nav .today-btn {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+    }
+    html[data-theme="light"] .topbar-nav .today-btn:hover {
+      background: #1d4ed8 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="light"] .topbar-member-selector {
+      color: #475569 !important;
+    }
+    html[data-theme="light"] .topbar-member-selector select {
+      background: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .topbar-theme-toggle,
+    html[data-theme="light"] .topbar-logout-btn {
+      background: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #475569 !important;
+    }
+    html[data-theme="light"] .topbar-theme-toggle:hover,
+    html[data-theme="light"] .topbar-logout-btn:hover {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+
     html[data-theme="light"] .toolbar.workspace-subbar {
       background: #ffffff !important;
       border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+      box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04) !important;
+      border-radius: 12px !important;
     }
+    html[data-theme="light"] .search-container {
+      background: #f8fafc !important;
+      border: 1.5px solid #e2e8f0 !important;
+      border-radius: 8px !important;
+    }
+    html[data-theme="light"] .search-container:focus-within {
+      background: #ffffff !important;
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+    }
+    html[data-theme="light"] .search-input {
+      background: transparent !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .search-icon {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .month-count-selector {
+      color: #475569 !important;
+    }
+    html[data-theme="light"] .month-count-selector select {
+      background: #f8fafc !important;
+      border: 1.5px solid #e2e8f0 !important;
+      border-radius: 8px !important;
+      color: #0f172a !important;
+    }
+
+    /* 浅色模式：月历卡片与网格（纯白卡片+细描边+清晰网格） */
     html[data-theme="light"] .month-calendar {
       background: #ffffff !important;
       border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+      border-radius: 16px !important;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02) !important;
+    }
+    html[data-theme="light"] .month-header {
+      border-bottom: 1px solid #f1f5f9 !important;
+    }
+    html[data-theme="light"] .month-title {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+      font-size: 1.35rem !important;
+    }
+    html[data-theme="light"] .stat-item {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #334155 !important;
+      font-weight: 700 !important;
+      border-radius: 999px !important;
+    }
+    html[data-theme="light"] .stat-item.total {
+      color: #2563eb !important;
+      background: #eff6ff !important;
+      border-color: #bfdbfe !important;
+    }
+    html[data-theme="light"] .stat-item.completed {
+      color: #059669 !important;
+      background: #ecfdf5 !important;
+      border-color: #a7f3d0 !important;
+    }
+    html[data-theme="light"] .stat-item.pending {
+      color: #dc2626 !important;
+      background: #fef2f2 !important;
+      border-color: #fecaca !important;
+    }
+    html[data-theme="light"] .stat-item.active {
+      box-shadow: 0 0 0 2px currentColor !important;
+    }
+    html[data-theme="light"] .weekdays div {
+      background: #f8fafc !important;
+      color: #64748b !important;
+      font-weight: 700 !important;
+      border-radius: 6px !important;
     }
     html[data-theme="light"] .calendar-day {
-      background-color: #f8fafc !important;
-      border-color: rgba(0, 0, 0, 0.1) !important;
+      background-color: #ffffff !important;
+      border: 1px solid #e8ecf4 !important;
+      border-radius: 8px !important;
+      transition: all 0.15s ease !important;
     }
     html[data-theme="light"] .calendar-day:hover {
-      background-color: #edf2f7 !important;
+      background-color: #f8faff !important;
+      border-color: #93c5fd !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08) !important;
     }
     html[data-theme="light"] .calendar-day.other-month {
-      background-color: #f1f5f9 !important;
-      opacity: 0.45 !important;
+      background-color: #fafbfc !important;
+      border-color: #f1f5f9 !important;
+      color: #94a3b8 !important;
+      opacity: 0.55 !important;
     }
     html[data-theme="light"] .calendar-day.today {
-      background-color: rgba(37, 99, 235, 0.08) !important;
-      border-color: #2563eb !important;
+      background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%) !important;
+      border: 1.5px solid #2563eb !important;
+      box-shadow: inset 0 0 0 1px #2563eb, 0 2px 8px rgba(37, 99, 235, 0.15) !important;
     }
-    html[data-theme="light"] .team-leaderboard,
-    html[data-theme="light"] .dashboard-hero,
+    html[data-theme="light"] .calendar-day .day-number {
+      color: #1e293b !important;
+      font-weight: 700 !important;
+      font-size: 0.92rem !important;
+    }
+    html[data-theme="light"] .day-memo-item {
+      background-color: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-left: 3.5px solid var(--memo-color, #3b82f6) !important;
+      border-radius: 6px !important;
+      color: #1e293b !important;
+      font-weight: 600 !important;
+      font-size: 0.82rem !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+      transition: all 0.15s ease !important;
+    }
+    html[data-theme="light"] .day-memo-item:hover {
+      background-color: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08) !important;
+    }
+    html[data-theme="light"] .day-memo-item.completed {
+      background-color: #f8fafc !important;
+      color: #94a3b8 !important;
+      text-decoration: line-through !important;
+      border-color: #edf2f7 !important;
+      opacity: 0.7 !important;
+    }
+    html[data-theme="light"] .memo-count {
+      background: #f1f5f9 !important;
+      color: #475569 !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 999px !important;
+      font-weight: 700 !important;
+      font-size: 0.72rem !important;
+    }
+
+    /* 浅色模式：团队完成竞赛榜 (彻底解决文字白透问题并优雅升级) */
+    html[data-theme="light"] .team-leaderboard {
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%) !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02) !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .leaderboard-header h2 {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="light"] .leaderboard-header p {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .leaderboard-kicker {
+      color: #4338ca !important;
+      background: #eef2ff !important;
+      border: 1px solid #e0e7ff !important;
+      border-radius: 999px !important;
+      padding: 3px 12px !important;
+      font-weight: 700 !important;
+      width: fit-content !important;
+    }
+    html[data-theme="light"] .leaderboard-champion {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+      border: 1.5px solid #fde68a !important;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.16) !important;
+      color: #78350f !important;
+      border-radius: 14px !important;
+    }
+    html[data-theme="light"] .leaderboard-champion .champion-label {
+      color: #92400e !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="light"] .leaderboard-champion strong {
+      color: #78350f !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="light"] .leaderboard-champion .champion-crown {
+      background: #fef08a !important;
+      border: 1px solid #fde047 !important;
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+    }
+    html[data-theme="light"] .leaderboard-card {
+      background: #ffffff !important;
+      border: 1px solid #eef2f6 !important;
+      border-radius: 14px !important;
+      box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02) !important;
+      transition: all 0.2s ease !important;
+    }
+    html[data-theme="light"] .leaderboard-card:hover {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.09) !important;
+      transform: translateY(-2px) !important;
+    }
+    html[data-theme="light"] .leaderboard-card.rank-1 {
+      background: linear-gradient(145deg, #ffffff 50%, #fffdf0 100%) !important;
+      border: 1.5px solid #fef08a !important;
+      box-shadow: 0 4px 18px rgba(234, 179, 8, 0.14) !important;
+    }
+    html[data-theme="light"] .leaderboard-card.rank-1 .leaderboard-rank {
+      background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35) !important;
+    }
+    html[data-theme="light"] .leaderboard-card.rank-2 .leaderboard-rank {
+      background: linear-gradient(135deg, #94a3b8, #64748b) !important;
+    }
+    html[data-theme="light"] .leaderboard-card.rank-3 .leaderboard-rank {
+      background: linear-gradient(135deg, #d97706, #b45309) !important;
+    }
+    html[data-theme="light"] .leaderboard-card.active {
+      outline: 2.5px solid #2563eb !important;
+      outline-offset: 2px !important;
+    }
+    html[data-theme="light"] .leaderboard-name {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="light"] .leaderboard-role {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .leaderboard-rate {
+      color: #2563eb !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="light"] .leaderboard-card.is-complete .leaderboard-rate {
+      color: #059669 !important;
+    }
+    html[data-theme="light"] .leaderboard-bar {
+      background: #f1f5f9 !important;
+      height: 7px !important;
+    }
+    html[data-theme="light"] .leaderboard-bar-fill {
+      background: linear-gradient(90deg, #3b82f6, #6366f1) !important;
+    }
+    html[data-theme="light"] .leaderboard-card.is-complete .leaderboard-bar-fill {
+      background: linear-gradient(90deg, #10b981, #059669) !important;
+    }
+    html[data-theme="light"] .leaderboard-stats {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .leaderboard-empty {
+      background: #f8fafc !important;
+      border: 1px dashed #cbd5e1 !important;
+      color: #64748b !important;
+    }
+
+    /* 浅色模式：研发大屏 (Dashboard) */
+    html[data-theme="light"] .dashboard-hero {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+    }
+    html[data-theme="light"] .dashboard-kicker {
+      color: #2563eb !important;
+    }
+    html[data-theme="light"] #dashboardTitle {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="light"] #dashboardSubtitle {
+      color: #64748b !important;
+    }
     html[data-theme="light"] .dashboard-card {
       background: #ffffff !important;
       border: 1px solid #e2e8f0 !important;
+      border-radius: 14px !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+    }
+    html[data-theme="light"] .dashboard-card-title span {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="light"] .dashboard-card-title small {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .dashboard-metric {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+    }
+    html[data-theme="light"] .dashboard-metric-label {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .dashboard-metric-value {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="light"] .dashboard-risk-item {
+      background: #fff8f8 !important;
+      border: 1px solid #fee2e2 !important;
     }
 
-    /* 浅色模式登录界面 */
+    /* 浅色模式：弹窗与组件深度美化 */
+    html[data-theme="light"] .modal-content {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .modal-header {
+      background: #ffffff !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .modal-title {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="light"] .close-modal {
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      border-radius: 50% !important;
+      border: none !important;
+      width: 32px !important;
+      height: 32px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    html[data-theme="light"] .close-modal:hover {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .modal-footer {
+      background: #fafbfc !important;
+      border-top: 1px solid #f1f5f9 !important;
+    }
+    html[data-theme="light"] .tabs {
+      border-bottom: 1.5px solid #e2e8f0 !important;
+    }
+    html[data-theme="light"] .tab {
+      color: #64748b !important;
+      font-weight: 600 !important;
+      border-radius: 8px 8px 0 0 !important;
+      border-bottom: 2px solid transparent !important;
+    }
+    html[data-theme="light"] .tab:hover {
+      color: #2563eb !important;
+      background: rgba(37, 99, 235, 0.04) !important;
+    }
+    html[data-theme="light"] .tab.active {
+      color: #2563eb !important;
+      border-bottom-color: #2563eb !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="light"] .form-control,
+    html[data-theme="light"] .memo-input,
+    html[data-theme="light"] textarea {
+      background-color: #f8fafc !important;
+      border: 1.5px solid #cbd5e1 !important;
+      border-radius: 8px !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .form-control:focus,
+    html[data-theme="light"] .memo-input:focus,
+    html[data-theme="light"] textarea:focus {
+      background-color: #ffffff !important;
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+    }
+    html[data-theme="light"] .excel-export-panel {
+      background: linear-gradient(135deg, #f8faff 0%, #f0f5ff 100%) !important;
+      border: 1.5px solid #dbeafe !important;
+      border-radius: 14px !important;
+    }
+    html[data-theme="light"] .excel-export-panel h4 {
+      color: #1e40af !important;
+    }
+    html[data-theme="light"] .excel-export-panel p {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .excel-export-grid > label {
+      color: #334155 !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="light"] .excel-export-grid > label input,
+    html[data-theme="light"] .excel-export-grid > label select {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      border-radius: 8px !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .excel-user-picker-heading {
+      color: #334155 !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="light"] .excel-selection-count {
+      background: #e0e7ff !important;
+      color: #4338ca !important;
+    }
+    html[data-theme="light"] .excel-user-picker {
+      background: #ffffff !important;
+      border: 1.5px solid #e2e8f0 !important;
+      border-radius: 10px !important;
+    }
+    html[data-theme="light"] .excel-user-option {
+      background: #f8fafc !important;
+      border: 1.5px solid #e2e8f0 !important;
+      border-radius: 8px !important;
+      color: #1e293b !important;
+    }
+    html[data-theme="light"] .excel-user-option:hover {
+      border-color: #3b82f6 !important;
+      background: #ffffff !important;
+    }
+    html[data-theme="light"] .excel-user-option.selected {
+      background: #eff6ff !important;
+      border-color: #2563eb !important;
+    }
+    html[data-theme="light"] .excel-user-option-name {
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .excel-user-option-meta {
+      color: #64748b !important;
+    }
+    html[data-theme="light"] .daily-quick-add-box {
+      background-color: #f8fafc !important;
+      border: 1.5px dashed #cbd5e1 !important;
+    }
+    html[data-theme="light"] .daily-quick-add-title {
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .daily-quick-memo-input {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .daily-quick-memo-input:focus {
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+    }
+    html[data-theme="light"] .data-stats-card {
+      background-color: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .task-assignee-panel {
+      background: #f8fafc !important;
+      border: 1.5px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+    }
+    html[data-theme="light"] .task-assignee-modes {
+      background: #edf2f7 !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 999px !important;
+    }
+    html[data-theme="light"] .task-assignee-mode {
+      color: #475569 !important;
+    }
+    html[data-theme="light"] .task-assignee-mode.active {
+      background: #ffffff !important;
+      color: #2563eb !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+    }
+    html[data-theme="light"] .assignee-tag {
+      background: #ffffff !important;
+      border: 1.5px solid #e2e8f0 !important;
+      color: #334155 !important;
+      border-radius: 999px !important;
+    }
+    html[data-theme="light"] .assignee-tag:hover {
+      border-color: #3b82f6 !important;
+      background: #f0f7ff !important;
+    }
+    html[data-theme="light"] .assignee-tag.selected {
+      background: #eff6ff !important;
+      border-color: #2563eb !important;
+      color: #1d4ed8 !important;
+    }
+    html[data-theme="light"] .user-management-item {
+      background: #f8fafc !important;
+      border: 1.5px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+    }
+    html[data-theme="light"] .user-field label {
+      color: #475569 !important;
+      font-weight: 600 !important;
+    }
+    html[data-theme="light"] .user-edit-grid input,
+    html[data-theme="light"] .user-edit-grid select {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      border-radius: 6px !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .memo-text-editor {
+      border: 1.5px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      overflow: hidden !important;
+    }
+    html[data-theme="light"] .memo-text-toolbar {
+      background: #f8fafc !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+    html[data-theme="light"] .memo-text-tool {
+      color: #475569 !important;
+    }
+    html[data-theme="light"] .memo-text-tool:hover {
+      background: #edf2f7 !important;
+      color: #2563eb !important;
+    }
+    html[data-theme="light"] .memo-text-separator {
+      background: #e2e8f0 !important;
+    }
+    html[data-theme="light"] .markdown-preview {
+      background: #f8fafc !important;
+      border: 1.5px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      color: #1e293b !important;
+    }
+    html[data-theme="light"] .reminder-content {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 16px !important;
+    }
+    html[data-theme="light"] .reminder-item {
+      background-color: #fffbeb !important;
+      border: 1px solid #fef3c7 !important;
+      border-left: 4px solid #f59e0b !important;
+      border-radius: 10px !important;
+    }
+    html[data-theme="light"] .reminder-actions {
+      background: #f8fafc !important;
+      border-top: 1px solid #e2e8f0 !important;
+    }
+
+    /* 浅色模式：标记完成按钮组件 */
+    html[data-theme="light"] .memo-title-completed {
+      background: #f8fafc !important;
+      border: 1.5px solid #cbd5e1 !important;
+      color: #334155 !important;
+      border-radius: 8px !important;
+      font-weight: 600 !important;
+      padding: 8px 14px !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    html[data-theme="light"] .memo-title-completed:hover {
+      background: #eff6ff !important;
+      border-color: #3b82f6 !important;
+      color: #2563eb !important;
+    }
+    html[data-theme="light"] .memo-title-completed.is-completed,
+    html[data-theme="light"] .memo-title-completed:has(input:checked) {
+      background: rgba(16, 185, 129, 0.12) !important;
+      border-color: #10b981 !important;
+      color: #059669 !important;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.16) !important;
+    }
+    html[data-theme="light"] .memo-title-completed input {
+      accent-color: #10b981 !important;
+    }
+
+    /* 浅色模式：通用与功能按钮优雅提升 */
+    html[data-theme="light"] .btn {
+      border-radius: 8px !important;
+      font-weight: 700 !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    html[data-theme="light"] .btn-primary {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25) !important;
+    }
+    html[data-theme="light"] .btn-primary:hover {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 5px 15px rgba(37, 99, 235, 0.35) !important;
+    }
+    html[data-theme="light"] .btn-secondary {
+      background: #f1f5f9 !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .btn-secondary:hover {
+      background: #e2e8f0 !important;
+      border-color: #94a3b8 !important;
+      color: #0f172a !important;
+      transform: translateY(-1px) !important;
+    }
+    html[data-theme="light"] .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25) !important;
+    }
+    html[data-theme="light"] .btn-success:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 5px 15px rgba(16, 185, 129, 0.35) !important;
+    }
+    html[data-theme="light"] .btn-danger {
+      background: #ef4444 !important;
+      border: 1px solid #dc2626 !important;
+      color: #ffffff !important;
+      box-shadow: 0 3px 10px rgba(239, 68, 68, 0.22) !important;
+    }
+    html[data-theme="light"] .btn-danger:hover {
+      background: #dc2626 !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 5px 15px rgba(239, 68, 68, 0.35) !important;
+    }
+    html[data-theme="light"] .btn-warning {
+      background: #f59e0b !important;
+      border: 1px solid #d97706 !important;
+      color: #ffffff !important;
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.22) !important;
+    }
+    html[data-theme="light"] .btn-warning:hover {
+      background: #d97706 !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 5px 15px rgba(245, 158, 11, 0.35) !important;
+    }
+    html[data-theme="light"] .toolbar-btn-secondary {
+      background: #f1f5f9 !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #334155 !important;
+    }
+    html[data-theme="light"] .toolbar-btn-secondary:hover {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .task-btn {
+      border-radius: 6px !important;
+      font-weight: 600 !important;
+      padding: 5px 10px !important;
+      border: 1px solid transparent !important;
+      transition: all 0.2s ease !important;
+    }
+    html[data-theme="light"] .task-btn-complete {
+      background: rgba(16, 185, 129, 0.12) !important;
+      color: #059669 !important;
+      border-color: rgba(16, 185, 129, 0.25) !important;
+    }
+    html[data-theme="light"] .task-btn-complete:hover {
+      background: #10b981 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="light"] .task-btn-edit {
+      background: rgba(37, 99, 235, 0.1) !important;
+      color: #2563eb !important;
+      border-color: rgba(37, 99, 235, 0.25) !important;
+    }
+    html[data-theme="light"] .task-btn-edit:hover {
+      background: #2563eb !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="light"] .task-btn-delete {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: #dc2626 !important;
+      border-color: rgba(239, 68, 68, 0.25) !important;
+    }
+    html[data-theme="light"] .task-btn-delete:hover {
+      background: #ef4444 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="light"] .user-save-btn {
+      background: rgba(16, 185, 129, 0.12) !important;
+      color: #059669 !important;
+      border-color: rgba(16, 185, 129, 0.25) !important;
+    }
+    html[data-theme="light"] .user-save-btn:hover {
+      background: #10b981 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="light"] .user-delete-btn:disabled {
+      background: #f1f5f9 !important;
+      color: #94a3b8 !important;
+      border-color: #e2e8f0 !important;
+      opacity: 0.6 !important;
+      cursor: not-allowed !important;
+    }
+    html[data-theme="light"] .reminder-header {
+      background: #ffffff !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .close-reminder {
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      border-radius: 50% !important;
+      border: none !important;
+      width: 32px !important;
+      height: 32px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    html[data-theme="light"] .close-reminder:hover {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+    html[data-theme="light"] .color-option.selected {
+      border: 2px solid #0f172a !important;
+      box-shadow: 0 0 0 2px #ffffff, 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+      transform: scale(1.15) !important;
+    }
+
+    /* 浅色模式：登录界面 */
     html[data-theme="light"] #serverLoginOverlay {
       background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.08) 0%, transparent 45%),
                   radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
@@ -1385,162 +2194,982 @@ function injectServerCss() {
       color: #94a3b8 !important;
     }
 
-    /* ---------------- 深色模式 (Dark Mode) ---------------- */
+    /* ========================================================
+       2. 深色模式 (Dark Mode) - 深度适配所有弹窗与面板
+       ======================================================== */
     html[data-theme="dark"] body {
-      background: #090d16 !important;
+      background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+                  radial-gradient(circle at 10% 40%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                  #080c14 !important;
       color: #f1f5f9 !important;
     }
     html[data-theme="dark"] header.app-topbar {
-      background: linear-gradient(135deg, #111827 0%, #0f172a 100%) !important;
-      border: 1px solid #1f293d !important;
+      background: rgba(11, 16, 28, 0.88) !important;
+      backdrop-filter: blur(16px) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
       color: #f8fafc !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
     }
     html[data-theme="dark"] .topbar-user-badge {
       background: rgba(255, 255, 255, 0.08) !important;
-      border-color: #334155 !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
       color: #e2e8f0 !important;
     }
     html[data-theme="dark"] .topbar-nav {
-      background: #1e293b !important;
-      border-color: #334155 !important;
+      background: #141d33 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    html[data-theme="dark"] .topbar-nav .nav-button {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .topbar-nav .nav-button:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .topbar-nav .current-period {
+      color: #f8fafc !important;
+      font-weight: 700 !important;
     }
     html[data-theme="dark"] .topbar-nav .today-btn {
       background: #3b82f6 !important;
-      color: white !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35) !important;
+    }
+    html[data-theme="dark"] .topbar-nav .today-btn:hover {
+      background: #2563eb !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .topbar-member-selector {
+      color: #94a3b8 !important;
     }
     html[data-theme="dark"] .topbar-member-selector select {
-      background: #1e293b !important;
+      background: #141d33 !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
       color: #f1f5f9 !important;
-      border-color: #334155 !important;
     }
+    html[data-theme="dark"] .topbar-theme-toggle,
+    html[data-theme="dark"] .topbar-logout-btn {
+      background: #141d33 !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .topbar-theme-toggle:hover,
+    html[data-theme="dark"] .topbar-logout-btn:hover {
+      background: #1e2b48 !important;
+      color: #f8fafc !important;
+    }
+
+    /* 深色模式：工作台副工具栏 (Layer 1) */
     html[data-theme="dark"] .toolbar.workspace-subbar {
-      background: #111827 !important;
-      border: 1px solid #1f293d !important;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+      background: rgba(14, 21, 37, 0.85) !important;
+      backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.07) !important;
+      border-radius: 14px !important;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
+    }
+    html[data-theme="dark"] .search-container {
+      background: #0b1120 !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 8px !important;
+    }
+    html[data-theme="dark"] .search-container:focus-within {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
     }
     html[data-theme="dark"] .search-input {
-      background: #0b0f19 !important;
-      border: 1.5px solid #26324a !important;
-      color: #f1f5f9 !important;
+      background: transparent !important;
+      border: none !important;
+      color: #f8fafc !important;
     }
-    html[data-theme="dark"] .search-input:focus {
-      border-color: #3b82f6 !important;
+    html[data-theme="dark"] .search-icon {
+      color: #94a3b8 !important;
     }
     html[data-theme="dark"] .month-count-selector {
       color: #94a3b8 !important;
     }
     html[data-theme="dark"] .month-count-selector select {
-      background: #0b0f19 !important;
-      border: 1.5px solid #26324a !important;
+      background: #0b1120 !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.1) !important;
       color: #f1f5f9 !important;
+      color-scheme: dark !important;
+      border-radius: 8px !important;
     }
+
+    /* 深色模式：日历主卡片 (Layer 2 稍亮蓝灰承载卡片 + 顶光反射) */
     html[data-theme="dark"] .month-calendar {
-      background: #111827 !important;
-      border: 1px solid #1f293d !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+      background: linear-gradient(180deg, #131d33 0%, #0f172a 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-radius: 16px !important;
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
     }
     html[data-theme="dark"] .month-header {
       color: #f8fafc !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
     }
     html[data-theme="dark"] .month-title {
       color: #f8fafc !important;
+      font-weight: 800 !important;
+      font-size: 1.35rem !important;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
     }
     html[data-theme="dark"] .stat-item {
+      background: #141f36 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      color: #cbd5e1 !important;
+      font-weight: 700 !important;
+      border-radius: 999px !important;
+    }
+    html[data-theme="dark"] .stat-item.total {
+      color: #60a5fa !important;
+      background: rgba(37, 99, 235, 0.16) !important;
+      border-color: rgba(37, 99, 235, 0.35) !important;
+    }
+    html[data-theme="dark"] .stat-item.completed {
+      color: #34d399 !important;
+      background: rgba(16, 185, 129, 0.16) !important;
+      border-color: rgba(16, 185, 129, 0.35) !important;
+    }
+    html[data-theme="dark"] .stat-item.pending {
+      color: #f87171 !important;
+      background: rgba(239, 68, 68, 0.16) !important;
+      border-color: rgba(239, 68, 68, 0.35) !important;
+    }
+    html[data-theme="dark"] .stat-item.active {
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4) !important;
+      border-color: #3b82f6 !important;
+    }
+    html[data-theme="dark"] .weekdays div {
+      background: #0b1120 !important;
+      color: #94a3b8 !important;
+      font-weight: 700 !important;
+      border-radius: 6px !important;
+    }
+
+    /* 深色模式：日历单元格 (Layer 3 内凹沉浸网格 + 实线细描边) */
+    html[data-theme="dark"] .calendar-day {
+      background-color: #0b1120 !important;
+      border: 1px solid rgba(255, 255, 255, 0.05) !important;
+      border-radius: 8px !important;
+      transition: all 0.15s ease !important;
+    }
+    html[data-theme="dark"] .calendar-day:hover {
+      background-color: #16223b !important;
+      border-color: rgba(59, 130, 246, 0.5) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+    }
+    html[data-theme="dark"] .calendar-day .day-number {
+      color: #f8fafc !important;
+      font-weight: 700 !important;
+      font-size: 0.92rem !important;
+    }
+    html[data-theme="dark"] .calendar-day.other-month {
+      background-color: #060a12 !important;
+      opacity: 0.35 !important;
+      border-color: rgba(255, 255, 255, 0.02) !important;
+    }
+    html[data-theme="dark"] .calendar-day.today {
+      background: rgba(37, 99, 235, 0.16) !important;
+      border: 1.5px solid #3b82f6 !important;
+      box-shadow: inset 0 0 12px rgba(59, 130, 246, 0.2), 0 0 16px rgba(59, 130, 246, 0.25) !important;
+    }
+
+    /* 深色模式：备忘录卡片项 (Layer 4 精致悬浮微卡) */
+    html[data-theme="dark"] .day-memo-item {
+      background-color: #17243c !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-left: 3.5px solid var(--memo-color, #3b82f6) !important;
+      border-radius: 6px !important;
+      color: #e2e8f0 !important;
+      font-weight: 500 !important;
+      font-size: 0.82rem !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+      transition: all 0.15s ease !important;
+    }
+    html[data-theme="dark"] .day-memo-item:hover {
+      background-color: #213254 !important;
+      border-color: rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
+    }
+    html[data-theme="dark"] .day-memo-item.completed {
+      background-color: #0f1828 !important;
+      color: #64748b !important;
+      text-decoration: line-through !important;
+      border-color: rgba(255, 255, 255, 0.03) !important;
+      opacity: 0.65 !important;
+    }
+    html[data-theme="dark"] .memo-count {
+      background: #162035 !important;
+      color: #94a3b8 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 999px !important;
+      font-weight: 700 !important;
+      font-size: 0.72rem !important;
+    }
+
+    /* 深色模式：团队完成竞赛榜 (Layer 2 高阶质感) */
+    html[data-theme="dark"] .team-leaderboard {
+      background: linear-gradient(180deg, #131d33 0%, #0f172a 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7) !important;
+      border-radius: 16px !important;
+      color: #f1f5f9 !important;
+    }
+    html[data-theme="dark"] .leaderboard-header h2 {
+      color: #f8fafc !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="dark"] .leaderboard-header p {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .leaderboard-kicker {
+      color: #a5b4fc !important;
+      background: rgba(99, 102, 241, 0.16) !important;
+      border: 1px solid rgba(99, 102, 241, 0.3) !important;
+      border-radius: 999px !important;
+      padding: 3px 12px !important;
+      width: fit-content !important;
+    }
+    html[data-theme="dark"] .leaderboard-champion {
+      background: rgba(245, 158, 11, 0.12) !important;
+      border: 1px solid rgba(245, 158, 11, 0.3) !important;
+      color: #fef3c7 !important;
+      border-radius: 14px !important;
+    }
+    html[data-theme="dark"] .leaderboard-champion .champion-label {
+      color: #fcd34d !important;
+    }
+    html[data-theme="dark"] .leaderboard-champion strong {
+      color: #fef3c7 !important;
+    }
+    html[data-theme="dark"] .leaderboard-champion .champion-crown {
+      background: rgba(245, 158, 11, 0.25) !important;
+      border: 1px solid rgba(245, 158, 11, 0.4) !important;
+    }
+    html[data-theme="dark"] .leaderboard-card {
+      background: #141e34 !important;
+      border: 1px solid rgba(255, 255, 255, 0.07) !important;
+      color: #f1f5f9 !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 14px !important;
+    }
+    html[data-theme="dark"] .leaderboard-card:hover {
+      background: #192642 !important;
+      border-color: rgba(59, 130, 246, 0.45) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55) !important;
+    }
+    html[data-theme="dark"] .leaderboard-card.rank-1 {
+      background: linear-gradient(145deg, #18233c 60%, rgba(245, 158, 11, 0.16) 100%) !important;
+      border: 1.5px solid rgba(245, 158, 11, 0.45) !important;
+    }
+    html[data-theme="dark"] .leaderboard-name {
+      color: #f8fafc !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="dark"] .leaderboard-role {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .leaderboard-rate {
+      color: #60a5fa !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="dark"] .leaderboard-card.is-complete .leaderboard-rate {
+      color: #34d399 !important;
+    }
+    html[data-theme="dark"] .leaderboard-bar {
+      background: rgba(255, 255, 255, 0.08) !important;
+      height: 7px !important;
+    }
+    html[data-theme="dark"] .leaderboard-bar-fill {
+      background: linear-gradient(90deg, #3b82f6, #6366f1) !important;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.3) !important;
+    }
+    html[data-theme="dark"] .leaderboard-card.is-complete .leaderboard-bar-fill {
+      background: linear-gradient(90deg, #10b981, #34d399) !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.45) !important;
+    }
+    html[data-theme="dark"] .leaderboard-stats {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .leaderboard-empty {
+      background: #0d131f !important;
+      border: 1px dashed rgba(255, 255, 255, 0.1) !important;
+      color: #94a3b8 !important;
+    }
+
+    /* 深色模式：研发大屏 (Dashboard - Layer 2 高阶质感) */
+    html[data-theme="dark"] .dashboard-hero,
+    html[data-theme="dark"] .dashboard-card {
+      background: linear-gradient(180deg, #131d33 0%, #0f172a 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7) !important;
+      border-radius: 16px !important;
+      color: #f1f5f9 !important;
+    }
+    html[data-theme="dark"] .dashboard-kicker {
+      color: #60a5fa !important;
+    }
+    html[data-theme="dark"] #dashboardTitle {
+      color: #f8fafc !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="dark"] #dashboardSubtitle {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .dashboard-card-title span {
+      color: #f8fafc !important;
+      font-weight: 700 !important;
+    }
+    html[data-theme="dark"] .dashboard-card-title small {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .dashboard-metric {
+      background: #141e34 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 14px !important;
+      color: #f1f5f9 !important;
+    }
+    html[data-theme="dark"] .dashboard-metric-label {
+      color: #94a3b8 !important;
+      font-weight: 600 !important;
+    }
+    html[data-theme="dark"] .dashboard-metric-value {
+      color: #f8fafc !important;
+      font-weight: 800 !important;
+      font-size: 2rem !important;
+    }
+    html[data-theme="dark"] .dashboard-risk-item {
+      background: #1e131d !important;
+      border: 1px solid rgba(239, 68, 68, 0.3) !important;
+      color: #fca5a5 !important;
+      border-radius: 10px !important;
+    }
+    html[data-theme="dark"] .dashboard-user-row {
+      background: #141e34 !important;
+      border: 1px solid rgba(255, 255, 255, 0.06) !important;
+      color: #f1f5f9 !important;
+      border-radius: 10px !important;
+    }
+
+    /* 深色模式：所有弹窗全量深度适配 (Layer 4 浮层高阶质感) */
+    html[data-theme="dark"] .modal-content {
+      background-color: #111a2e !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #f8fafc !important;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85) !important;
+    }
+    html[data-theme="dark"] .modal-header {
+      background: #0f172a !important;
+      border-bottom: 1px solid #1e293b !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .modal-title {
+      color: #f8fafc !important;
+      font-weight: 800 !important;
+    }
+    html[data-theme="dark"] .close-modal {
+      background: #1e293b !important;
+      color: #94a3b8 !important;
+      border: 1px solid #334155 !important;
+      border-radius: 50% !important;
+      width: 32px !important;
+      height: 32px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    html[data-theme="dark"] .close-modal:hover {
+      background: #334155 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .modal-footer {
+      background-color: #090d16 !important;
+      border-top: 1px solid #1e293b !important;
+    }
+    html[data-theme="dark"] .tabs {
+      border-bottom-color: #1e293b !important;
+    }
+    html[data-theme="dark"] .tab {
+      color: #94a3b8 !important;
+      border-radius: 8px 8px 0 0 !important;
+      border-bottom: 2px solid transparent !important;
+    }
+    html[data-theme="dark"] .tab:hover {
+      color: #f8fafc !important;
+      background: rgba(255, 255, 255, 0.05) !important;
+    }
+    html[data-theme="dark"] .tab.active {
+      color: #38bdf8 !important;
+      border-bottom-color: #38bdf8 !important;
+      font-weight: 700 !important;
+    }
+
+    /* 表单与输入框全量适配深色模式 */
+    html[data-theme="dark"] .form-control,
+    html[data-theme="dark"] .memo-input,
+    html[data-theme="dark"] textarea,
+    html[data-theme="dark"] select,
+    html[data-theme="dark"] input[type="text"],
+    html[data-theme="dark"] input[type="date"],
+    html[data-theme="dark"] input[type="time"],
+    html[data-theme="dark"] input[type="month"],
+    html[data-theme="dark"] input[type="datetime-local"] {
+      background-color: #141b2d !important;
+      border: 1.5px solid #28354f !important;
+      border-radius: 8px !important;
+      color: #f8fafc !important;
+      color-scheme: dark !important;
+    }
+    html[data-theme="dark"] .form-control:focus,
+    html[data-theme="dark"] .memo-input:focus,
+    html[data-theme="dark"] textarea:focus,
+    html[data-theme="dark"] input:focus {
+      background-color: #0b0f19 !important;
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22) !important;
+    }
+    html[data-theme="dark"] .form-group label {
+      color: #cbd5e1 !important;
+      font-weight: 600 !important;
+    }
+
+    /* 深色模式：功能面板 - 数据管理 (Excel 导出面板深度适配) */
+    html[data-theme="dark"] .excel-export-panel {
+      background: #141b2d !important;
+      border: 1.5px solid #28354f !important;
+      border-radius: 14px !important;
+    }
+    html[data-theme="dark"] .excel-export-panel h4 {
+      color: #60a5fa !important;
+    }
+    html[data-theme="dark"] .excel-export-panel p {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .excel-export-grid > label {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .excel-export-grid > label input,
+    html[data-theme="dark"] .excel-export-grid > label select {
+      background: #0f172a !important;
+      border: 1.5px solid #28354f !important;
+      color: #f8fafc !important;
+      color-scheme: dark !important;
+    }
+    html[data-theme="dark"] .excel-user-picker-heading {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .excel-selection-count {
+      background: rgba(59, 130, 246, 0.2) !important;
+      color: #93c5fd !important;
+    }
+    html[data-theme="dark"] .excel-user-picker {
+      background: #0b0f19 !important;
+      border: 1.5px solid #1e293b !important;
+      border-radius: 10px !important;
+    }
+    html[data-theme="dark"] .excel-user-option {
+      background: #141b2d !important;
+      border: 1px solid #28354f !important;
+      color: #f1f5f9 !important;
+      border-radius: 8px !important;
+    }
+    html[data-theme="dark"] .excel-user-option:hover {
+      border-color: #3b82f6 !important;
+      background: #1a233a !important;
+    }
+    html[data-theme="dark"] .excel-user-option.selected {
+      background: rgba(37, 99, 235, 0.25) !important;
+      border-color: #3b82f6 !important;
+    }
+    html[data-theme="dark"] .excel-user-option-name {
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .excel-user-option-meta {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .excel-user-picker-empty {
+      color: #64748b !important;
+    }
+
+    /* 深色模式：功能面板 - 任务发布 (接收人选择器与说明) */
+    html[data-theme="dark"] .task-assignee-panel {
+      background: #141b2d !important;
+      border: 1.5px solid #28354f !important;
+      border-radius: 12px !important;
+    }
+    html[data-theme="dark"] .task-assignee-modes {
+      background: #0b0f19 !important;
+      border: 1px solid #1e293b !important;
+      border-radius: 999px !important;
+    }
+    html[data-theme="dark"] .task-assignee-mode {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .task-assignee-mode.active {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35) !important;
+    }
+    html[data-theme="dark"] .task-assignee-summary {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .assignee-tag {
+      background: #0f172a !important;
+      border: 1.5px solid #28354f !important;
+      color: #e2e8f0 !important;
+      border-radius: 999px !important;
+    }
+    html[data-theme="dark"] .assignee-tag:hover {
+      border-color: #3b82f6 !important;
+      background: #1a233a !important;
+    }
+    html[data-theme="dark"] .assignee-tag.selected {
+      background: rgba(37, 99, 235, 0.3) !important;
+      border-color: #3b82f6 !important;
+      color: #93c5fd !important;
+    }
+    html[data-theme="dark"] .task-publish-info,
+    html[data-theme="dark"] .export-info {
+      background: #141b2d !important;
+      border: 1px solid #28354f !important;
+      color: #94a3b8 !important;
+      border-radius: 10px !important;
+    }
+    html[data-theme="dark"] .task-publish-info h4,
+    html[data-theme="dark"] .export-info h4 {
+      color: #f8fafc !important;
+    }
+
+    /* 深色模式：功能面板 - 人员管理 */
+    html[data-theme="dark"] .user-management-item {
+      background: #141b2d !important;
+      border: 1.5px solid #28354f !important;
+      border-radius: 12px !important;
+    }
+    html[data-theme="dark"] .user-field label {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .user-edit-grid input,
+    html[data-theme="dark"] .user-edit-grid select {
+      background: #0b0f19 !important;
+      border: 1.5px solid #28354f !important;
+      color: #f8fafc !important;
+      color-scheme: dark !important;
+    }
+    html[data-theme="dark"] .user-edit-grid input:disabled,
+    html[data-theme="dark"] .user-edit-grid select:disabled {
+      background: #080c14 !important;
+      color: #64748b !important;
+      border-color: #1e293b !important;
+    }
+    html[data-theme="dark"] .user-management-meta {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .user-management-current {
+      background: rgba(59, 130, 246, 0.2) !important;
+      color: #93c5fd !important;
+    }
+
+    /* 深色模式：功能面板 - 运维监控 */
+    html[data-theme="dark"] .ops-card {
+      background: #141b2d !important;
+      border: 1px solid #28354f !important;
+      border-radius: 12px !important;
+    }
+    html[data-theme="dark"] .ops-card-title {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .ops-card-value {
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .ops-card-subtitle {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .ops-section {
+      background: #141b2d !important;
+      border: 1px solid #28354f !important;
+      border-radius: 12px !important;
+    }
+    html[data-theme="dark"] .ops-section h4 {
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .ops-disk-item {
+      background: #0f172a !important;
+      border: 1px solid #1e293b !important;
+      border-radius: 10px !important;
+    }
+    html[data-theme="dark"] .ops-disk-top {
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .ops-progress {
+      background: #1e293b !important;
+    }
+    html[data-theme="dark"] .ops-info-row {
+      background: #0f172a !important;
+      border: 1px solid #1e293b !important;
+      border-radius: 8px !important;
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .ops-info-row strong {
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .ops-note-list {
+      color: #94a3b8 !important;
+    }
+
+    /* 深色模式：备忘录编辑弹窗 Markdown 编辑器 */
+    html[data-theme="dark"] .memo-text-editor {
+      border: 1.5px solid #28354f !important;
+      border-radius: 10px !important;
+      background: #0b0f19 !important;
+      overflow: hidden !important;
+    }
+    html[data-theme="dark"] .memo-text-toolbar {
+      background: #141b2d !important;
+      border-bottom: 1px solid #1e293b !important;
+    }
+    html[data-theme="dark"] .memo-text-tool {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .memo-text-tool:hover {
+      background: #1e293b !important;
+      color: #60a5fa !important;
+    }
+    html[data-theme="dark"] .memo-text-separator {
+      background: #28354f !important;
+    }
+    html[data-theme="dark"] .memo-text-editor textarea.form-control {
+      background: #0b0f19 !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .memo-text-helper {
+      background: #141b2d !important;
+      border-top: 1px solid #1e293b !important;
+      color: #64748b !important;
+    }
+    html[data-theme="dark"] .markdown-preview {
+      background: #0b0f19 !important;
+      border: 1.5px solid #28354f !important;
+      border-radius: 10px !important;
+      color: #e2e8f0 !important;
+    }
+    html[data-theme="dark"] .markdown-preview h1,
+    html[data-theme="dark"] .markdown-preview h2,
+    html[data-theme="dark"] .markdown-preview h3 {
+      color: #f8fafc !important;
+      border-bottom-color: #28354f !important;
+    }
+    html[data-theme="dark"] .markdown-preview code {
+      background: #1e293b !important;
+      color: #f472b6 !important;
+    }
+    html[data-theme="dark"] .markdown-preview pre {
+      background: #050810 !important;
+      border: 1px solid #1e293b !important;
+      color: #f8fafc !important;
+    }
+
+    /* 深色模式：每日备忘录详情弹窗 (DailyDetailModal) */
+    html[data-theme="dark"] .daily-quick-add-box {
+      background-color: #141b2d !important;
+      border: 1.5px dashed #28354f !important;
+    }
+    html[data-theme="dark"] .daily-quick-add-title {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .daily-quick-memo-input {
+      background: #0b0f19 !important;
+      border: 1.5px solid #28354f !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .daily-quick-memo-input:focus {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22) !important;
+    }
+    html[data-theme="dark"] #dailyDetailModal .task-item {
+      background: #141b2d !important;
+      border: 1px solid #28354f !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .data-stats-card {
+      background-color: #141b2d !important;
+      border: 1px solid #28354f !important;
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .stat-completed {
+      color: #34d399 !important;
+    }
+    html[data-theme="dark"] .stat-pending {
+      color: #94a3b8 !important;
+    }
+
+    /* 深色模式：提醒中心弹窗 (ReminderModal) */
+    html[data-theme="dark"] .reminder-content {
+      background: #0f172a !important;
+      border: 1px solid #1e293b !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .reminder-body {
+      background: #0f172a !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .reminder-section-title {
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .reminder-section-title small {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .reminder-item {
+      background-color: #141b2d !important;
+      border: 1px solid #28354f !important;
+      border-left: 4px solid #f59e0b !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .reminder-item:hover {
+      background-color: #1a233a !important;
+    }
+    html[data-theme="dark"] .reminder-item-title {
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .reminder-item-details {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .reminder-actions {
+      background: #090d16 !important;
+      border-top: 1px solid #1e293b !important;
+    }
+    html[data-theme="dark"] .reminder-settings {
+      color: #cbd5e1 !important;
+    }
+
+    /* 深色模式：标记完成按钮组件 (重点修复白底暗字异常) */
+    html[data-theme="dark"] .memo-title-completed {
+      background: #141b2d !important;
+      border: 1.5px solid #28354f !important;
+      color: #94a3b8 !important;
+      border-radius: 8px !important;
+      font-weight: 600 !important;
+      padding: 8px 14px !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    html[data-theme="dark"] .memo-title-completed:hover {
+      background: #1e293b !important;
+      border-color: #3b82f6 !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .memo-title-completed.is-completed,
+    html[data-theme="dark"] .memo-title-completed:has(input:checked) {
+      background: rgba(16, 185, 129, 0.22) !important;
+      border-color: #10b981 !important;
+      color: #34d399 !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.25) !important;
+    }
+    html[data-theme="dark"] .memo-title-completed input {
+      accent-color: #10b981 !important;
+    }
+
+    /* 深色模式：全量按钮组件深度美化 */
+    html[data-theme="dark"] .btn {
+      border-radius: 8px !important;
+      font-weight: 700 !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    html[data-theme="dark"] .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 3px 12px rgba(37, 99, 235, 0.35) !important;
+    }
+    html[data-theme="dark"] .btn-primary:hover {
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 5px 18px rgba(37, 99, 235, 0.5) !important;
+    }
+    html[data-theme="dark"] .btn-secondary {
       background: #1e293b !important;
       border: 1px solid #334155 !important;
       color: #cbd5e1 !important;
     }
-    html[data-theme="dark"] .stat-item.active {
-      border-color: #3b82f6 !important;
+    html[data-theme="dark"] .btn-secondary:hover {
+      background: #334155 !important;
+      border-color: #475569 !important;
       color: #ffffff !important;
+      transform: translateY(-1px) !important;
     }
-    html[data-theme="dark"] .weekdays div {
-      color: #94a3b8 !important;
+    html[data-theme="dark"] .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35) !important;
     }
-    html[data-theme="dark"] .calendar-day {
-      background-color: #0d131f !important;
-      border: 1px dashed #26324a !important;
+    html[data-theme="dark"] .btn-success:hover {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 5px 18px rgba(16, 185, 129, 0.5) !important;
     }
-    html[data-theme="dark"] .calendar-day:hover {
-      background-color: #1e293b !important;
-      border-color: #3b82f6 !important;
+    html[data-theme="dark"] .btn-danger {
+      background: rgba(239, 68, 68, 0.2) !important;
+      border: 1px solid rgba(239, 68, 68, 0.45) !important;
+      color: #fca5a5 !important;
+      box-shadow: 0 3px 10px rgba(239, 68, 68, 0.2) !important;
     }
-    html[data-theme="dark"] .calendar-day .day-number {
-      color: #f1f5f9 !important;
+    html[data-theme="dark"] .btn-danger:hover {
+      background: #ef4444 !important;
+      color: #ffffff !important;
+      border-color: #ef4444 !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 5px 18px rgba(239, 68, 68, 0.4) !important;
     }
-    html[data-theme="dark"] .calendar-day.other-month {
-      background-color: #080c14 !important;
-      opacity: 0.35 !important;
-      border-color: #1a2233 !important;
+    html[data-theme="dark"] .btn-warning {
+      background: rgba(245, 158, 11, 0.2) !important;
+      border: 1px solid rgba(245, 158, 11, 0.45) !important;
+      color: #fcd34d !important;
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.2) !important;
     }
-    html[data-theme="dark"] .calendar-day.today {
-      background-color: rgba(59, 130, 246, 0.14) !important;
-      border: 2px solid #3b82f6 !important;
+    html[data-theme="dark"] .btn-warning:hover {
+      background: #f59e0b !important;
+      color: #ffffff !important;
+      border-color: #f59e0b !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 5px 18px rgba(245, 158, 11, 0.4) !important;
     }
-    html[data-theme="dark"] .day-memo-item {
-      background-color: #1a2333 !important;
+    html[data-theme="dark"] .toolbar-btn-secondary {
+      background: #1e293b !important;
+      border: 1px solid #334155 !important;
       color: #cbd5e1 !important;
     }
-    html[data-theme="dark"] .team-leaderboard,
-    html[data-theme="dark"] .dashboard-hero,
-    html[data-theme="dark"] .dashboard-card {
-      background: #111827 !important;
-      border: 1px solid #1f293d !important;
-      color: #f1f5f9 !important;
+    html[data-theme="dark"] .toolbar-btn-secondary:hover {
+      background: #334155 !important;
+      color: #ffffff !important;
     }
-    html[data-theme="dark"] .leaderboard-card,
-    html[data-theme="dark"] .leaderboard-row,
-    html[data-theme="dark"] .dashboard-metric {
-      background: #0d131f !important;
-      border: 1px solid #1f293d !important;
-      color: #f1f5f9 !important;
+    html[data-theme="dark"] .complete-all-btn {
+      background: linear-gradient(135deg, #10b981, #059669) !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
     }
-    html[data-theme="dark"] .modal-content {
-      background-color: #111827 !important;
-      border: 1px solid #1f293d !important;
-      color: #f1f5f9 !important;
-      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7) !important;
+    html[data-theme="dark"] .complete-all-btn:hover {
+      background: linear-gradient(135deg, #34d399, #10b981) !important;
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5) !important;
     }
-    html[data-theme="dark"] .modal-header {
+    html[data-theme="dark"] .task-btn {
+      border-radius: 6px !important;
+      font-weight: 600 !important;
+      padding: 5px 10px !important;
+      border: 1px solid transparent !important;
+      transition: all 0.2s ease !important;
+    }
+    html[data-theme="dark"] .task-btn-complete {
+      background: rgba(16, 185, 129, 0.2) !important;
+      color: #34d399 !important;
+      border-color: rgba(16, 185, 129, 0.35) !important;
+    }
+    html[data-theme="dark"] .task-btn-complete:hover {
+      background: #10b981 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .task-btn-edit {
+      background: rgba(59, 130, 246, 0.2) !important;
+      color: #60a5fa !important;
+      border-color: rgba(59, 130, 246, 0.35) !important;
+    }
+    html[data-theme="dark"] .task-btn-edit:hover {
+      background: #3b82f6 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .task-btn-delete {
+      background: rgba(239, 68, 68, 0.2) !important;
+      color: #f87171 !important;
+      border-color: rgba(239, 68, 68, 0.35) !important;
+    }
+    html[data-theme="dark"] .task-btn-delete:hover {
+      background: #ef4444 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .user-save-btn {
+      background: rgba(16, 185, 129, 0.2) !important;
+      color: #34d399 !important;
+      border-color: rgba(16, 185, 129, 0.35) !important;
+    }
+    html[data-theme="dark"] .user-save-btn:hover {
+      background: #10b981 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .user-delete-btn:disabled {
       background: #1e293b !important;
-      border-bottom: 1px solid #334155 !important;
-      color: #f8fafc !important;
-    }
-    html[data-theme="dark"] .modal-footer {
-      background-color: #0d131f !important;
-      border-top: 1px solid #1f293d !important;
-    }
-    html[data-theme="dark"] .form-control,
-    html[data-theme="dark"] .memo-input,
-    html[data-theme="dark"] textarea {
-      background-color: #0b0f19 !important;
-      border-color: #334155 !important;
-      color: #f1f5f9 !important;
-    }
-    html[data-theme="dark"] .tabs {
-      border-bottom-color: #1f293d !important;
-    }
-    html[data-theme="dark"] .tab {
-      color: #94a3b8 !important;
-    }
-    html[data-theme="dark"] .tab.active {
-      color: #3b82f6 !important;
-      border-bottom-color: #3b82f6 !important;
+      color: #475569 !important;
+      border: 1px solid #334155 !important;
+      opacity: 0.5 !important;
+      cursor: not-allowed !important;
     }
     html[data-theme="dark"] .task-item {
-      background-color: #0d131f !important;
-      border-color: #1f293d !important;
-      color: #f1f5f9 !important;
+      background: #141b2d !important;
+      border: 1px solid #28354f !important;
+      border-left: 4px solid var(--primary-color) !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .task-item:hover {
+      background: #1a233a !important;
     }
     html[data-theme="dark"] .task-title {
       color: #f8fafc !important;
     }
-    html[data-theme="dark"] .task-content {
+    html[data-theme="dark"] .task-due {
       color: #94a3b8 !important;
     }
+    html[data-theme="dark"] .task-content {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .reminder-header {
+      background: #0f172a !important;
+      border-bottom: 1px solid #1e293b !important;
+      color: #f8fafc !important;
+    }
+    html[data-theme="dark"] .close-reminder {
+      background: #1e293b !important;
+      color: #94a3b8 !important;
+      border: 1px solid #334155 !important;
+      border-radius: 50% !important;
+      width: 32px !important;
+      height: 32px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    html[data-theme="dark"] .close-reminder:hover {
+      background: #334155 !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .color-option.selected {
+      border: 2px solid #ffffff !important;
+      box-shadow: 0 0 0 2px #0f172a, 0 0 10px rgba(255, 255, 255, 0.4) !important;
+      transform: scale(1.15) !important;
+    }
+    html[data-theme="dark"] .clear-search {
+      color: #94a3b8 !important;
+    }
+    html[data-theme="dark"] .clear-search:hover {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      color: #f87171 !important;
+    }
+    html[data-theme="dark"] .server-session-actions button:last-child {
+      background: #1e293b !important;
+      border: 1px solid #334155 !important;
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .server-session-actions button:last-child:hover {
+      background: #334155 !important;
+      color: #ffffff !important;
+    }
 
-    /* 深色模式登录界面 */
+    /* 深色模式：登录界面 */
     html[data-theme="dark"] #serverLoginOverlay {
       background: radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.18) 0%, transparent 45%),
                   radial-gradient(circle at 85% 80%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
@@ -3066,6 +4695,14 @@ function renderColorOptions(activeColor = colors[0], target = 'memo') {
   box.innerHTML = colors.map((color) => `<div class="color-option ${color === activeColor ? 'selected' : ''}" data-color="${color}" data-target="${target}" style="background-color:${color}"></div>`).join('');
 }
 
+function syncMemoCompletedState() {
+  const checkbox = $('memoCompleted');
+  const label = checkbox?.closest('.memo-title-completed');
+  if (label && checkbox) {
+    label.classList.toggle('is-completed', Boolean(checkbox.checked));
+  }
+}
+
 async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   state.selectedMemoId = memoId;
   const requestVersion = ++state.memoDetailRequestVersion;
@@ -3092,6 +4729,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   $('memoDueTime').value = memo?.dueTime ? toLocalDateTimeInput(memo.dueTime) : '';
   $('memoContent').value = memo?.content || '';
   $('memoCompleted').checked = Boolean(memo?.completed);
+  syncMemoCompletedState();
   $('deleteMemo').style.display = memo ? 'inline-flex' : 'none';
   state.selectedMemoColor = memo?.color || randomMemoColor(latestMemoColor());
   renderColorOptions(state.selectedMemoColor, 'memo');
@@ -3967,6 +5605,7 @@ function initEventListeners() {
   $('memoContent').addEventListener('input', updateMarkdownPreview);
   $('memoContent').addEventListener('keydown', continueOrderedMemoLine);
   $('memoTextToolbar')?.addEventListener('click', handleMemoTextToolbarClick);
+  $('memoCompleted')?.addEventListener('change', syncMemoCompletedState);
   $('closeDailyDetailModal').addEventListener('click', closeDailyDetailModal);
   $('closeDailyDetailModalBtn').addEventListener('click', closeDailyDetailModal);
   $('addNewMemoBtn').addEventListener('click', openDetailedMemoFromDaily);
