@@ -3545,48 +3545,49 @@ html[data-theme='dark'] .task-time-exact {
   transform: translateY(0);
 }
 
-/* ── 周计划与研发复盘全屏独立工作台 (Weekly Plan Page) ────────── */
+/* ── 周计划全屏独立工作台 (Weekly Plan Page) ────────── */
 .weekly-plan-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 18px 24px;
-  min-height: calc(100vh - 120px);
-  animation: wpFadeIn 0.25s ease-out;
+  gap: 12px;
+  padding: 14px 20px;
+  min-height: calc(100vh - 80px);
+  animation: wpFadeIn 0.2s ease-out;
 }
 
 @keyframes wpFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* 顶部工作台导航卡片 (极简单行排布) */
 .wp-hero-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
   background: var(--ui-surface, #ffffff);
   border: 1px solid var(--ui-border, #e2e8f0);
-  border-radius: 14px;
-  padding: 14px 20px;
-  box-shadow: var(--ui-shadow, 0 4px 16px rgba(0, 0, 0, 0.04));
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: var(--ui-shadow, 0 2px 8px rgba(0, 0, 0, 0.04));
 }
 
 .wp-hero-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .wp-back-btn {
-  padding: 8px 14px;
-  font-size: 0.86rem;
+  padding: 6px 12px;
+  font-size: 0.82rem;
   font-weight: 600;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   cursor: pointer;
   border: 1px solid var(--ui-border, #cbd5e1);
   background: var(--ui-surface-soft, #f8fafc);
@@ -3601,48 +3602,40 @@ html[data-theme='dark'] .task-time-exact {
 
 .wp-hero-title-box {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
 }
 
-.wp-hero-kicker {
-  font-size: 0.74rem;
+.wp-hero-title {
+  margin: 0;
+  font-size: 1.12rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ui-text-muted, #64748b);
+  color: var(--ui-text, #0f172a);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.wp-hero-title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--ui-text, #0f172a);
-}
-
 .wp-hero-center {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .wp-week-nav-bar {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: var(--ui-surface-soft, #f8fafc);
   border: 1px solid var(--ui-border, #e2e8f0);
-  border-radius: 10px;
-  padding: 4px 8px;
+  border-radius: 8px;
+  padding: 3px 6px;
 }
 
 .wp-nav-arrow-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: 1px solid var(--ui-border, #cbd5e1);
   background: var(--ui-surface, #ffffff);
   color: var(--ui-text, #1e293b);
@@ -3658,25 +3651,74 @@ html[data-theme='dark'] .task-time-exact {
 }
 
 .wp-current-week-label {
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   font-weight: 700;
   color: var(--ui-text, #0f172a);
-  padding: 0 8px;
+  padding: 0 6px;
   white-space: nowrap;
 }
 
 .wp-today-chip {
-  padding: 4px 10px;
-  font-size: 0.78rem;
+  padding: 3px 8px;
+  font-size: 0.74rem;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
 }
 
+/* 顶部紧凑指标胶囊群（取代臃肿大卡片） */
+.wp-hero-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.wp-stat-chip {
+  padding: 4px 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: 6px;
+  background: var(--ui-surface-soft, #f8fafc);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  color: var(--ui-text, #1e293b);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wp-stat-chip strong {
+  font-weight: 700;
+}
+
+.wp-stat-chip.done {
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.wp-stat-chip.pending {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.wp-stat-chip.rate {
+  background: rgba(67, 97, 238, 0.08);
+  color: #4361ee;
+  border-color: rgba(67, 97, 238, 0.25);
+}
+
+.wp-stat-chip.next {
+  background: rgba(2, 132, 199, 0.08);
+  color: #0284c7;
+  border-color: rgba(2, 132, 199, 0.25);
+}
+
 .wp-hero-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -3690,8 +3732,8 @@ html[data-theme='dark'] .task-time-exact {
 }
 
 .wp-view-toggle-wrap .btn {
-  padding: 6px 12px;
-  font-size: 0.8rem;
+  padding: 5px 10px;
+  font-size: 0.78rem;
   font-weight: 600;
   border-radius: 6px;
   border: none;
@@ -3704,13 +3746,13 @@ html[data-theme='dark'] .task-time-exact {
 .wp-view-toggle-wrap .btn.active {
   background: var(--ui-surface, #ffffff);
   color: var(--ui-primary, #4361ee);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   font-weight: 700;
 }
 
 #wpPageCopyReportBtn {
-  padding: 8px 14px;
-  font-size: 0.85rem;
+  padding: 6px 12px;
+  font-size: 0.8rem;
   font-weight: 600;
   border-radius: 8px;
   display: inline-flex;
@@ -3721,17 +3763,17 @@ html[data-theme='dark'] .task-time-exact {
   color: #ffffff;
   border: none;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
 }
 
 #wpPageCopyReportBtn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.3);
 }
 
 #wpPageRefreshBtn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -3739,170 +3781,41 @@ html[data-theme='dark'] .task-time-exact {
   cursor: pointer;
 }
 
-/* ── 关键指标横条 ────────── */
-.wp-metrics-ribbon {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.wp-metric-box {
-  background: var(--ui-surface, #ffffff);
-  border: 1px solid var(--ui-border, #e2e8f0);
-  border-radius: 12px;
-  padding: 12px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  box-shadow: var(--ui-shadow, 0 2px 8px rgba(0, 0, 0, 0.03));
-}
-
-.wp-metric-val {
-  font-size: 1.65rem;
-  font-weight: 800;
-  line-height: 1.15;
-  color: var(--ui-text, #0f172a);
-}
-
-.wp-metric-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--ui-text-muted, #64748b);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* ── 双栏工作台核心区域 ────────── */
-.wp-dual-workspace {
-  display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-/* 左侧：复盘与滞后流转池 */
-.wp-review-panel {
-  background: var(--ui-surface, #ffffff);
-  border: 1px solid var(--ui-border, #e2e8f0);
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--ui-shadow, 0 4px 16px rgba(0, 0, 0, 0.04));
-}
-
-.wp-panel-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--ui-border, #e2e8f0);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--ui-surface-soft, #f8fafc);
-}
-
-.wp-panel-title {
-  font-size: 0.88rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ui-text, #0f172a);
-}
-
-.wp-panel-badge {
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: var(--ui-text-muted, #64748b);
-  background: var(--ui-surface, #ffffff);
-  border: 1px solid var(--ui-border, #e2e8f0);
-  border-radius: 6px;
-  padding: 2px 8px;
-}
-
-.wp-review-scroll-list {
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: calc(100vh - 280px);
-  overflow-y: auto;
-}
-
-.wp-review-section-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 2px;
-}
-
-.wp-empty-hint {
-  padding: 12px;
-  font-size: 0.78rem;
-  color: var(--ui-text-muted, #94a3b8);
-  text-align: center;
-  background: var(--ui-surface-soft, #f8fafc);
-  border-radius: 8px;
-  border: 1px dashed var(--ui-border, #e2e8f0);
-}
-
-.wp-rollover-card {
-  padding: 10px 12px;
+/* ── 待办流转提醒通知栏 (有待办时优雅浮现，平时不占空间) ────────── */
+.wp-rollover-banner {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
   border-radius: 10px;
-  border: 1px solid var(--ui-border, #e2e8f0);
-  background: var(--ui-surface-soft, #f8fafc);
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: all 0.15s ease;
+  gap: 8px;
+  animation: wpFadeIn 0.2s ease-out;
 }
 
-.wp-rollover-card.pending {
-  border-left: 3px solid #ef4444;
-}
-
-.wp-rollover-card.completed {
-  border-left: 3px solid #10b981;
-  opacity: 0.85;
-}
-
-.wp-card-title-row {
+.wp-rollover-banner-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.wp-card-title {
+.wp-rollover-banner-title {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--ui-text, #0f172a);
-  line-height: 1.35;
-  flex: 1;
-  word-break: break-all;
-}
-
-.wp-card-title.completed {
-  text-decoration: line-through;
-  color: var(--ui-text-muted, #94a3b8);
-}
-
-.wp-card-meta-row {
+  color: #92400e;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 0.74rem;
-  color: var(--ui-text-muted, #64748b);
+  gap: 6px;
 }
 
-.wp-rollover-action-btn {
-  padding: 3px 9px;
-  font-size: 0.73rem;
-  font-weight: 600;
+.wp-rollover-batch-btn {
+  padding: 3px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
   border-radius: 6px;
-  background: #206bc4;
+  background: #d97706;
   color: #ffffff;
   border: none;
   cursor: pointer;
@@ -3912,69 +3825,68 @@ html[data-theme='dark'] .task-time-exact {
   transition: background 0.15s ease;
 }
 
-.wp-rollover-action-btn:hover {
-  background: #17549c;
+.wp-rollover-batch-btn:hover {
+  background: #b45309;
 }
 
-/* 右侧：全屏周日程与攻坚规划大看板 */
-.wp-board-panel {
-  background: var(--ui-surface, #ffffff);
-  border: 1px solid var(--ui-border, #e2e8f0);
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--ui-shadow, 0 4px 16px rgba(0, 0, 0, 0.04));
-}
-
-.wp-board-header {
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--ui-border, #e2e8f0);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  background: var(--ui-surface-soft, #f8fafc);
-}
-
-.wp-board-title-group {
+.wp-rollover-banner-chips {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-.wp-board-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--ui-text, #0f172a);
-}
-
-.wp-board-week-range {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--ui-text-muted, #64748b);
-  background: var(--ui-surface, #ffffff);
-  border: 1px solid var(--ui-border, #e2e8f0);
+.wp-rollover-banner-chip {
+  background: #ffffff;
+  border: 1px solid #fcd34d;
   border-radius: 6px;
-  padding: 2px 8px;
-}
-
-.wp-board-quick-legend {
-  font-size: 0.78rem;
-  color: var(--ui-text-muted, #64748b);
-  display: flex;
+  padding: 4px 8px;
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
+  max-width: 320px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-/* 7天日历网格 */
+.wp-chip-name {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #78350f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wp-chip-action-btn {
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 4px;
+  background: #206bc4;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: background 0.15s ease;
+}
+
+.wp-chip-action-btn:hover {
+  background: #17549c;
+}
+
+/* ── 7天周看板网格容器 (100% 满宽排布) ────────── */
+.wp-board-container {
+  width: 100%;
+}
+
 .wp-columns-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
-  padding: 14px;
-  background: var(--ui-bg, #f4f6f8);
-  overflow-x: auto;
+  width: 100%;
 }
 
 .wp-day-column {
@@ -3983,13 +3895,14 @@ html[data-theme='dark'] .task-time-exact {
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  min-height: 480px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  min-height: calc(100vh - 200px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
 .wp-day-column:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
 
 .wp-day-column.is-today {
@@ -4004,16 +3917,16 @@ html[data-theme='dark'] .task-time-exact {
   align-items: center;
   justify-content: space-between;
   background: var(--ui-surface-soft, #f8fafc);
-  border-radius: 10px 10px 0 0;
 }
 
 .wp-day-date-box {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: 5px;
 }
 
 .wp-day-name {
-  font-size: 0.84rem;
+  font-size: 0.86rem;
   font-weight: 700;
   color: var(--ui-text, #0f172a);
 }
@@ -4024,7 +3937,7 @@ html[data-theme='dark'] .task-time-exact {
 }
 
 .wp-today-badge {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
   background: var(--ui-primary, #4361ee);
   color: #ffffff;
@@ -4042,21 +3955,47 @@ html[data-theme='dark'] .task-time-exact {
   padding: 1px 6px;
 }
 
+/* 顶部快速录入框（直接处于日期下方，无需下翻） */
+.wp-day-quick-add {
+  padding: 8px;
+  border-bottom: 1px solid var(--ui-border, #f1f5f9);
+  background: var(--ui-surface, #ffffff);
+}
+
+.wp-day-input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--ui-border, #cbd5e1);
+  font-size: 0.76rem;
+  outline: none;
+  background: var(--ui-surface-soft, #f8fafc);
+  color: var(--ui-text, #1e293b);
+  transition: all 0.15s ease;
+}
+
+.wp-day-input:focus {
+  background: #ffffff;
+  border-color: var(--ui-primary, #4361ee);
+  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.15);
+}
+
+/* 任务列表滚动区域 */
 .wp-day-task-list {
-  padding: 10px 8px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   flex: 1;
   overflow-y: auto;
-  max-height: calc(100vh - 420px);
+  max-height: calc(100vh - 260px);
 }
 
 .wp-day-empty {
   text-align: center;
   color: var(--ui-text-muted, #94a3b8);
   font-size: 0.74rem;
-  padding: 24px 4px;
+  padding: 28px 4px;
 }
 
 .wp-day-task-card {
@@ -4073,12 +4012,12 @@ html[data-theme='dark'] .task-time-exact {
 
 .wp-day-task-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
 }
 
 .wp-day-task-card.completed {
-  opacity: 0.72;
-  background: rgba(16, 185, 129, 0.04);
+  opacity: 0.7;
+  background: rgba(16, 185, 129, 0.03);
 }
 
 .wp-day-card-top {
@@ -4109,7 +4048,7 @@ html[data-theme='dark'] .task-time-exact {
 }
 
 .wp-day-card-content {
-  font-size: 0.72rem;
+  font-size: 0.71rem;
   color: var(--ui-text-muted, #64748b);
   line-height: 1.25;
   overflow: hidden;
@@ -4152,35 +4091,11 @@ html[data-theme='dark'] .task-time-exact {
   background: rgba(0, 0, 0, 0.05);
 }
 
-.wp-day-quick-add {
-  padding: 8px 10px;
-  border-top: 1px solid var(--ui-border, #e2e8f0);
-  background: var(--ui-surface-soft, #f8fafc);
-  border-radius: 0 0 10px 10px;
-}
-
-.wp-day-input {
-  width: 100%;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--ui-border, #cbd5e1);
-  font-size: 0.76rem;
-  outline: none;
-  background: var(--ui-surface, #ffffff);
-  color: var(--ui-text, #1e293b);
-  transition: border-color 0.15s ease;
-}
-
-.wp-day-input:focus {
-  border-color: var(--ui-primary, #4361ee);
-  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.15);
-}
-
 /* 团队视图矩阵 */
 .team-plan-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 .team-plan-card {
   border-radius: 12px;
@@ -4207,24 +4122,15 @@ html[data-theme='dark'] .calendar-weekly-plan-btn {
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
 }
 html[data-theme='dark'] .wp-hero-card,
-html[data-theme='dark'] .wp-metric-box,
-html[data-theme='dark'] .wp-review-panel,
-html[data-theme='dark'] .wp-board-panel,
 html[data-theme='dark'] .wp-day-column {
   background: #1e293b;
   border-color: #334155;
 }
 html[data-theme='dark'] .wp-hero-title,
-html[data-theme='dark'] .wp-metric-val,
-html[data-theme='dark'] .wp-panel-title,
-html[data-theme='dark'] .wp-board-title,
 html[data-theme='dark'] .wp-day-name,
-html[data-theme='dark'] .wp-card-title,
 html[data-theme='dark'] .wp-day-card-title {
   color: #f1f5f9;
 }
-html[data-theme='dark'] .wp-panel-header,
-html[data-theme='dark'] .wp-board-header,
 html[data-theme='dark'] .wp-day-col-header,
 html[data-theme='dark'] .wp-day-quick-add,
 html[data-theme='dark'] .wp-week-nav-bar,
@@ -4232,10 +4138,6 @@ html[data-theme='dark'] .wp-view-toggle-wrap {
   background: #0f172a;
   border-color: #334155;
 }
-html[data-theme='dark'] .wp-columns-grid {
-  background: #0b1120;
-}
-html[data-theme='dark'] .wp-rollover-card,
 html[data-theme='dark'] .wp-day-task-card,
 html[data-theme='dark'] .team-plan-card {
   background: #0f172a;
@@ -4253,60 +4155,71 @@ html[data-theme='dark'] .wp-view-toggle-wrap .btn.active {
   background: #1e293b;
   color: #60a5fa;
 }
-html[data-theme='dark'] .wp-panel-badge,
-html[data-theme='dark'] .wp-board-week-range,
 html[data-theme='dark'] .wp-day-count-badge {
   background: #1e293b;
   border-color: #334155;
   color: #94a3b8;
 }
+html[data-theme='dark'] .wp-stat-chip {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+html[data-theme='dark'] .wp-rollover-banner {
+  background: #2d2410;
+  border-color: #78350f;
+}
+html[data-theme='dark'] .wp-rollover-banner-title {
+  color: #fde68a;
+}
+html[data-theme='dark'] .wp-rollover-banner-chip {
+  background: #1e293b;
+  border-color: #78350f;
+}
+html[data-theme='dark'] .wp-chip-name {
+  color: #fde68a;
+}
 
 /* 响应式适配 (Responsive Media Queries) */
 @media (max-width: 1200px) {
   .wp-columns-grid {
-    grid-template-columns: repeat(7, minmax(130px, 1fr));
-  }
-}
-@media (max-width: 992px) {
-  .wp-dual-workspace {
-    grid-template-columns: 1fr;
-  }
-  .wp-review-panel {
-    order: 2;
-  }
-  .wp-board-panel {
-    order: 1;
-  }
-  .wp-review-scroll-list {
-    max-height: 300px;
+    grid-template-columns: repeat(7, minmax(135px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 6px;
   }
 }
 @media (max-width: 768px) {
   .weekly-plan-page {
     padding: 10px 8px;
-    gap: 12px;
+    gap: 10px;
   }
   .wp-hero-card {
-    padding: 12px;
+    padding: 10px;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
   .wp-hero-left {
     width: 100%;
-    justify-content: flex-start;
-    gap: 12px;
+    justify-content: space-between;
   }
   .wp-hero-title {
     font-size: 1.05rem;
   }
   .wp-hero-center {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
   .wp-week-nav-bar {
     width: 100%;
     justify-content: space-between;
     padding: 4px 6px;
+  }
+  .wp-hero-stats {
+    width: 100%;
+    justify-content: flex-start;
   }
   .wp-current-week-label {
     font-size: 0.78rem;
@@ -4322,41 +4235,20 @@ html[data-theme='dark'] .wp-day-count-badge {
     padding: 0 10px;
     font-size: 0.78rem;
   }
-  .wp-metrics-ribbon {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-  .wp-metrics-ribbon .wp-metric-box:last-child {
-    grid-column: 1 / -1;
-  }
-  .wp-metric-box {
-    padding: 10px 12px;
-  }
-  .wp-metric-val {
-    font-size: 1.3rem;
-  }
-  .wp-metric-label {
-    font-size: 0.72rem;
-  }
-  .wp-board-header {
-    padding: 10px 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-  .wp-board-title {
-    font-size: 0.88rem;
-  }
-  .wp-board-quick-legend {
-    font-size: 0.72rem;
-  }
   .wp-columns-grid {
-    grid-template-columns: repeat(7, minmax(130px, 1fr));
+    grid-template-columns: repeat(7, minmax(160px, 1fr));
     gap: 8px;
-    padding: 10px 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
   }
   .wp-day-column {
-    min-height: 400px;
+    min-height: 440px;
+    scroll-snap-align: start;
+  }
+  .wp-day-date-box {
+    white-space: nowrap;
   }
 }
 

@@ -4248,6 +4248,12 @@ function applyMainView() {
   setElementVisible('dashboardPage', dashboardVisible);
   setElementVisible('weeklyPlanPage', weeklyPlanVisible);
 
+  // 隐藏顶部二级工具栏容器（搜索、月份选择、新建等），保持周计划页面纯净专注
+  const workspaceSubbar = document.querySelector('.workspace-subbar');
+  if (workspaceSubbar) {
+    workspaceSubbar.style.display = weeklyPlanVisible ? 'none' : '';
+  }
+
   const calendarContainer = document.querySelector('.calendar-container');
   if (calendarContainer) {
     calendarContainer.hidden = !calendarVisible;
@@ -6482,30 +6488,15 @@ function renderWeeklyPlanPage() {
   const pending = thisWeekMemos.filter(m => !m.completed);
   const planRate = thisWeekMemos.length ? Math.round((completed.length / thisWeekMemos.length) * 100) : 100;
 
-  // Render Metrics Ribbon
-  const metricsRibbon = $('wpPageMetricsRibbon');
-  if (metricsRibbon) {
-    metricsRibbon.innerHTML = `
-      <div class="wp-metric-box">
-        <div class="wp-metric-val">${thisWeekMemos.length}</div>
-        <div class="wp-metric-label"><i class="fas fa-tasks text-primary"></i> 本周事项总数</div>
-      </div>
-      <div class="wp-metric-box success">
-        <div class="wp-metric-val" style="color: var(--ui-success);">${completed.length}</div>
-        <div class="wp-metric-label"><i class="fas fa-check-circle text-success"></i> 已达成事项</div>
-      </div>
-      <div class="wp-metric-box danger">
-        <div class="wp-metric-val" style="color: var(--ui-danger);">${pending.length}</div>
-        <div class="wp-metric-label"><i class="fas fa-exclamation-circle text-danger"></i> 滞后/待办事项</div>
-      </div>
-      <div class="wp-metric-box primary">
-        <div class="wp-metric-val" style="color: var(--ui-primary);">${planRate}%</div>
-        <div class="wp-metric-label"><i class="fas fa-chart-line text-primary"></i> 本周计划达成率</div>
-      </div>
-      <div class="wp-metric-box info">
-        <div class="wp-metric-val" style="color: #0284c7;">${nextWeekMemos.length}</div>
-        <div class="wp-metric-label"><i class="fas fa-calendar-check text-info"></i> 下周已预排目标</div>
-      </div>
+  // 顶部卡片内紧凑指标状态条（无多余大卡片侵占视线）
+  const statsGroup = $('wpPageStatsGroup');
+  if (statsGroup) {
+    statsGroup.innerHTML = `
+      <span class="wp-stat-chip total" title="本周总事项数"><i class="fas fa-tasks"></i> <strong>${thisWeekMemos.length}</strong> 项</span>
+      <span class="wp-stat-chip done" title="已达成事项数"><i class="fas fa-check-circle"></i> 达成 <strong>${completed.length}</strong></span>
+      ${pending.length > 0 ? `<span class="wp-stat-chip pending" title="滞后待办事项数"><i class="fas fa-clock"></i> 待办 <strong>${pending.length}</strong></span>` : ''}
+      <span class="wp-stat-chip rate" title="本周计划达成率"><i class="fas fa-chart-line"></i> <strong>${planRate}%</strong></span>
+      <span class="wp-stat-chip next" title="下周已预排目标数"><i class="far fa-calendar-check"></i> 下周预排 <strong>${nextWeekMemos.length}</strong></span>
     `;
   }
 
@@ -6535,109 +6526,71 @@ function renderWeeklyPlanPage() {
     });
   }
 
-  workspaceBody.innerHTML = `
-    <div class="wp-dual-workspace">
-      <!-- 左栏：本周复盘与未完事项待流转池 -->
-      <div class="wp-review-panel card">
-        <div class="wp-panel-header">
-          <div class="wp-panel-title">
-            <i class="fas fa-clipboard-check text-success"></i>
-            <span>本周复盘与滞后流转</span>
-          </div>
-          <span class="wp-panel-badge">${monKey.slice(5)} ~ ${sunKey.slice(5)}</span>
+  // 待办流转提醒条：仅当本周有滞后/未完成事项时优雅浮现，否则不占用一像素空间
+  const rolloverBannerHtml = pending.length > 0 ? `
+    <div class="wp-rollover-banner">
+      <div class="wp-rollover-banner-head">
+        <div class="wp-rollover-banner-title">
+          <i class="fas fa-exclamation-circle text-warning"></i>
+          <span>本周有 <strong>${pending.length}</strong> 项待办/滞后事项未完成：</span>
         </div>
-
-        <div class="wp-review-scroll-list">
-          <div class="wp-review-section-title">
-            <span class="text-danger"><i class="fas fa-exclamation-circle"></i> 滞后/待办事项 (${pending.length})</span>
-            <small style="color: var(--ui-text-muted);">一键顺延滚入下周</small>
-          </div>
-          ${pending.length === 0 ? '<div class="wp-empty-hint"><i class="fas fa-check-circle text-success"></i> 本周无滞后待办事项</div>' : ''}
-          ${pending.map(m => `
-            <div class="wp-rollover-card pending" id="wpCard-${m.id}">
-              <div class="wp-card-title-row">
-                <span class="wp-card-title">${escapeHtml(m.title)}</span>
-                <span class="task-status-pill pending">待办</span>
-              </div>
-              <div class="wp-card-meta-row">
-                <span class="wp-card-time"><i class="far fa-calendar-alt"></i> ${m.date}</span>
-                <button type="button" class="wp-rollover-action-btn" onclick="rollOverMemoToNextWeek('${m.id}')" title="将此未完成事项流转到下周计划">
-                  <i class="fas fa-share"></i> 滚入下周计划
-                </button>
-              </div>
-            </div>
-          `).join('')}
-
-          <div class="wp-review-section-title" style="margin-top: 14px;">
-            <span class="text-success"><i class="fas fa-check-circle"></i> 本周已达成事项 (${completed.length})</span>
-          </div>
-          ${completed.length === 0 ? '<div class="wp-empty-hint"><i class="far fa-clock"></i> 暂无已完成事项</div>' : ''}
-          ${completed.map(m => `
-            <div class="wp-rollover-card completed">
-              <div class="wp-card-title-row">
-                <span class="wp-card-title completed">${escapeHtml(m.title)}</span>
-                <span class="task-status-pill completed">达成</span>
-              </div>
-              <div class="wp-card-meta-row">
-                <span class="wp-card-time"><i class="far fa-calendar-alt"></i> ${m.date}</span>
-                <span class="text-success" style="font-size: 0.72rem; font-weight: 600;"><i class="fas fa-check"></i> 已完成</span>
-              </div>
-            </div>
-          `).join('')}
-        </div>
+        <button type="button" class="wp-rollover-batch-btn" onclick="rollOverAllPendingToNextWeek()" title="将本周未完成的全部事项一键顺延流转至下周一">
+          <i class="fas fa-angle-double-right"></i> 全部顺延滚入下周
+        </button>
       </div>
-
-      <!-- 右栏：全屏周日程与攻坚计划大看板 -->
-      <div class="wp-board-panel card">
-        <div class="wp-board-header">
-          <div class="wp-board-title-group">
-            <i class="fas fa-calendar-alt text-primary"></i>
-            <span class="wp-board-title">第${weekNum}周 周日程规划日历列表</span>
-            <span class="wp-board-week-range">${monKey} ~ ${sunKey}</span>
+      <div class="wp-rollover-banner-chips">
+        ${pending.map(m => `
+          <div class="wp-rollover-banner-chip">
+            <span class="wp-chip-name" title="${escapeHtml(m.title)}">${escapeHtml(m.title)}</span>
+            <button type="button" class="wp-chip-action-btn" onclick="rollOverMemoToNextWeek('${m.id}')" title="将此项流转到下周一">
+              <i class="fas fa-share"></i> 滚入下周
+            </button>
           </div>
-          <div class="wp-board-quick-legend">
-            <span><i class="fas fa-lightbulb text-warning" style="margin-right: 4px;"></i>在下方各日输入框填写计划，按回车即可加入</span>
-          </div>
-        </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
 
-        <div class="wp-columns-grid">
-          ${weekDays.map(day => `
-            <div class="wp-day-column ${day.isToday ? 'is-today' : ''}">
-              <div class="wp-day-col-header">
-                <div class="wp-day-date-box">
-                  <span class="wp-day-name">${day.dayName}</span>
-                  <span class="wp-day-date">${day.dateLabel}</span>
-                </div>
-                ${day.isToday ? '<span class="wp-today-badge">今日</span>' : ''}
-                <span class="wp-day-count-badge">${day.memos.length} 项</span>
+  workspaceBody.innerHTML = `
+    ${rolloverBannerHtml}
+    <div class="wp-board-container">
+      <div class="wp-columns-grid">
+        ${weekDays.map(day => `
+          <div class="wp-day-column ${day.isToday ? 'is-today' : ''}">
+            <div class="wp-day-col-header">
+              <div class="wp-day-date-box">
+                <span class="wp-day-name">${day.dayName}</span>
+                <span class="wp-day-date">${day.dateLabel}</span>
               </div>
+              ${day.isToday ? '<span class="wp-today-badge">今日</span>' : ''}
+              <span class="wp-day-count-badge">${day.memos.length}项</span>
+            </div>
 
-              <div class="wp-day-task-list" id="wpDayList-${day.dateKey}">
-                ${day.memos.length === 0 ? '<div class="wp-day-empty">暂无安排</div>' : ''}
-                ${day.memos.map(m => `
-                  <div class="wp-day-task-card ${m.completed ? 'completed' : ''}" style="border-left-color: ${m.color || '#206bc4'};">
-                    <div class="wp-day-card-top">
-                      <input type="checkbox" class="wp-day-checkbox" ${m.completed ? 'checked' : ''} onchange="toggleMemoCompleteFromBoard('${m.id}', this.checked)" title="标记完成状态">
-                      <span class="wp-day-card-title ${m.completed ? 'completed' : ''}" onclick="openMemoModal('${m.id}')" title="点击查看编辑">${escapeHtml(m.title)}</span>
-                    </div>
-                    ${m.content ? `<div class="wp-day-card-content">${escapeHtml(m.content.slice(0, 60))}</div>` : ''}
-                    <div class="wp-day-card-footer">
-                      <span class="wp-day-card-due"><i class="far fa-clock"></i> ${formatMemoDue(m)}</span>
-                      <div class="wp-card-actions">
-                        <button type="button" class="wp-icon-btn" onclick="openMemoModal('${m.id}')" title="编辑详情"><i class="fas fa-edit"></i></button>
-                        <button type="button" class="wp-icon-btn text-danger" onclick="deleteMemoFromBoard('${m.id}')" title="删除"><i class="fas fa-trash-alt"></i></button>
-                      </div>
+            <div class="wp-day-quick-add">
+              <input type="text" class="wp-day-input" placeholder="+ 写计划，回车保存" onkeydown="if(event.key==='Enter')addPlanForSpecificDate('${day.dateKey}', this)">
+            </div>
+
+            <div class="wp-day-task-list" id="wpDayList-${day.dateKey}">
+              ${day.memos.length === 0 ? '<div class="wp-day-empty">今日无计划</div>' : ''}
+              ${day.memos.map(m => `
+                <div class="wp-day-task-card ${m.completed ? 'completed' : ''}" style="border-left-color: ${m.color || '#206bc4'};">
+                  <div class="wp-day-card-top">
+                    <input type="checkbox" class="wp-day-checkbox" ${m.completed ? 'checked' : ''} onchange="toggleMemoCompleteFromBoard('${m.id}', this.checked)" title="标记完成状态">
+                    <span class="wp-day-card-title ${m.completed ? 'completed' : ''}" onclick="openMemoModal('${m.id}')" title="点击查看编辑">${escapeHtml(m.title)}</span>
+                  </div>
+                  ${m.content ? `<div class="wp-day-card-content">${escapeHtml(m.content.slice(0, 50))}</div>` : ''}
+                  <div class="wp-day-card-footer">
+                    <span class="wp-day-card-due"><i class="far fa-clock"></i> ${formatMemoDue(m)}</span>
+                    <div class="wp-card-actions">
+                      <button type="button" class="wp-icon-btn" onclick="openMemoModal('${m.id}')" title="编辑详情"><i class="fas fa-edit"></i></button>
+                      <button type="button" class="wp-icon-btn text-danger" onclick="deleteMemoFromBoard('${m.id}')" title="删除"><i class="fas fa-trash-alt"></i></button>
                     </div>
                   </div>
-                `).join('')}
-              </div>
-
-              <div class="wp-day-quick-add">
-                <input type="text" class="wp-day-input" placeholder="+ 添加攻坚计划，回车保存" onkeydown="if(event.key==='Enter')addPlanForSpecificDate('${day.dateKey}', this)">
-              </div>
+                </div>
+              `).join('')}
             </div>
-          `).join('')}
-        </div>
+          </div>
+        `).join('')}
       </div>
     </div>
   `;
@@ -6751,6 +6704,60 @@ async function rollOverMemoToNextWeek(memoId) {
   }
 }
 
+async function rollOverAllPendingToNextWeek() {
+  const { monday, sunday, nextMonday } = getWeekRange(state.weeklyPlanDate);
+  const monKey = dateKey(monday);
+  const sunKey = dateKey(sunday);
+  const targetDate = dateKey(nextMonday);
+
+  const targetUserId = getWeeklyTargetUserId();
+  const userMemos = state.memos.filter(m => Number(m.ownerId) === targetUserId);
+  const pending = userMemos.filter(m => m.date >= monKey && m.date <= sunKey && !m.completed);
+
+  if (pending.length === 0) {
+    showWeeklyFeedback('没有需要流转的待办事项');
+    return;
+  }
+
+  if (!confirm(`确定要将本周未完成的 ${pending.length} 项事项批量流转至下周一 (${targetDate}) 吗？`)) return;
+
+  let successCount = 0;
+  for (const memo of pending) {
+    try {
+      const titlePrefix = memo.title.includes('流转') || memo.title.includes('计划') ? '' : '[上周流转] ';
+      const updatedTitle = titlePrefix + memo.title;
+      let targetDueTime = `${targetDate}T18:00:00`;
+      if (memo.dueTime) {
+        const d = new Date(memo.dueTime);
+        if (!Number.isNaN(d.getTime())) {
+          targetDueTime = `${targetDate}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+        }
+      }
+      const updatedData = {
+        title: updatedTitle,
+        date: targetDate,
+        dueTime: targetDueTime,
+        completed: false
+      };
+      const res = await request(`/memos/${memo.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updatedData)
+      });
+      const idx = state.memos.findIndex(m => String(m.id) === String(memo.id));
+      if (idx !== -1) {
+        state.memos[idx] = res.memo || { ...state.memos[idx], ...updatedData };
+      }
+      successCount++;
+    } catch (e) {
+      console.error('Failed to rollover memo', memo.id, e);
+    }
+  }
+
+  renderMultiMonthCalendar();
+  renderWeeklyPlanPage();
+  showWeeklyFeedback(`✔ 已成功将 ${successCount} 项待办事项批量顺延至下周计划 (${targetDate})！`);
+}
+
 function copyWeeklyReportMarkdown() {
   const { monday, sunday, nextMonday, nextSunday } = getWeekRange(state.weeklyPlanDate);
   const weekNum = getWeekNumber(monday);
@@ -6855,6 +6862,7 @@ window.shiftWeeklyPlanWeek = shiftWeeklyPlanWeek;
 window.setWeeklyPlanToCurrentWeek = setWeeklyPlanToCurrentWeek;
 window.switchWeeklyPlanView = switchWeeklyPlanView;
 window.rollOverMemoToNextWeek = rollOverMemoToNextWeek;
+window.rollOverAllPendingToNextWeek = rollOverAllPendingToNextWeek;
 window.addPlanForSpecificDate = addPlanForSpecificDate;
 window.toggleMemoCompleteFromBoard = toggleMemoCompleteFromBoard;
 window.deleteMemoFromBoard = deleteMemoFromBoard;

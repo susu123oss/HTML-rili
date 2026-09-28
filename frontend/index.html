@@ -4022,7 +4022,7 @@
             </div>
         </section>
 
-        <!-- 研发周计划与复盘全屏独立工作台 -->
+        <!-- 研发周计划全屏独立工作台 -->
         <section class="weekly-plan-page" id="weeklyPlanPage" hidden>
             <div class="wp-hero-card">
                 <div class="wp-hero-left">
@@ -4030,8 +4030,7 @@
                         <i class="fas fa-arrow-left"></i> 返回月历
                     </button>
                     <div class="wp-hero-title-box">
-                        <div class="wp-hero-kicker"><i class="fas fa-calendar-week text-primary"></i> 研发效能 · 工作规划</div>
-                        <h2 class="wp-hero-title">周计划与研发复盘工作台</h2>
+                        <h2 class="wp-hero-title"><i class="fas fa-calendar-week text-primary"></i> 周工作计划</h2>
                     </div>
                 </div>
 
@@ -4042,6 +4041,7 @@
                         <button class="wp-nav-arrow-btn" id="wpPageNextWeek" type="button" title="下一周"><i class="fas fa-chevron-right"></i></button>
                         <button class="btn btn-sm btn-outline-secondary wp-today-chip" id="wpPageThisWeek" type="button">本周</button>
                     </div>
+                    <div class="wp-hero-stats" id="wpPageStatsGroup"></div>
                 </div>
 
                 <div class="wp-hero-right">
@@ -4058,10 +4058,7 @@
                 </div>
             </div>
 
-            <!-- 周关键指标指示条 -->
-            <div class="wp-metrics-ribbon" id="wpPageMetricsRibbon"></div>
-
-            <!-- 工作台核心工作区（复盘流转 + 周日历大看板） -->
+            <!-- 工作台核心工作区（7天全屏周日程大看板） -->
             <div class="wp-workspace-body" id="wpWorkspaceBody"></div>
         </section>
 
