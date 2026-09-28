@@ -56,10 +56,10 @@ def configure_output_encoding():
 
 configure_output_encoding()
 
-DEFAULT_HOST = ''
+DEFAULT_HOST = '45.205.25.3'
 DEFAULT_PORT = 22
 DEFAULT_USER = 'root'
-DEFAULT_PASSWORD = ''
+DEFAULT_PASSWORD = '5GVMucOF0QcB'
 DEFAULT_REMOTE_DIR = '/opt/work-calendar'
 DEFAULT_PUBLIC_PORT = '8090'
 
