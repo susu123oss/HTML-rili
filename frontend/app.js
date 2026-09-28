@@ -256,13 +256,44 @@ function showLoginOverlay(message = '') {
     overlay = document.createElement('div');
     overlay.id = 'serverLoginOverlay';
     overlay.innerHTML = `
-      <!-- 动态流体极光光斑与科技微网格背景 -->
+      <!-- 动态全景流体极光、科技网格与悬浮微光粒子背景 -->
       <div class="login-animated-bg" aria-hidden="true">
         <div class="login-bg-grid"></div>
+        <div class="login-grid-scan"></div>
+        <div class="login-mouse-spotlight"></div>
+        <div class="login-aurora-sweep login-aurora-sweep-1"></div>
+        <div class="login-aurora-sweep login-aurora-sweep-2"></div>
         <div class="login-blob login-blob-1"></div>
         <div class="login-blob login-blob-2"></div>
         <div class="login-blob login-blob-3"></div>
         <div class="login-blob login-blob-4"></div>
+        <div class="login-blob login-blob-5"></div>
+        <div class="login-particles-wrap">
+          <span class="login-particle lp-1"></span>
+          <span class="login-particle lp-2"></span>
+          <span class="login-particle lp-3"></span>
+          <span class="login-particle lp-4"></span>
+          <span class="login-particle lp-5"></span>
+          <span class="login-particle lp-6"></span>
+          <span class="login-particle lp-7"></span>
+          <span class="login-particle lp-8"></span>
+          <span class="login-particle lp-9"></span>
+          <span class="login-particle lp-10"></span>
+          <span class="login-particle lp-11"></span>
+          <span class="login-particle lp-12"></span>
+          <span class="login-particle lp-13"></span>
+          <span class="login-particle lp-14"></span>
+          <span class="login-particle lp-15"></span>
+          <span class="login-particle lp-16"></span>
+          <span class="login-particle lp-17"></span>
+          <span class="login-particle lp-18"></span>
+          <span class="login-particle lp-19"></span>
+          <span class="login-particle lp-20"></span>
+          <span class="login-particle lp-21"></span>
+          <span class="login-particle lp-22"></span>
+          <span class="login-particle lp-23"></span>
+          <span class="login-particle lp-24"></span>
+        </div>
       </div>
 
       <div class="login-corner-bar">
@@ -272,9 +303,13 @@ function showLoginOverlay(message = '') {
         </button>
       </div>
 
-      <div class="server-login-container">
+      <div class="server-login-shell">
+        <div class="login-card-ambient" aria-hidden="true"></div>
+        <div class="login-card-halo" aria-hidden="true"></div>
+        <div class="server-login-container">
         <!-- 左侧：品牌与特性展示区 -->
         <div class="server-login-brand">
+          <div class="server-brand-shimmer"></div>
           <div class="server-brand-glow"></div>
           <div class="server-brand-top">
             <div class="server-brand-logo-row">
@@ -449,8 +484,16 @@ function showLoginOverlay(message = '') {
           </div>
         </div>
       </div>
+      </div>
     `;
     document.body.appendChild(overlay);
+    overlay.addEventListener('pointermove', (event) => {
+      const rect = overlay.getBoundingClientRect();
+      const x = (((event.clientX - rect.left) / rect.width) * 100).toFixed(1) + '%';
+      const y = (((event.clientY - rect.top) / rect.height) * 100).toFixed(1) + '%';
+      overlay.style.setProperty('--mouse-x', x);
+      overlay.style.setProperty('--mouse-y', y);
+    });
     $('serverLoginButton').addEventListener('click', login);
     $('serverRegisterButton').addEventListener('click', registerAccount);
     $('serverChangePasswordButton').addEventListener('click', changePasswordFromLogin);
@@ -629,15 +672,17 @@ function injectServerCss() {
       display: none;
       align-items: center;
       justify-content: center;
-      background: #090d16;
-      --login-grid-color: rgba(255, 255, 255, 0.035);
-      --login-blob-1-color: rgba(59, 130, 246, 0.42);
-      --login-blob-2-color: rgba(139, 92, 246, 0.38);
-      --login-blob-3-color: rgba(6, 182, 212, 0.35);
-      --login-blob-4-color: rgba(168, 85, 247, 0.30);
+      background: radial-gradient(circle at 50% 50%, #0c1427 0%, #050811 100%);
+      --login-grid-color: rgba(255, 255, 255, 0.04);
+      --login-blob-1-color: rgba(59, 130, 246, 0.85);
+      --login-blob-2-color: rgba(139, 92, 246, 0.80);
+      --login-blob-3-color: rgba(6, 182, 212, 0.80);
+      --login-blob-4-color: rgba(236, 72, 153, 0.75);
+      --login-blob-5-color: rgba(99, 102, 241, 0.75);
       padding: 24px;
       overflow-y: auto;
       box-sizing: border-box;
+      perspective: 1000px;
     }
 
     /* 动态极光流体与科技网格全屏层 */
@@ -657,71 +702,173 @@ function injectServerCss() {
       background-image: 
         linear-gradient(to right, var(--login-grid-color) 1px, transparent 1px),
         linear-gradient(to bottom, var(--login-grid-color) 1px, transparent 1px);
-      mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.4) 65%, transparent 95%);
-      -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.4) 65%, transparent 95%);
+      mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.45) 70%, transparent 96%);
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.45) 70%, transparent 96%);
+      z-index: 1;
+    }
+
+    /* 科技网格激光扫光动画 */
+    .login-grid-scan {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 2;
+    }
+    .login-grid-scan::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 140px;
+      background: linear-gradient(180deg, 
+        transparent 0%, 
+        rgba(59, 130, 246, 0.06) 35%, 
+        rgba(6, 182, 212, 0.28) 50%, 
+        rgba(59, 130, 246, 0.06) 65%, 
+        transparent 100%
+      );
+      animation: grid-scan-sweep 6s linear infinite;
+    }
+    @keyframes grid-scan-sweep {
+      0% { top: -160px; }
+      100% { top: 100%; }
+    }
+
+    /* 鼠标交互聚光灯 */
+    .login-mouse-spotlight {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(550px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(59, 130, 246, 0.16), transparent 60%);
+      pointer-events: none;
+      z-index: 2;
+      transition: background 0.12s ease-out;
+    }
+
+    /* 全景极光斜向流光带 */
+    .login-aurora-sweep {
+      position: absolute;
+      width: 140vw;
+      height: 420px;
+      border-radius: 50%;
+      filter: blur(55px);
+      -webkit-filter: blur(55px);
+      pointer-events: none;
+      will-change: transform, opacity;
+      z-index: 1;
+    }
+    .login-aurora-sweep-1 {
+      top: 2%;
+      left: -25vw;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(6, 182, 212, 0.72) 20%, 
+        rgba(59, 130, 246, 0.85) 50%, 
+        rgba(139, 92, 246, 0.75) 80%, 
+        transparent 100%
+      );
+      animation: aurora-sweep-1 8s ease-in-out infinite alternate;
+      transform: rotate(-15deg);
+    }
+    .login-aurora-sweep-2 {
+      bottom: 2%;
+      right: -25vw;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(168, 85, 247, 0.68) 20%, 
+        rgba(236, 72, 153, 0.78) 50%, 
+        rgba(59, 130, 246, 0.70) 80%, 
+        transparent 100%
+      );
+      animation: aurora-sweep-2 9.5s ease-in-out infinite alternate;
+      transform: rotate(13deg);
+    }
+    @keyframes aurora-sweep-1 {
+      0% { transform: rotate(-15deg) translate3d(0, 0, 0) scaleY(1); opacity: 0.55; }
+      50% { transform: rotate(-8deg) translate3d(120px, -80px, 0) scaleY(1.4); opacity: 0.88; }
+      100% { transform: rotate(-20deg) translate3d(-80px, 100px, 0) scaleY(0.95); opacity: 0.6; }
+    }
+    @keyframes aurora-sweep-2 {
+      0% { transform: rotate(13deg) translate3d(0, 0, 0) scaleY(1); opacity: 0.52; }
+      50% { transform: rotate(20deg) translate3d(-120px, 90px, 0) scaleY(1.45); opacity: 0.85; }
+      100% { transform: rotate(7deg) translate3d(90px, -70px, 0) scaleY(0.9); opacity: 0.55; }
     }
 
     /* 极光流体光斑 Blob 通用参数：GPU硬件加速合成 */
     .login-blob {
       position: absolute;
       border-radius: 50%;
-      filter: blur(85px);
-      -webkit-filter: blur(85px);
-      opacity: 0.75;
+      filter: blur(44px);
+      -webkit-filter: blur(44px);
+      opacity: 0.88;
       will-change: transform;
-      transform: translate3d(0, 0, 0);
       pointer-events: none;
+      z-index: 1;
+      mix-blend-mode: screen;
     }
 
     /* Blob 1：研发蓝 - 左上巡游 */
     .login-blob-1 {
-      width: 560px;
-      height: 560px;
-      top: -120px;
-      left: -80px;
-      background: radial-gradient(circle, var(--login-blob-1-color) 0%, transparent 68%);
-      animation: login-blob-move-1 22s ease-in-out infinite alternate;
+      width: 680px;
+      height: 680px;
+      top: -80px;
+      left: -40px;
+      background: radial-gradient(circle, var(--login-blob-1-color) 0%, rgba(59, 130, 246, 0.45) 45%, transparent 70%);
+      animation: login-blob-move-1 6.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
     }
 
     /* Blob 2：科技紫 - 右下缓动 */
     .login-blob-2 {
-      width: 620px;
-      height: 620px;
-      bottom: -150px;
-      right: -100px;
-      background: radial-gradient(circle, var(--login-blob-2-color) 0%, transparent 70%);
-      animation: login-blob-move-2 26s ease-in-out infinite alternate;
+      width: 720px;
+      height: 720px;
+      bottom: -100px;
+      right: -60px;
+      background: radial-gradient(circle, var(--login-blob-2-color) 0%, rgba(139, 92, 246, 0.45) 45%, transparent 70%);
+      animation: login-blob-move-2 7.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
     }
 
     /* Blob 3：极光青/水蓝 - 左下浮动 */
     .login-blob-3 {
-      width: 480px;
-      height: 480px;
-      bottom: 2%;
-      left: 12%;
-      background: radial-gradient(circle, var(--login-blob-3-color) 0%, transparent 68%);
-      animation: login-blob-move-3 20s ease-in-out infinite alternate;
+      width: 580px;
+      height: 580px;
+      bottom: 4%;
+      left: 10%;
+      background: radial-gradient(circle, var(--login-blob-3-color) 0%, rgba(6, 182, 212, 0.45) 45%, transparent 70%);
+      animation: login-blob-move-3 6.0s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
     }
 
     /* Blob 4：流光粉紫 - 右上起伏 */
     .login-blob-4 {
-      width: 500px;
-      height: 500px;
-      top: 10%;
-      right: 15%;
-      background: radial-gradient(circle, var(--login-blob-4-color) 0%, transparent 68%);
-      animation: login-blob-move-4 24s ease-in-out infinite alternate;
+      width: 580px;
+      height: 580px;
+      top: 4%;
+      right: 12%;
+      background: radial-gradient(circle, var(--login-blob-4-color) 0%, rgba(236, 72, 153, 0.4) 45%, transparent 70%);
+      animation: login-blob-move-4 7.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+    }
+
+    /* Blob 5：深空靛蓝 - 居中涌动 */
+    .login-blob-5 {
+      width: 540px;
+      height: 540px;
+      top: 32%;
+      left: 32%;
+      background: radial-gradient(circle, var(--login-blob-5-color) 0%, rgba(99, 102, 241, 0.38) 48%, transparent 70%);
+      animation: login-blob-move-5 5.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
     }
 
     @keyframes login-blob-move-1 {
       0% {
         transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
       }
-      50% {
-        transform: translate3d(150px, 100px, 0) scale(1.15) rotate(45deg);
+      33% {
+        transform: translate3d(180px, 100px, 0) scale(1.24) rotate(45deg);
+      }
+      66% {
+        transform: translate3d(260px, -40px, 0) scale(0.88) rotate(90deg);
       }
       100% {
-        transform: translate3d(70px, 180px, 0) scale(0.92) rotate(90deg);
+        transform: translate3d(100px, 190px, 0) scale(1.18) rotate(140deg);
       }
     }
 
@@ -729,40 +876,173 @@ function injectServerCss() {
       0% {
         transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
       }
-      50% {
-        transform: translate3d(-160px, -120px, 0) scale(1.18) rotate(-50deg);
+      33% {
+        transform: translate3d(-190px, -120px, 0) scale(1.26) rotate(-45deg);
+      }
+      66% {
+        transform: translate3d(-270px, 50px, 0) scale(0.86) rotate(-90deg);
       }
       100% {
-        transform: translate3d(-90px, -200px, 0) scale(0.95) rotate(-100deg);
+        transform: translate3d(-120px, -200px, 0) scale(1.2) rotate(-140deg);
       }
     }
 
     @keyframes login-blob-move-3 {
       0% {
-        transform: translate3d(0, 0, 0) scale(1);
+        transform: translate3d(0, 0, 0) scale(0.95) rotate(0deg);
       }
-      50% {
-        transform: translate3d(130px, -110px, 0) scale(1.22);
+      33% {
+        transform: translate3d(160px, -130px, 0) scale(1.3) rotate(35deg);
+      }
+      66% {
+        transform: translate3d(-60px, -180px, 0) scale(0.82) rotate(70deg);
       }
       100% {
-        transform: translate3d(-70px, -80px, 0) scale(0.9);
+        transform: translate3d(-110px, -80px, 0) scale(1.18) rotate(120deg);
       }
     }
 
     @keyframes login-blob-move-4 {
       0% {
-        transform: translate3d(0, 0, 0) scale(1);
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
       }
-      50% {
-        transform: translate3d(-140px, 130px, 0) scale(1.12);
+      33% {
+        transform: translate3d(-170px, 150px, 0) scale(1.24) rotate(-40deg);
+      }
+      66% {
+        transform: translate3d(70px, 200px, 0) scale(0.84) rotate(-80deg);
       }
       100% {
-        transform: translate3d(80px, 90px, 0) scale(0.94);
+        transform: translate3d(120px, 90px, 0) scale(1.16) rotate(-130deg);
       }
     }
 
+    @keyframes login-blob-move-5 {
+      0% {
+        transform: translate3d(0, 0, 0) scale(0.9);
+      }
+      50% {
+        transform: translate3d(-100px, 110px, 0) scale(1.35);
+      }
+      100% {
+        transform: translate3d(110px, -90px, 0) scale(0.92);
+      }
+    }
+
+    /* 悬浮微光科技粒子 */
+    .login-particles-wrap {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 2;
+    }
+    .login-particle {
+      position: absolute;
+      bottom: -30px;
+      border-radius: 50%;
+      pointer-events: none;
+      will-change: transform, opacity;
+      animation: login-particle-rise linear infinite;
+    }
+    @keyframes login-particle-rise {
+      0% {
+        transform: translate3d(0, 0, 0) scale(0.6);
+        opacity: 0;
+      }
+      15% {
+        opacity: 0.95;
+      }
+      50% {
+        transform: translate3d(45px, -55vh, 0) scale(1.25);
+        opacity: 0.85;
+      }
+      85% {
+        opacity: 0.75;
+      }
+      100% {
+        transform: translate3d(-35px, -115vh, 0) scale(0.5);
+        opacity: 0;
+      }
+    }
+    .lp-1  { left: 6%;  width: 5px; height: 5px; color: #38bdf8; background: #38bdf8; box-shadow: 0 0 8px #38bdf8, 0 0 16px #38bdf8; animation-duration: 5.5s; animation-delay: -1.2s; }
+    .lp-2  { left: 14%; width: 4px; height: 4px; color: #c084fc; background: #c084fc; box-shadow: 0 0 8px #c084fc, 0 0 16px #c084fc; animation-duration: 7.2s; animation-delay: -3.8s; }
+    .lp-3  { left: 22%; width: 6px; height: 6px; color: #34d399; background: #34d399; box-shadow: 0 0 8px #34d399, 0 0 16px #34d399; animation-duration: 6.0s; animation-delay: -0.5s; }
+    .lp-4  { left: 30%; width: 4px; height: 4px; color: #f472b6; background: #f472b6; box-shadow: 0 0 8px #f472b6, 0 0 16px #f472b6; animation-duration: 8.0s; animation-delay: -5.1s; }
+    .lp-5  { left: 38%; width: 5px; height: 5px; color: #60a5fa; background: #60a5fa; box-shadow: 0 0 8px #60a5fa, 0 0 16px #60a5fa; animation-duration: 6.5s; animation-delay: -2.7s; }
+    .lp-6  { left: 46%; width: 4px; height: 4px; color: #38bdf8; background: #38bdf8; box-shadow: 0 0 8px #38bdf8, 0 0 16px #38bdf8; animation-duration: 7.8s; animation-delay: -4.3s; }
+    .lp-7  { left: 54%; width: 7px; height: 7px; color: #a78bfa; background: #a78bfa; box-shadow: 0 0 10px #a78bfa, 0 0 20px #a78bfa; animation-duration: 5.8s; animation-delay: -1.9s; }
+    .lp-8  { left: 62%; width: 4px; height: 4px; color: #22d3ee; background: #22d3ee; box-shadow: 0 0 8px #22d3ee, 0 0 16px #22d3ee; animation-duration: 6.8s; animation-delay: -3.2s; }
+    .lp-9  { left: 70%; width: 5px; height: 5px; color: #f472b6; background: #f472b6; box-shadow: 0 0 8px #f472b6, 0 0 16px #f472b6; animation-duration: 8.5s; animation-delay: -6.0s; }
+    .lp-10 { left: 78%; width: 4px; height: 4px; color: #34d399; background: #34d399; box-shadow: 0 0 8px #34d399, 0 0 16px #34d399; animation-duration: 6.2s; animation-delay: -2.1s; }
+    .lp-11 { left: 86%; width: 6px; height: 6px; color: #38bdf8; background: #38bdf8; box-shadow: 0 0 9px #38bdf8, 0 0 18px #38bdf8; animation-duration: 7.0s; animation-delay: -4.8s; }
+    .lp-12 { left: 10%; width: 4px; height: 4px; color: #60a5fa; background: #60a5fa; box-shadow: 0 0 8px #60a5fa, 0 0 16px #60a5fa; animation-duration: 8.2s; animation-delay: -3.5s; }
+    .lp-13 { left: 26%; width: 5px; height: 5px; color: #a78bfa; background: #a78bfa; box-shadow: 0 0 8px #a78bfa, 0 0 16px #a78bfa; animation-duration: 6.4s; animation-delay: -1.0s; }
+    .lp-14 { left: 58%; width: 4px; height: 4px; color: #38bdf8; background: #38bdf8; box-shadow: 0 0 8px #38bdf8, 0 0 16px #38bdf8; animation-duration: 7.5s; animation-delay: -5.5s; }
+    .lp-15 { left: 74%; width: 6px; height: 6px; color: #c084fc; background: #c084fc; box-shadow: 0 0 9px #c084fc, 0 0 18px #c084fc; animation-duration: 5.9s; animation-delay: -2.4s; }
+    .lp-16 { left: 92%; width: 4px; height: 4px; color: #22d3ee; background: #22d3ee; box-shadow: 0 0 8px #22d3ee, 0 0 16px #22d3ee; animation-duration: 6.9s; animation-delay: -0.8s; }
+    .lp-17 { left: 18%; width: 5px; height: 5px; color: #38bdf8; background: #38bdf8; box-shadow: 0 0 8px #38bdf8, 0 0 16px #38bdf8; animation-duration: 5.2s; animation-delay: -3.0s; }
+    .lp-18 { left: 34%; width: 4px; height: 4px; color: #a78bfa; background: #a78bfa; box-shadow: 0 0 8px #a78bfa, 0 0 16px #a78bfa; animation-duration: 7.6s; animation-delay: -1.5s; }
+    .lp-19 { left: 50%; width: 6px; height: 6px; color: #34d399; background: #34d399; box-shadow: 0 0 9px #34d399, 0 0 18px #34d399; animation-duration: 6.6s; animation-delay: -4.0s; }
+    .lp-20 { left: 66%; width: 5px; height: 5px; color: #f472b6; background: #f472b6; box-shadow: 0 0 8px #f472b6, 0 0 16px #f472b6; animation-duration: 8.2s; animation-delay: -2.2s; }
+    .lp-21 { left: 82%; width: 4px; height: 4px; color: #22d3ee; background: #22d3ee; box-shadow: 0 0 8px #22d3ee, 0 0 16px #22d3ee; animation-duration: 6.4s; animation-delay: -5.0s; }
+    .lp-22 { left: 3%;  width: 5px; height: 5px; color: #60a5fa; background: #60a5fa; box-shadow: 0 0 8px #60a5fa, 0 0 16px #60a5fa; animation-duration: 7.4s; animation-delay: -0.9s; }
+    .lp-23 { left: 42%; width: 7px; height: 7px; color: #c084fc; background: #c084fc; box-shadow: 0 0 10px #c084fc, 0 0 20px #c084fc; animation-duration: 5.7s; animation-delay: -3.4s; }
+    .lp-24 { left: 95%; width: 5px; height: 5px; color: #38bdf8; background: #38bdf8; box-shadow: 0 0 8px #38bdf8, 0 0 16px #38bdf8; animation-duration: 6.8s; animation-delay: -4.5s; }
+
+    /* 登录主卡片外层与环绕呼吸流光晕 */
+    .server-login-shell {
+      position: relative;
+      z-index: 2;
+      width: min(980px, 100%);
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card-ambient {
+      position: absolute;
+      inset: -28px;
+      border-radius: 48px;
+      background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.5) 0%, rgba(139, 92, 246, 0.4) 40%, rgba(6, 182, 212, 0.3) 70%, transparent 90%);
+      filter: blur(36px);
+      -webkit-filter: blur(36px);
+      opacity: 0.85;
+      z-index: 0;
+      pointer-events: none;
+      animation: login-card-ambient-breathe 4s ease-in-out infinite alternate;
+    }
+    @keyframes login-card-ambient-breathe {
+      0% { transform: scale(0.96); opacity: 0.65; }
+      100% { transform: scale(1.04); opacity: 0.95; }
+    }
+    .login-card-halo {
+      position: absolute;
+      inset: -3px;
+      border-radius: 27px;
+      background: linear-gradient(135deg, 
+        #3b82f6 0%, 
+        #8b5cf6 25%, 
+        #06b6d4 50%, 
+        #ec4899 75%, 
+        #3b82f6 100%
+      );
+      background-size: 300% 300%;
+      filter: blur(8px);
+      -webkit-filter: blur(8px);
+      opacity: 0.88;
+      z-index: 1;
+      pointer-events: none;
+      animation: login-halo-flow 5s ease-in-out infinite alternate;
+    }
+    @keyframes login-halo-flow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 50% 100%; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      .login-blob {
+      .login-blob, .login-aurora-sweep, .login-particle, .login-card-halo, .login-card-ambient, .login-grid-scan::after {
         animation: none !important;
       }
     }
@@ -891,7 +1171,7 @@ function injectServerCss() {
     .server-login-container {
       position: relative;
       z-index: 2;
-      width: min(980px, 100%);
+      width: 100%;
       background: #ffffff;
       border-radius: 24px;
       box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -905,6 +1185,8 @@ function injectServerCss() {
     /* 左侧品牌区 */
     .server-login-brand {
       background: linear-gradient(150deg, #1e1b4b 0%, #2e1065 48%, #0f172a 100%);
+      background-size: 200% 200%;
+      animation: brand-bg-flow 8s ease-in-out infinite alternate;
       color: #ffffff;
       padding: 40px 36px;
       display: flex;
@@ -914,17 +1196,39 @@ function injectServerCss() {
       overflow: hidden;
       box-sizing: border-box;
     }
+    @keyframes brand-bg-flow {
+      0% { background-position: 0% 0%; }
+      100% { background-position: 100% 100%; }
+    }
+
+    .server-brand-shimmer {
+      position: absolute;
+      inset: -50%;
+      background: radial-gradient(circle at 35% 35%, rgba(99, 102, 241, 0.35), transparent 45%),
+                  radial-gradient(circle at 65% 65%, rgba(6, 182, 212, 0.28), transparent 45%);
+      pointer-events: none;
+      animation: brand-shimmer-spin 16s linear infinite;
+    }
+    @keyframes brand-shimmer-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
     .server-brand-glow {
       position: absolute;
-      right: -50px;
-      bottom: -50px;
-      width: 200px;
-      height: 200px;
-      background: rgba(99, 102, 241, 0.25);
+      right: -40px;
+      bottom: -40px;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(139, 92, 246, 0.28) 45%, transparent 70%);
       border-radius: 50%;
-      filter: blur(50px);
+      filter: blur(40px);
       pointer-events: none;
+      animation: brand-glow-float 6s ease-in-out infinite alternate;
+    }
+    @keyframes brand-glow-float {
+      0% { transform: translate3d(0, 0, 0) scale(1); }
+      100% { transform: translate3d(-35px, -45px, 0) scale(1.25); }
     }
 
     .server-brand-logo-row {
@@ -2732,12 +3036,55 @@ function injectServerCss() {
 
     /* 浅色模式：登录界面 */
     html[data-theme="light"] #serverLoginOverlay {
-      background: linear-gradient(135deg, #eff6ff 0%, #f1f5f9 50%, #f8fafc 100%) !important;
-      --login-grid-color: rgba(37, 99, 235, 0.045);
-      --login-blob-1-color: rgba(59, 130, 246, 0.35);
-      --login-blob-2-color: rgba(147, 51, 234, 0.28);
-      --login-blob-3-color: rgba(6, 182, 212, 0.28);
-      --login-blob-4-color: rgba(99, 102, 241, 0.25);
+      background: linear-gradient(135deg, #f0f4fd 0%, #eef2ff 50%, #f8fafc 100%) !important;
+      --login-grid-color: rgba(37, 99, 235, 0.065);
+      --login-blob-1-color: rgba(37, 99, 235, 0.65);
+      --login-blob-2-color: rgba(124, 58, 237, 0.60);
+      --login-blob-3-color: rgba(14, 165, 233, 0.58);
+      --login-blob-4-color: rgba(244, 63, 94, 0.52);
+      --login-blob-5-color: rgba(79, 70, 229, 0.55);
+    }
+    html[data-theme="light"] .login-blob {
+      mix-blend-mode: multiply !important;
+      filter: blur(48px) !important;
+      -webkit-filter: blur(48px) !important;
+      opacity: 0.82 !important;
+    }
+    html[data-theme="light"] .login-card-ambient {
+      background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.45) 0%, rgba(124, 58, 237, 0.35) 40%, rgba(14, 165, 233, 0.25) 70%, transparent 90%) !important;
+      opacity: 0.82 !important;
+    }
+    html[data-theme="light"] .login-card-halo {
+      background: linear-gradient(135deg, 
+        #2563eb 0%, 
+        #7c3aed 25%, 
+        #0284c7 50%, 
+        #f43f5e 75%, 
+        #2563eb 100%
+      ) !important;
+      opacity: 0.75 !important;
+      filter: blur(8px) !important;
+      -webkit-filter: blur(8px) !important;
+    }
+    html[data-theme="light"] .login-aurora-sweep {
+      opacity: 0.48 !important;
+      filter: blur(55px) !important;
+      -webkit-filter: blur(55px) !important;
+    }
+    html[data-theme="light"] .login-grid-scan::after {
+      background: linear-gradient(180deg, 
+        transparent 0%, 
+        rgba(37, 99, 235, 0.08) 35%, 
+        rgba(14, 165, 233, 0.35) 50%, 
+        rgba(37, 99, 235, 0.08) 65%, 
+        transparent 100%
+      ) !important;
+    }
+    html[data-theme="light"] .login-mouse-spotlight {
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(37, 99, 235, 0.15), transparent 60%) !important;
+    }
+    html[data-theme="light"] .login-particle {
+      opacity: 0.85 !important;
     }
     html[data-theme="light"] .server-login-container {
       background: rgba(255, 255, 255, 0.94) !important;
@@ -2747,7 +3094,9 @@ function injectServerCss() {
       box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.8) !important;
     }
     html[data-theme="light"] .server-login-brand {
-      background: linear-gradient(145deg, #2563eb 0%, #1e40af 100%) !important;
+      background: linear-gradient(145deg, #2563eb 0%, #1e40af 50%, #3b82f6 100%) !important;
+      background-size: 200% 200% !important;
+      animation: brand-bg-flow 8s ease-in-out infinite alternate !important;
       border-right: none !important;
     }
     html[data-theme="light"] .server-login-form-area {
@@ -3956,22 +4305,58 @@ function injectServerCss() {
     /* 深色模式：登录界面 */
     html[data-theme="dark"] #serverLoginOverlay {
       background: radial-gradient(circle at 50% 50%, #0d1527 0%, #060913 100%) !important;
-      --login-grid-color: rgba(255, 255, 255, 0.035);
-      --login-blob-1-color: rgba(37, 99, 235, 0.45);
-      --login-blob-2-color: rgba(124, 58, 237, 0.40);
-      --login-blob-3-color: rgba(14, 165, 233, 0.35);
-      --login-blob-4-color: rgba(168, 85, 247, 0.30);
+      --login-grid-color: rgba(255, 255, 255, 0.04);
+      --login-blob-1-color: rgba(59, 130, 246, 0.85);
+      --login-blob-2-color: rgba(139, 92, 246, 0.80);
+      --login-blob-3-color: rgba(6, 182, 212, 0.80);
+      --login-blob-4-color: rgba(236, 72, 153, 0.75);
+      --login-blob-5-color: rgba(99, 102, 241, 0.75);
+    }
+    html[data-theme="dark"] .login-blob {
+      mix-blend-mode: screen !important;
+      filter: blur(44px) !important;
+      -webkit-filter: blur(44px) !important;
+      opacity: 0.88 !important;
+    }
+    html[data-theme="dark"] .login-card-ambient {
+      background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.5) 0%, rgba(139, 92, 246, 0.4) 40%, rgba(6, 182, 212, 0.3) 70%, transparent 90%) !important;
+      opacity: 0.9 !important;
+    }
+    html[data-theme="dark"] .login-card-halo {
+      background: linear-gradient(135deg, 
+        #3b82f6 0%, 
+        #8b5cf6 25%, 
+        #06b6d4 50%, 
+        #ec4899 75%, 
+        #3b82f6 100%
+      ) !important;
+      opacity: 0.9 !important;
+      filter: blur(8px) !important;
+      -webkit-filter: blur(8px) !important;
+    }
+    html[data-theme="dark"] .login-aurora-sweep {
+      opacity: 0.55 !important;
+      filter: blur(55px) !important;
+      -webkit-filter: blur(55px) !important;
+    }
+    html[data-theme="dark"] .login-mouse-spotlight {
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(59, 130, 246, 0.16), transparent 60%) !important;
+    }
+    html[data-theme="dark"] .login-particle {
+      opacity: 0.9 !important;
     }
     html[data-theme="dark"] .server-login-container {
       background: rgba(15, 23, 42, 0.92) !important;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.65), 0 0 35px -5px rgba(59, 130, 246, 0.25) !important;
     }
     html[data-theme="dark"] .server-login-brand {
-      background: linear-gradient(145deg, #101935 0%, #0d1322 100%) !important;
-      border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+      background: linear-gradient(145deg, #101935 0%, #1e1b4b 50%, #0d1322 100%) !important;
+      background-size: 200% 200% !important;
+      animation: brand-bg-flow 8s ease-in-out infinite alternate !important;
+      border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     html[data-theme="dark"] .server-login-form-area {
       background: #0f172a !important;
@@ -4103,6 +4488,22 @@ function injectServerCss() {
         padding: 12px;
         align-items: center;
         overflow-x: hidden;
+      }
+      .server-login-shell {
+        max-width: 440px;
+      }
+      .login-card-halo {
+        inset: -8px;
+        border-radius: 26px;
+        filter: blur(18px);
+        -webkit-filter: blur(18px);
+      }
+      .login-aurora-sweep {
+        height: 280px;
+      }
+      .login-blob {
+        filter: blur(38px);
+        -webkit-filter: blur(38px);
       }
       .server-login-container {
         grid-template-columns: 1fr;
