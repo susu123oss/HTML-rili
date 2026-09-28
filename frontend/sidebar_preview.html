@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>侧边栏后台布局预览 - 工作日历</title>
+    <link rel="stylesheet" href="css/all.min.css">
+    <link rel="stylesheet" href="./vendor/tabler-core/tabler.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --primary-hover: #1d4ed8;
+            --sidebar-width: 240px;
+            --sidebar-collapsed-width: 68px;
+            --header-height: 56px;
+            --bg-canvas: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* 主架构容器 (App Shell) */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+            width: 100vw;
+        }
+
+        /* ================= 左侧侧边栏 (Sidebar) ================= */
+        .app-sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            z-index: 100;
+            user-select: none;
+        }
+
+        .sidebar-header {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border-color);
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: #0f172a;
+            transition: opacity 0.2s ease;
+        }
+
+        .logo-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            background: #dbeafe;
+            color: #1e40af;
+            border-radius: 999px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-group-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #94a3b8;
+            padding: 10px 10px 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            color: #475569;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.18s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            border: none;
+            background: transparent;
+            width: 100%;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .nav-item:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .nav-item.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .nav-item i {
+            font-size: 1.05rem;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+            color: #64748b;
+            transition: color 0.18s ease;
+        }
+
+        .nav-item:hover i {
+            color: #0f172a;
+        }
+
+        .nav-item.active i {
+            color: #2563eb;
+        }
+
+        .nav-item .nav-label {
+            flex: 1;
+            transition: opacity 0.2s ease;
+        }
+
+        .nav-item .nav-pill {
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: white;
+            font-weight: 600;
+            line-height: 1;
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background: #f1f5f9;
+            margin: 8px 6px;
+        }
+
+        .sidebar-footer {
+            padding: 12px 10px;
+            border-top: 1px solid var(--border-color);
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 9px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            overflow: hidden;
+        }
+
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #e0f2fe;
+            color: #0369a1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 0.72rem;
+            color: #64748b;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ================= 折叠状态 (Collapsed State) ================= */
+        .app-sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .app-sidebar.collapsed .logo-text,
+        .app-sidebar.collapsed .logo-badge,
+        .app-sidebar.collapsed .nav-label,
+        .app-sidebar.collapsed .nav-group-title,
+        .app-sidebar.collapsed .user-info,
+        .app-sidebar.collapsed .nav-pill {
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        .app-sidebar.collapsed .sidebar-header {
+            padding: 0;
+            justify-content: center;
+        }
+
+        .app-sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .app-sidebar.collapsed .user-card {
+            padding: 6px;
+            justify-content: center;
+        }
+
+        /* ================= 右侧主工作台 (App Main) ================= */
+        .app-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-canvas);
+        }
+
+        /* 顶部通栏导航 (App Header) */
+        .app-header {
+            height: var(--header-height);
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* 侧栏折叠按钮（对应参考图中的 |<- 图标） */
+        .sidebar-toggle-btn {
+            width: 34px;
+            height: 34px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+
+        .header-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-search {
+            position: relative;
+            width: 260px;
+        }
+
+        .header-search input {
+            width: 100%;
+            height: 34px;
+            padding: 0 12px 0 34px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.85rem;
+            outline: none;
+            background: #f8fafc;
+            transition: all 0.2s ease;
+        }
+
+        .header-search input:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .header-search i {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .member-select {
+            height: 34px;
+            padding: 0 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.85rem;
+            background: #ffffff;
+            color: #334155;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .btn-new-memo {
+            height: 34px;
+            padding: 0 14px;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+            transition: all 0.18s ease;
+        }
+
+        .btn-new-memo:hover {
+            background: var(--primary-hover);
+        }
+
+        /* 主体内容区 (App Body) */
+        .app-body {
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 100%;
+        }
+
+        /* 团队排行榜卡片 (Leaderboard Card) */
+        .preview-leaderboard-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .leaderboard-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #0f172a;
+        }
+
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .member-rank-item {
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rank-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: #f59e0b;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .rank-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .rank-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .rank-role {
+            font-size: 0.72rem;
+            color: #64748b;
+        }
+
+        .rank-rate {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        /* 日历主卡片 (Calendar Card) */
+        .preview-calendar-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .calendar-ctrl-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .cal-month-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cal-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .btn-nav-arrow {
+            width: 28px;
+            height: 28px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .btn-today {
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 6px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .cal-stats {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-chip {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .stat-total { background: #eff6ff; color: #2563eb; }
+        .stat-done { background: #ecfdf5; color: #059669; }
+
+        /* 简要日历网格示意 */
+        .sample-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .grid-header {
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #64748b;
+            padding: 6px 0;
+        }
+
+        .sample-day-cell {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            min-height: 105px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sample-day-cell.today {
+            border-color: #3b82f6;
+            background: #ffffff;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+
+        .day-num {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .memo-tag {
+            font-size: 0.72rem;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background: #ffffff;
+            border-left: 3px solid #3b82f6;
+            color: #334155;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .memo-tag.done {
+            border-left-color: #10b981;
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- 左侧可折叠后台侧栏 (Sidebar) -->
+        <aside class="app-sidebar" id="appSidebar">
+            <!-- 侧栏顶部 Logo 与系统名 -->
+            <div class="sidebar-header">
+                <a href="#" class="sidebar-logo">
+                    <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                    <span class="logo-text">工作日历</span>
+                    <span class="logo-badge">PRO</span>
+                </a>
+            </div>
+
+            <!-- 侧栏导航菜单 (按参考图高保真打造) -->
+            <nav class="sidebar-nav">
+                <div class="nav-group-title">核心工作台</div>
+                <button class="nav-item active">
+                    <i class="fas fa-th-large"></i>
+                    <span class="nav-label">工作日历</span>
+                </button>
+                <button class="nav-item">
+                    <i class="fas fa-tasks"></i>
+                    <span class="nav-label">周计划与周报</span>
+                </button>
+                <button class="nav-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="nav-label">研发大屏</span>
+                </button>
+
+                <div class="sidebar-divider"></div>
+                <div class="nav-group-title">协同与管理</div>
+                <button class="nav-item">
+                    <i class="fas fa-paper-plane"></i>
+                    <span class="nav-label">任务发布</span>
+                </button>
+                <button class="nav-item">
+                    <i class="fas fa-bell"></i>
+                    <span class="nav-label">事项提醒</span>
+                    <span class="nav-pill">2</span>
+                </button>
+                <button class="nav-item">
+                    <i class="fas fa-database"></i>
+                    <span class="nav-label">数据管理</span>
+                </button>
+                <button class="nav-item">
+                    <i class="fas fa-file-excel"></i>
+                    <span class="nav-label">Excel 导出</span>
+                </button>
+
+                <div class="sidebar-divider"></div>
+                <div class="nav-group-title">系统偏好</div>
+                <button class="nav-item" id="themeToggleBtn">
+                    <i class="fas fa-moon"></i>
+                    <span class="nav-label">深浅色主题</span>
+                </button>
+                <button class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-label">系统设置</span>
+                </button>
+            </nav>
+
+            <!-- 侧栏底部个人信息与登出 -->
+            <div class="sidebar-footer">
+                <div class="user-card">
+                    <div class="user-avatar">管</div>
+                    <div class="user-info">
+                        <div class="user-name">系统管理员</div>
+                        <div class="user-role">经理 · 研发部</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右侧主内容展示区 (Main Content) -->
+        <main class="app-main">
+            <!-- 顶部通栏导航栏 (Header) -->
+            <header class="app-header">
+                <div class="header-left">
+                    <!-- 折叠展开按钮（对标参考图红箭头指示的 [|<-] 按钮） -->
+                    <button class="sidebar-toggle-btn" id="sidebarToggle" title="折叠/展开侧栏">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <!-- 面包屑标题（对标参考图红箭头指示的「仪表盘」标题） -->
+                    <div class="header-breadcrumb">
+                        <span>工作日历</span>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <div class="header-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="搜索备忘录或事项...">
+                    </div>
+                    <select class="member-select">
+                        <option>全部成员</option>
+                        <option>邹木生</option>
+                        <option>蔡涛</option>
+                        <option>廖斌保</option>
+                    </select>
+                    <button class="btn-new-memo">
+                        <i class="fas fa-plus"></i> 新建备忘录
+                    </button>
+                </div>
+            </header>
+
+            <!-- 主体页面内容：不再居中挤压，自然充满右侧空间 -->
+            <div class="app-body">
+                <!-- 团队完成率竞赛榜 -->
+                <div class="preview-leaderboard-card">
+                    <div class="leaderboard-header">
+                        <div class="leaderboard-title">
+                            <i class="fas fa-trophy" style="color:#f59e0b;"></i> 2026年9月 团队完成竞赛榜
+                        </div>
+                        <span style="font-size:0.78rem;color:#64748b;">按当月完成率排序</span>
+                    </div>
+                    <div class="leaderboard-grid">
+                        <div class="member-rank-item">
+                            <div class="rank-num">1</div>
+                            <div class="rank-info">
+                                <div class="rank-name">邹木生 👑</div>
+                                <div class="rank-role">助理电气工程师 · 研发部</div>
+                            </div>
+                            <div class="rank-rate">100%</div>
+                        </div>
+                        <div class="member-rank-item">
+                            <div class="rank-num" style="background:#64748b;">2</div>
+                            <div class="rank-info">
+                                <div class="rank-name">蔡涛</div>
+                                <div class="rank-role">储备干部 · 研发部</div>
+                            </div>
+                            <div class="rank-rate">100%</div>
+                        </div>
+                        <div class="member-rank-item">
+                            <div class="rank-num" style="background:#b45309;">3</div>
+                            <div class="rank-info">
+                                <div class="rank-name">廖斌保</div>
+                                <div class="rank-role">结构工程师 · 研发部</div>
+                            </div>
+                            <div class="rank-rate">100%</div>
+                        </div>
+                        <div class="member-rank-item">
+                            <div class="rank-num" style="background:#475569;">4</div>
+                            <div class="rank-info">
+                                <div class="rank-name">陈强</div>
+                                <div class="rank-role">结构工程师 · 研发部</div>
+                            </div>
+                            <div class="rank-rate">100%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 日历卡片 -->
+                <div class="preview-calendar-card">
+                    <div class="calendar-ctrl-bar">
+                        <div class="cal-month-nav">
+                            <button class="btn-nav-arrow"><i class="fas fa-chevron-left"></i></button>
+                            <span class="cal-title">2026年9月</span>
+                            <button class="btn-nav-arrow"><i class="fas fa-chevron-right"></i></button>
+                            <button class="btn-today">今天</button>
+                        </div>
+                        <div class="cal-stats">
+                            <span class="stat-chip stat-total">事项 252</span>
+                            <span class="stat-chip stat-done">已完成 252</span>
+                        </div>
+                    </div>
+
+                    <!-- 日历表格示意 -->
+                    <div class="sample-grid">
+                        <div class="grid-header">日</div>
+                        <div class="grid-header">一</div>
+                        <div class="grid-header">二</div>
+                        <div class="grid-header">三</div>
+                        <div class="grid-header">四</div>
+                        <div class="grid-header">五</div>
+                        <div class="grid-header">六</div>
+
+                        <!-- 示例日历格 -->
+                        <div class="sample-day-cell"><div class="day-num" style="color:#94a3b8;">30</div></div>
+                        <div class="sample-day-cell"><div class="day-num" style="color:#94a3b8;">31</div></div>
+                        <div class="sample-day-cell">
+                            <div class="day-num">1</div>
+                            <div class="memo-tag">家储结构评审</div>
+                            <div class="memo-tag done">电气图纸输出</div>
+                        </div>
+                        <div class="sample-day-cell">
+                            <div class="day-num">2</div>
+                            <div class="memo-tag">储能柜接线调试</div>
+                        </div>
+                        <div class="sample-day-cell">
+                            <div class="day-num">3</div>
+                            <div class="memo-tag">F32 体机工程图</div>
+                        </div>
+                        <div class="sample-day-cell">
+                            <div class="day-num">4</div>
+                            <div class="memo-tag done">样机材料清点</div>
+                        </div>
+                        <div class="sample-day-cell"><div class="day-num">5</div></div>
+
+                        <div class="sample-day-cell"><div class="day-num">6</div></div>
+                        <div class="sample-day-cell"><div class="day-num">7</div><div class="memo-tag">周例会汇报</div></div>
+                        <div class="sample-day-cell"><div class="day-num">8</div></div>
+                        <div class="sample-day-cell"><div class="day-num">9</div><div class="memo-tag">软件架构升级</div></div>
+                        <div class="sample-day-cell"><div class="day-num">10</div></div>
+                        <div class="sample-day-cell"><div class="day-num">11</div></div>
+                        <div class="sample-day-cell"><div class="day-num">12</div></div>
+
+                        <div class="sample-day-cell"><div class="day-num">27</div><div class="memo-tag">w10工程图导出</div><div class="memo-tag done">完成率80%图纸</div></div>
+                        <div class="sample-day-cell today">
+                            <div class="day-num" style="color:#2563eb;">28 (今天)</div>
+                            <div class="memo-tag" style="border-left-color:#2563eb;font-weight:600;">系统改版升级</div>
+                            <div class="memo-tag done">备忘录功能验收</div>
+                        </div>
+                        <div class="sample-day-cell"><div class="day-num">29</div></div>
+                        <div class="sample-day-cell"><div class="day-num">30</div></div>
+                        <div class="sample-day-cell"><div class="day-num" style="color:#94a3b8;">1</div></div>
+                        <div class="sample-day-cell"><div class="day-num" style="color:#94a3b8;">2</div></div>
+                        <div class="sample-day-cell"><div class="day-num" style="color:#94a3b8;">3</div></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const sidebar = document.getElementById('appSidebar');
+        const toggleBtn = document.getElementById('sidebarToggle');
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+    </script>
+</body>
+</html>
