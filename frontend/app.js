@@ -266,7 +266,6 @@ function showLoginOverlay(message = '') {
       <div class="server-login-container">
         <!-- 左侧：品牌与特性展示区 -->
         <div class="server-login-brand">
-          <div class="server-brand-glow"></div>
           <div class="server-brand-top">
             <div class="server-brand-logo-row">
               <div class="server-brand-logo-icon">📅</div>
@@ -620,9 +619,7 @@ function injectServerCss() {
       display: none;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 15% 20%, rgba(67, 97, 238, 0.22) 0%, transparent 45%),
-                  radial-gradient(circle at 85% 80%, rgba(123, 31, 162, 0.22) 0%, transparent 45%),
-                  #090d16;
+      background: #0f172a;
       padding: 24px;
       overflow-y: auto;
       box-sizing: border-box;
@@ -634,9 +631,7 @@ function injectServerCss() {
       display: none;
       align-items: center;
       justify-content: center;
-      background: var(--ui-page, rgba(15, 23, 42, 0.7));
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: rgba(15, 23, 42, 0.7);
       padding: 20px;
     }
     .server-session-card {
@@ -705,7 +700,6 @@ function injectServerCss() {
       border-radius: 999px;
       background: linear-gradient(90deg, #4361ee, #4cc9f0);
       transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
     }
     .server-session-card p {
       margin: 0;
@@ -752,8 +746,8 @@ function injectServerCss() {
     .server-login-container {
       width: min(980px, 100%);
       background: #ffffff;
-      border-radius: 24px;
-      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
       display: grid;
       grid-template-columns: 4.4fr 5.6fr;
       overflow: hidden;
@@ -763,27 +757,14 @@ function injectServerCss() {
 
     /* 左侧品牌区 */
     .server-login-brand {
-      background: linear-gradient(150deg, #1e1b4b 0%, #2e1065 48%, #0f172a 100%);
+      background: #1e1b4b;
       color: #ffffff;
       padding: 40px 36px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       position: relative;
-      overflow: hidden;
       box-sizing: border-box;
-    }
-
-    .server-brand-glow {
-      position: absolute;
-      right: -50px;
-      bottom: -50px;
-      width: 200px;
-      height: 200px;
-      background: rgba(99, 102, 241, 0.25);
-      border-radius: 50%;
-      filter: blur(50px);
-      pointer-events: none;
     }
 
     .server-brand-logo-row {
@@ -795,14 +776,13 @@ function injectServerCss() {
     .server-brand-logo-icon {
       width: 44px;
       height: 44px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 22px;
-      backdrop-filter: blur(8px);
     }
 
     .server-brand-title-wrap {
@@ -882,7 +862,6 @@ function injectServerCss() {
       border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 16px;
       padding: 16px;
-      backdrop-filter: blur(12px);
     }
 
     .server-preview-head {
@@ -1190,28 +1169,20 @@ function injectServerCss() {
       padding: 11px 16px;
       border: 0;
       border-radius: 11px;
-      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      background: #4f46e5;
       color: #ffffff;
       font-weight: 700;
       font-size: 0.85rem;
       letter-spacing: 0.3px;
       cursor: pointer;
-      transition: all 0.18s ease;
-      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
-    }
-
-    #serverLoginButton:hover, #serverRegisterButton:hover, #serverChangePasswordButton:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
     }
 
     #serverLoginButton:active, #serverRegisterButton:active, #serverChangePasswordButton:active {
-      transform: translateY(0);
+      opacity: 0.85;
     }
 
     .btn-register-action {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3) !important;
+      background: #059669 !important;
     }
 
     .server-login-error {
@@ -1431,32 +1402,24 @@ function injectServerCss() {
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
-      backdrop-filter: blur(12px);
     }
     html[data-theme="dark"] .login-theme-toggle {
-      background: rgba(255, 255, 255, 0.08);
+      background: #1e293b;
       border: 1px solid rgba(255, 255, 255, 0.16);
       color: #e2e8f0;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
     html[data-theme="dark"] .login-theme-toggle:hover {
-      background: rgba(255, 255, 255, 0.16);
-      border-color: rgba(255, 255, 255, 0.3);
+      background: #334155;
       color: #ffffff;
-      transform: translateY(-1px);
     }
     html[data-theme="light"] .login-theme-toggle {
-      background: rgba(255, 255, 255, 0.9);
+      background: #ffffff;
       border: 1px solid #cbd5e1;
       color: #334155;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
     }
     html[data-theme="light"] .login-theme-toggle:hover {
-      background: #ffffff;
-      border-color: #94a3b8;
+      background: #f1f5f9;
       color: #0f172a;
-      transform: translateY(-1px);
     }
     .topbar-logout-btn {
       display: inline-flex;
@@ -2589,19 +2552,17 @@ function injectServerCss() {
       transform: scale(1.15) !important;
     }
 
-    /* 浅色模式：登录界面 */
+    /* 浅色模式：登录界面（纯静态、零光效、零动效） */
     html[data-theme="light"] #serverLoginOverlay {
-      background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.08) 0%, transparent 45%),
-                  radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
-                  #f1f5f9 !important;
+      background: #f1f5f9 !important;
     }
     html[data-theme="light"] .server-login-container {
       background: #ffffff !important;
       border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+      box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08) !important;
     }
     html[data-theme="light"] .server-login-brand {
-      background: linear-gradient(145deg, #2563eb 0%, #1e40af 100%) !important;
+      background: #1e3a8a !important;
       border-right: none !important;
     }
     html[data-theme="light"] .server-login-form-area {
@@ -3807,19 +3768,17 @@ function injectServerCss() {
       color: #ffffff !important;
     }
 
-    /* 深色模式：登录界面 */
+    /* 深色模式：登录界面（纯静态、零光效、零动效） */
     html[data-theme="dark"] #serverLoginOverlay {
-      background: radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.18) 0%, transparent 45%),
-                  radial-gradient(circle at 85% 80%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
-                  #090d16 !important;
+      background: #090d16 !important;
     }
     html[data-theme="dark"] .server-login-container {
       background: #0f172a !important;
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.8) !important;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5) !important;
     }
     html[data-theme="dark"] .server-login-brand {
-      background: linear-gradient(145deg, #101935 0%, #0d1322 100%) !important;
+      background: #0f172a !important;
       border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
     }
     html[data-theme="dark"] .server-login-form-area {

@@ -1337,20 +1337,14 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
    ======================================================== */
 html[data-theme] #serverSessionOverlay {
   background: var(--ui-page, #0f172a) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
 }
 
 html[data-theme='light'] #serverSessionOverlay {
-  background: rgba(248, 250, 252, 0.88) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
+  background: rgba(248, 250, 252, 0.95) !important;
 }
 
 html[data-theme='dark'] #serverSessionOverlay {
-  background: rgba(11, 15, 25, 0.88) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
+  background: rgba(11, 15, 25, 0.95) !important;
 }
 
 html[data-theme] .server-session-card {
