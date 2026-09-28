@@ -5661,6 +5661,10 @@ html[data-theme='dark'] .header-month-select {
   transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.sidebar-close-btn {
+  display: none;
+}
+
 /* 移动端响应式适配 (<= 768px) */
 @media (max-width: 768px) {
   .app-layout {
@@ -5694,6 +5698,31 @@ html[data-theme='dark'] .header-month-select {
   }
   .app-sidebar.mobile-open {
     transform: translateX(0) !important;
+  }
+
+  .sidebar-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .sidebar-close-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 30px !important;
+    height: 30px !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 6px !important;
+    background: var(--sidebar-bg) !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    font-size: 0.9rem !important;
+    transition: all 0.15s ease !important;
+  }
+  .sidebar-close-btn:hover {
+    color: var(--text-main) !important;
+    background: var(--ui-surface-hover, #f1f5f9) !important;
   }
 
   /* 遮罩激活状态 */
@@ -5780,9 +5809,10 @@ html[data-theme='dark'] .header-month-select {
   }
   .topbar-member-selector .member-select {
     height: 30px !important;
-    font-size: 0.8rem !important;
+    font-size: 0.82rem !important;
     padding: 0 6px !important;
-    max-width: 105px !important;
+    max-width: 125px !important;
+    min-width: 82px !important;
     border-radius: 6px !important;
     background: var(--sidebar-bg) !important;
     color: var(--text-main) !important;
@@ -5802,7 +5832,7 @@ html[data-theme='dark'] .header-month-select {
   }
   .month-count-selector .header-month-select {
     height: 30px !important;
-    font-size: 0.8rem !important;
+    font-size: 0.82rem !important;
     padding: 0 4px !important;
     width: auto !important;
     border-radius: 6px !important;

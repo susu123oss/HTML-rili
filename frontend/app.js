@@ -8959,8 +8959,9 @@ function initSidebarLayout() {
     }
   });
 
-  // 移动端点击背景遮罩或外部区域自动收起
+  // 移动端点击背景遮罩、关闭按钮或外部区域自动收起
   backdrop?.addEventListener('click', closeMobileSidebar);
+  $('sidebarCloseBtn')?.addEventListener('click', closeMobileSidebar);
   document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
       if (!sidebar.contains(e.target) && !toggleBtn?.contains(e.target)) {
