@@ -501,6 +501,26 @@ function ensureSessionOverlay() {
   return overlay;
 }
 
+function resetSessionProgress() {
+  if (sessionProgressTimer) {
+    clearInterval(sessionProgressTimer);
+    sessionProgressTimer = null;
+  }
+  sessionProgressValue = 0;
+  const percentEl = $('serverSessionPercent');
+  const fillEl = $('serverSessionProgressFill');
+  const msgEl = $('serverSessionMessage');
+  if (fillEl) {
+    // 禁用过渡动画瞬间归零，强制重绘，杜绝任何“从100%往回滑退”的倒退视觉
+    fillEl.style.transition = 'none';
+    fillEl.style.width = '0%';
+    void fillEl.offsetWidth; // 触发 reflow
+    fillEl.style.transition = '';
+  }
+  if (percentEl) percentEl.textContent = '0%';
+  if (msgEl) msgEl.textContent = '正在读取日历数据，请稍候…';
+}
+
 function updateSessionProgress(targetPercent = 0, message = '') {
   const clamped = Math.max(0, Math.min(100, Math.round(targetPercent)));
   const percentEl = $('serverSessionPercent');
@@ -516,6 +536,11 @@ function updateSessionProgress(targetPercent = 0, message = '') {
     msgEl.textContent = message;
   }
 
+  // 单调递增保护：加载流程中进度条只能向前走，绝不允许倒退！
+  if (clamped < sessionProgressValue && targetPercent !== 0) {
+    return;
+  }
+
   if (sessionProgressTimer) {
     clearInterval(sessionProgressTimer);
     sessionProgressTimer = null;
@@ -529,7 +554,11 @@ function updateSessionProgress(targetPercent = 0, message = '') {
     return;
   }
 
-  const steps = 10;
+  // 进度条宽度由 CSS transition 负责单向平滑向前推
+  if (fillEl) fillEl.style.width = `${clamped}%`;
+
+  // 数字百分比由轻量定时器平滑递增
+  const steps = 8;
   let currentStep = 0;
   sessionProgressTimer = setInterval(() => {
     currentStep++;
@@ -537,15 +566,13 @@ function updateSessionProgress(targetPercent = 0, message = '') {
     const val = Math.round(start + delta * factor);
     sessionProgressValue = val;
     if (percentEl) percentEl.textContent = `${val}%`;
-    if (fillEl) fillEl.style.width = `${val}%`;
     if (currentStep >= steps) {
       clearInterval(sessionProgressTimer);
       sessionProgressTimer = null;
       sessionProgressValue = clamped;
       if (percentEl) percentEl.textContent = `${clamped}%`;
-      if (fillEl) fillEl.style.width = `${clamped}%`;
     }
-  }, 16);
+  }, 20);
 }
 
 function showSessionOverlay(message = '正在读取日历数据，请稍候…', { error = false, percent = null } = {}) {
@@ -566,14 +593,12 @@ function showSessionOverlay(message = '正在读取日历数据，请稍候…',
   if (logoutBtn) logoutBtn.hidden = !error;
 
   if (!error) {
-    if (typeof percent === 'number') {
-      updateSessionProgress(percent, message);
-    } else if (sessionProgressValue === 0 || sessionProgressValue === 100) {
-      sessionProgressValue = 0;
-      updateSessionProgress(10, message);
-    } else {
-      updateSessionProgress(sessionProgressValue, message);
+    const isNewOpen = overlay.style.display !== 'flex';
+    if (isNewOpen) {
+      resetSessionProgress();
     }
+    const target = typeof percent === 'number' ? percent : Math.max(sessionProgressValue, 12);
+    updateSessionProgress(target, message);
   }
 
   overlay.style.display = 'flex';
@@ -582,10 +607,7 @@ function showSessionOverlay(message = '正在读取日历数据，请稍候…',
 function hideSessionOverlay() {
   const overlay = $('serverSessionOverlay');
   if (overlay) overlay.style.display = 'none';
-  if (sessionProgressTimer) {
-    clearInterval(sessionProgressTimer);
-    sessionProgressTimer = null;
-  }
+  resetSessionProgress();
 }
 
 function injectServerCss() {
@@ -682,7 +704,7 @@ function injectServerCss() {
       width: 0%;
       border-radius: 999px;
       background: linear-gradient(90deg, #4361ee, #4cc9f0);
-      transition: width 0.22s ease-out;
+      transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
     }
     .server-session-card p {
@@ -4447,7 +4469,7 @@ function showAppLoadFailure(error) {
 async function retryAppStart() {
   if (!state.token || !state.user) return;
   hideLoginOverlay();
-  sessionProgressValue = 0;
+  resetSessionProgress();
   showSessionOverlay('正在重新加载日历…', { percent: 12 });
   const sessionVersion = beginSession(state.user);
   try {
@@ -4472,7 +4494,7 @@ async function login() {
     localStorage.setItem('calendarToken', state.token);
     updateSavedLogin(username, password);
     hideLoginOverlay();
-    sessionProgressValue = 0;
+    resetSessionProgress();
     showSessionOverlay('正在加载日历…', { percent: 15 });
     sessionVersion = beginSession(data.user);
     await startApp(sessionVersion);
@@ -4503,7 +4525,7 @@ async function registerAccount() {
     localStorage.setItem('calendarToken', state.token);
     localStorage.setItem(savedLoginKey, JSON.stringify({ username, password }));
     hideLoginOverlay();
-    sessionProgressValue = 0;
+    resetSessionProgress();
     showSessionOverlay('正在加载日历…', { percent: 15 });
     sessionVersion = beginSession(data.user);
     await startApp(sessionVersion);
@@ -4565,7 +4587,7 @@ async function restoreSession() {
   }
 
   let sessionVersion = null;
-  sessionProgressValue = 0;
+  resetSessionProgress();
   showSessionOverlay('正在恢复登录状态…', { percent: 10 });
   try {
     const data = await request('/auth/me');
@@ -4637,6 +4659,7 @@ function logout() {
   state.opsStatus = null;
   localStorage.removeItem('calendarToken');
   hideSessionOverlay();
+  resetSessionProgress();
   showLoginOverlay();
   setAuthBusy(false);
 }
