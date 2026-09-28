@@ -4837,6 +4837,7 @@ function refreshMemoViews() {
   applyMainView();
   updateStats();
   updateReminderBadge();
+  if (state.activeView === 'weeklyPlan') renderWeeklyPlanPage();
   if ($('reminderModal')?.classList.contains('active')) showReminderModal();
   if ($('dailyDetailModal')?.classList.contains('active')) loadDailyDetailMemos(state.dailyDetailDate);
 }

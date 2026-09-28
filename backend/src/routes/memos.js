@@ -608,7 +608,7 @@ async function handleUpdateMemo(req, res, next) {
           content = COALESCE($4, content),
           color = COALESCE($5, color),
           completed = COALESCE($6, completed),
-          due_time = CASE WHEN $7 THEN $8 ELSE due_time END,
+          due_time = CASE WHEN $7 THEN $8::timestamptz ELSE due_time END,
           plan_kind = COALESCE($9, plan_kind),
           updated_at = NOW()
       WHERE id = $1
@@ -621,7 +621,7 @@ async function handleUpdateMemo(req, res, next) {
         color || null,
         typeof completed === 'boolean' ? completed : null,
         hasDueTime,
-        normalizedDueTime,
+        hasDueTime ? normalizedDueTime : null,
         planKind ?? null
       ]
     );
