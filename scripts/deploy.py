@@ -67,7 +67,7 @@ DEFAULT_PUBLIC_PORT = '8090'
 SKIP_DIRS = {
     'node_modules', '.git', 'dist', 'build', '__pycache__',
     'cad_output', '.venv', 'venv', '.idea', '.vscode', '.gemini',
-    '.pytest_cache', 'coverage'
+    '.pytest_cache', 'coverage', 'scratch'
 }
 SKIP_FILES = {'.DS_Store', 'Thumbs.db'}
 FRONTEND_FILES = ['index.html', 'styles.css', 'theme.css', 'theme-init.js', 'app.js', 'nginx.conf', 'Dockerfile']
@@ -168,7 +168,7 @@ def fetch_remote_hashes(client, remote_dir):
     通过单条远程命令批量获取服务器上现有文件的 MD5 指纹字典，
     毫秒级响应，避免每个文件逐个 stat 带来的网络 RTT 延迟。
     """
-    safe_print(f'🔍 正在查询服务器现有文件指纹 (MD5)...')
+    safe_print('🔍 正在比对服务器现有文件指纹 (MD5)...')
     cmd = (
         f"cd {remote_dir} && find . -type f "
         "-not -path '*/.git/*' "
@@ -187,7 +187,7 @@ def fetch_remote_hashes(client, remote_dir):
             raw_path = file_path.strip().replace('\\', '/')
             clean_path = raw_path[2:] if raw_path.startswith('./') else raw_path
             remote_map[clean_path] = md5_val.lower()
-    safe_print(f'✔ 远程已映射 {len(remote_map)} 个现有文件指纹')
+    safe_print(f'✔ 远程已获取 {len(remote_map)} 个现有文件指纹')
     return remote_map
 
 
@@ -206,7 +206,7 @@ def format_size(size):
     value = float(size or 0)
     for unit in ('B', 'KB', 'MB', 'GB'):
         if value < 1024 or unit == 'GB':
-            return f'{value:.1f}{unit}' if unit != 'B' else f'{int(value)}B'
+            return f'{value:.1f} {unit}' if unit != 'B' else f'{int(value)} B'
         value /= 1024
 
 
@@ -244,27 +244,24 @@ def put_file(sftp, local_path, remote_path, root, remote_hashes=None, stats=None
                 stats['skipped'] += 1
             return False
 
-    last_percent = -1
+    file_size = local_path.stat().st_size
+    sftp.put(str(local_path), remote_path)
 
-    def progress(sent, total):
-        nonlocal last_percent
-        percent = int((sent / total) * 100) if total else 100
-        if percent == last_percent and percent not in (0, 100):
-            return
-        last_percent = percent
-        safe_write(f'\r⬆ 增量上传：{relative_path} {percent:3d}% ({format_size(sent)}/{format_size(total)})')
+    # 统一整齐排版输出：[上传] 相对路径 文件大小 ✔ 完成
+    path_col = relative_path.ljust(38) if len(relative_path) < 38 else relative_path
+    size_col = format_size(file_size).rjust(9)
+    safe_print(f'  ↑ [上传] {path_col} {size_col}   ✔ 完成')
 
-    sftp.put(str(local_path), remote_path, callback=progress)
-    safe_print()
     if stats is not None:
         stats['uploaded'] += 1
+        stats['uploaded_bytes'] = stats.get('uploaded_bytes', 0) + file_size
         stats['uploaded_files'].append(relative_path)
     return True
 
 
 def upload_tree(sftp, local_root, remote_root, display_root=None, remote_hashes=None, stats=None, force=False):
     root = display_root or local_root
-    for item in local_root.iterdir():
+    for item in sorted(local_root.iterdir(), key=lambda x: (x.is_file(), x.name.lower())):
         if item.name in SKIP_DIRS or item.name in SKIP_FILES or item.name.endswith('.pyc') or item.name.endswith('.tmp'):
             continue
         remote_path = posixpath.join(remote_root, item.name)
@@ -325,9 +322,9 @@ def verify_public(args):
     import urllib.request
 
     url = f'http://{args.host}:{args.public_port}/api/health'
-    safe_print(f'\n公网验证：{url}')
+    safe_print(f'\n🌐 公网健康检查：{url}')
     data = urllib.request.urlopen(url, timeout=12).read().decode('utf-8', errors='replace')
-    safe_print(data)
+    safe_print(f'  ✔ 状态正常: {data.strip()}')
 
 
 def request_json(url, payload=None, headers=None, timeout=12):
@@ -345,7 +342,7 @@ def request_json(url, payload=None, headers=None, timeout=12):
 
 def verify_business_api(args):
     base_url = f'http://{args.host}:{args.public_port}/api'
-    safe_print('\n业务接口验证：登录、部门、日历数据')
+    safe_print('\n🔐 业务接口连通性验证：')
 
     login_data = request_json(
         f'{base_url}/auth/login',
@@ -360,8 +357,8 @@ def verify_business_api(args):
         raise RuntimeError('业务接口验证失败：登录接口没有返回 token')
 
     department_name = user.get('departmentName') or ''
-    safe_print(f'登录用户：{user.get("displayName") or user.get("username") or args.verify_username}')
-    safe_print(f'登录部门：{department_name}')
+    user_display = user.get("displayName") or user.get("username") or args.verify_username
+    safe_print(f'  • 登录鉴权: {user_display} (部门: {department_name or "未分配"})  ✔')
     if args.verify_department and department_name != args.verify_department:
         raise RuntimeError(f'业务接口验证失败：部门应为 {args.verify_department}，实际为 {department_name}')
 
@@ -373,9 +370,8 @@ def verify_business_api(args):
     memos = memos_data.get('memos')
     if not isinstance(memos, list):
         raise RuntimeError('业务接口验证失败：日历接口没有返回 memos 数组')
-    safe_print(f'日历月份：{verify_month}')
-    safe_print(f'日历记录数：{len(memos)}')
-    safe_print('业务接口验证通过')
+    safe_print(f'  • 数据同步: {verify_month} 月历 (获取到 {len(memos)} 条备忘记录)  ✔')
+    safe_print('✨ 线上业务接口验证全部通过！\n')
 
 
 def deploy(args):
@@ -383,9 +379,11 @@ def deploy(args):
     if not (project_root / 'docker-compose.yml').exists():
         raise RuntimeError(f'项目根目录不正确：{project_root}')
 
-    stats = {'uploaded': 0, 'skipped': 0, 'uploaded_files': []}
+    stats = {'uploaded': 0, 'skipped': 0, 'uploaded_files': [], 'uploaded_bytes': 0}
 
+    safe_print(f'🚀 正在连接远程部署服务器 [{args.host}:{args.port}] (用户: {args.user})...')
     client = connect(args)
+    safe_print('✔ SSH 连接成功\n')
     try:
         run(client, 'docker --version && docker compose version')
         run(client, f'mkdir -p {args.remote_dir}')
@@ -394,6 +392,7 @@ def deploy(args):
         use_incremental = not (args.force or args.clean)
         remote_hashes = fetch_remote_hashes(client, args.remote_dir) if use_incremental else {}
 
+        safe_print(f'\n📦 增量同步文件传输中 (目标目录: {args.remote_dir})...')
         sftp = client.open_sftp()
         try:
             if args.mode == 'all':
@@ -412,8 +411,17 @@ def deploy(args):
         finally:
             sftp.close()
 
+        if stats['uploaded'] == 0:
+            safe_print('  ⚡ 本地文件与远程完全一致，已跳过所有未更改文件')
+
         total_scanned = stats['uploaded'] + stats['skipped']
-        safe_print(f"\n📊 增量检测汇总：共扫描 {total_scanned} 个文件，增量上传 {stats['uploaded']} 个已更改文件，跳过 {stats['skipped']} 个无变化文件。")
+        uploaded_size_str = format_size(stats.get('uploaded_bytes', 0))
+        safe_print('\n' + '-' * 64)
+        safe_print('📊 增量检测汇总：')
+        safe_print(f"  • 文件总计: {total_scanned} 个")
+        safe_print(f"  • 增量上传: {stats['uploaded']} 个已更改文件 ({uploaded_size_str})")
+        safe_print(f"  • 忽略跳过: {stats['skipped']} 个无变化文件")
+        safe_print('-' * 64)
 
         # 智能分析需构建的服务
         uploaded = stats['uploaded_files']
@@ -435,18 +443,19 @@ def deploy(args):
             else:
                 target_services = None
 
-        if stats['uploaded'] == 0 and not args.force_rebuild and target_services is None:
-            safe_print('⚡ 本次无任何代码或配置变更，跳过 Docker 镜像重建（如需强制重建请使用 --force-rebuild）')
+        if stats['uploaded'] == 0 and not args.force_rebuild:
+            safe_print('\n⚡ 本次无任何文件变动，跳过 Docker 镜像重建（如需强制重建请使用 --force-rebuild）')
             run(client, f'cd {args.remote_dir} && docker compose up -d')
         else:
             if target_services == 'frontend':
-                safe_print('⚡ 仅检测到前端文件发生变更，仅定向重建 frontend 容器...')
+                safe_print('\n⚡ 检测到前端变动，定向重建 frontend 容器...')
                 run(client, f'cd {args.remote_dir} && COMPOSE_ANSI=never COMPOSE_PROGRESS=plain docker compose up -d --build frontend')
             elif target_services == 'backend':
-                safe_print('⚡ 仅检测到后端文件发生变更，仅定向重建 backend 容器...')
+                safe_print('\n⚡ 检测到后端变动，定向重建 backend 容器...')
                 run(client, f'cd {args.remote_dir} && COMPOSE_ANSI=never COMPOSE_PROGRESS=plain docker compose up -d --build backend')
             else:
                 svc_arg = target_services if target_services is not None else ''
+                safe_print(f'\n⚡ 正在构建并重启容器 [{svc_arg or "全部服务"}]...')
                 run(client, f'cd {args.remote_dir} && COMPOSE_ANSI=never COMPOSE_PROGRESS=plain docker compose up -d --build {svc_arg}'.rstrip())
 
         run(client, f'cd {args.remote_dir} && docker compose ps')

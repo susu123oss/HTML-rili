@@ -8,3 +8,4 @@ cad_output/
 npm-debug.log*
 .DS_Store
 calendar_db
+scratch/
