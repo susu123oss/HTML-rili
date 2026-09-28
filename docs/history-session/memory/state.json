@@ -1,20 +1,34 @@
 {
   "version": 2,
-  "state_revision": 4,
-  "archive_revision": "sha256:988c384f91b3ac91526d959ec4a75fb1c03e6fbfbdba5c750cd53fad5c79a5ec",
-  "generated_at": "unix:1790561958",
+  "state_revision": 12,
+  "archive_revision": "sha256:5dc3d8baecbeabefc63ce4f799b98834fc520e99e236e60125ecaa3718d1bf95",
+  "generated_at": "unix:1790570557",
   "current_session": {
     "number": 2,
     "path": "docs/history-session/2.md",
     "reason": "当前 ChatGPT 会话档案"
   },
-  "current_focus": "你觉得周计划页面和逻辑还有哪些能优化的",
+  "current_focus": "HTTP_PROXY=http://127.0.0.1:10808\nHTTPS_PROXY=http://127.0.0.1:10808本机是这样阿门",
   "recent_changes": [
-    "建议优先修正周范围数据加载、计划统计口径与顺延历史，再改善空状态、布局和录入体验。"
+    "建议优先修正周范围数据加载、计划统计口径与顺延历史，再改善空状态、布局和录入体验。",
+    "backend/src/db/schema.js",
+    "backend/src/routes/memos.js",
+    "frontend/app.js",
+    "frontend/index.html",
+    "frontend/theme.css",
+    "保留历史顺延记录；周报预览后复制；当前工作区新增目标互锁和团队看板设计已由同期提交提供。",
+    "保持启动器运行以维持其本地桥接；此轮不再改动配置。",
+    "将 config.toml 备份为 config.toml.bak-20260928-122303，按集成日志恢复 17841 路由和 v6.1.1 hook；不修改集成日志。",
+    "重启 Codex Web GPT 启动器使桥接和隧道启动，再重启 Codex 加载模型目录。",
+    "备份 C:\\Users\\Administrator\\.codex\\config.toml 至 config.toml.bak-20260928-0012；注释失效的 17841 覆盖，保留 10808 环境代理。"
   ],
   "open_items": [
     "如用户要求实施，先明确定义周计划项与普通备忘录的关系，以及顺延采用复制关联或记录历史，再改前后端与周报。",
-    "后续每轮任务完成前使用本次 bootstrap 返回的 session_key 与 current_path 调用 history_session_checkpoint。"
+    "后续每轮任务完成前使用本次 bootstrap 返回的 session_key 与 current_path 调用 history_session_checkpoint。",
+    "未在真实 PostgreSQL/部署环境验证迁移；当前 backend/src/routes/memos.js 有同期未提交修改。",
+    "用户应保持 Web GPT 启动器运行；关闭前使用 Settings → Remove Codex integration 并重启 Codex 可恢复原生直连。",
+    "需在 Codex 选择 (Web) 模型发一条消息验证实际会话和 ChatGPT connector。",
+    "未在原图示会话中由用户再次发起实际模型请求；第三方 Codex Web GPT 未来若再次接管配置，可能重写 17841。"
   ],
   "references": [
     {

@@ -115,9 +115,17 @@ async function resolveMemoScope(user, requestedUserId) {
 }
 
 const normalizeDueTime = (value) => {
-  const text = String(value || '').trim();
-  if (!text || Number.isNaN(new Date(text).getTime())) return null;
-  return text;
+  if (!value) return null;
+  // pg 返回的 Date 对象直接转 ISO，避免 toString() 产生无法被 PostgreSQL 解析的格式
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value.toISOString();
+  }
+  const text = String(value).trim();
+  if (!text) return null;
+  const d = new Date(text);
+  if (isNaN(d.getTime())) return null;
+  // 统一返回 ISO 8601，防止传入非标准格式的字符串穿透到数据库
+  return d.toISOString();
 };
 
 function memoQueryScope(range, scope) {
