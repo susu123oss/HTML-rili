@@ -4403,7 +4403,7 @@ function resetMemoSnapshot() {
   state.weeklyRequestController = null;
   state.weeklyMemos = [];
   state.weeklySummaries = [];
-  state.weeklyDataRangeKey = '';
+  if (!keepCurrentBoard) state.weeklyDataRangeKey = '';
   state.weeklyDataLoadingKey = '';
   state.weeklyDataErrorKey = '';
   state.weeklyDataError = '';
@@ -4936,6 +4936,8 @@ function canRealtimeRefresh() {
     && !document.hidden
     && !$('memoModal')?.classList.contains('active')
     && !$('functionsModal')?.classList.contains('active')
+    && !(state.activeView === 'weeklyPlan'
+      && document.activeElement?.closest('.wp-summary-panel, .wp-day-quick-add'))
   );
 }
 
@@ -4944,6 +4946,7 @@ async function refreshMemosInBackground() {
   state.realtimeRefreshBusy = true;
   try {
     await loadMemos();
+    if (state.activeView === 'weeklyPlan') await loadWeeklyPlanData({ force: true, silent: true });
     await loadReminders();
   } catch (error) {
     console.warn('实时刷新失败', error);
@@ -6468,11 +6471,12 @@ function weeklyDataRequest() {
     key: `${dateKey(monday)}:${startMonth}:${months}:${userId}` };
 }
 
-async function loadWeeklyPlanData({ force = false } = {}) {
+async function loadWeeklyPlanData({ force = false, silent = false } = {}) {
   if (state.activeView !== 'weeklyPlan') return;
   const { monday, startMonth, months, userId, key } = weeklyDataRequest();
   if (!force && (state.weeklyDataRangeKey === key || state.weeklyDataLoadingKey === key)) return;
   const version = ++state.weeklyRequestVersion;
+  const keepCurrentBoard = silent && state.weeklyDataRangeKey === key;
   state.weeklyRequestController?.abort();
   const controller = new AbortController();
   state.weeklyRequestController = controller;
@@ -6480,7 +6484,8 @@ async function loadWeeklyPlanData({ force = false } = {}) {
   state.weeklyDataLoadingKey = key;
   state.weeklyDataErrorKey = '';
   state.weeklyDataError = '';
-  renderWeeklyPlanPage();
+  if (!keepCurrentBoard) renderWeeklyPlanPage();
+  let changed = false;
   try {
     const params = new URLSearchParams({ startMonth, months: String(months), userId });
     const summariesParams = new URLSearchParams({
@@ -6494,18 +6499,24 @@ async function loadWeeklyPlanData({ force = false } = {}) {
     if (!Array.isArray(memoData.memos) || !Array.isArray(summaryData.summaries)) {
       throw new Error('周计划数据格式无效');
     }
-    state.weeklyMemos = sortMemosForCalendar(memoData.memos);
+    const nextMemos = sortMemosForCalendar(memoData.memos);
+    changed = JSON.stringify(nextMemos) !== JSON.stringify(state.weeklyMemos)
+      || JSON.stringify(summaryData.summaries) !== JSON.stringify(state.weeklySummaries);
+    state.weeklyMemos = nextMemos;
     state.weeklySummaries = summaryData.summaries;
     state.weeklyDataRangeKey = key;
   } catch (error) {
     if (error.name === 'AbortError' || version !== state.weeklyRequestVersion) return;
-    state.weeklyDataErrorKey = key;
-    state.weeklyDataError = error.message || '加载失败';
+    if (keepCurrentBoard) console.warn('周计划后台刷新失败', error);
+    else {
+      state.weeklyDataErrorKey = key;
+      state.weeklyDataError = error.message || '加载失败';
+    }
   } finally {
     if (version === state.weeklyRequestVersion) {
       state.weeklyDataLoadingKey = '';
       state.weeklyRequestController = null;
-      renderWeeklyPlanPage();
+      if (!keepCurrentBoard || changed) renderWeeklyPlanPage();
     }
   }
 }
@@ -6572,6 +6583,7 @@ function renderWeeklySummaryPanel(ownerId, weekStart) {
   const isDraft = Boolean(state.weeklySummaryDrafts[draftKey]);
   const summary = { ...weeklySummaryFor(ownerId, weekStart), ...state.weeklySummaryDrafts[draftKey] };
   const hasContent = ['goals', 'deliverables', 'actual', 'risks'].some(key => summary[key]?.trim());
+  const shouldOpen = isDraft || (!hasContent && window.innerWidth > 768);
   const fields = [
     ['goals', '本周目标', '本周最重要的目标'],
     ['deliverables', '承诺交付物', '图纸、测试报告或其他具体交付'],
@@ -6579,7 +6591,7 @@ function renderWeeklySummaryPanel(ownerId, weekStart) {
     ['risks', '风险与协同需求', '阻塞项、所需支持；没有可留空']
   ];
   return `
-    <details class="wp-summary-panel" data-summary-key="${draftKey}" ${hasContent && !isDraft ? '' : 'open'}>
+    <details class="wp-summary-panel" data-summary-key="${draftKey}" ${shouldOpen ? 'open' : ''}>
       <summary><strong>本周目标与复盘</strong><span>${hasContent ? escapeHtml(summary.goals.split('\n')[0] || '查看交付与风险') : '先明确目标、交付物和风险'}</span><i class="fas fa-chevron-down"></i></summary>
       <div class="wp-summary-fields">
         ${fields.map(([key, label, placeholder]) => `
@@ -6959,7 +6971,8 @@ function buildWeeklyReportMarkdown() {
       report += `  ${completed.length + idx + 1}. [待办/未完] ${m.title} (${m.date})\n`;
     });
     rolledOver.forEach((m, idx) => {
-      report += `  ${completed.length + pending.length + idx + 1}. [已顺延] ${m.title} (${m.date})\n`;
+      const successor = state.weeklyMemos.find(item => Number(item.id) === Number(m.rolloverToId));
+      report += `  ${completed.length + pending.length + idx + 1}. [已顺延] ${m.title} (${m.date})${successor?.rolloverReason ? '，原因：' + successor.rolloverReason : ''}\n`;
     });
   }
   report += `  实际进展及偏差：${summary.actual || '待补充'}\n`;
