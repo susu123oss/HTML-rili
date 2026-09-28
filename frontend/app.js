@@ -94,7 +94,11 @@ function showDialog(id, focusId) {
     window.requestAnimationFrame(() => {
       if (!dialog.classList.contains('active')) return;
       const target = (focusId && $(focusId)) || dialog.querySelector(dialogFocusable);
-      target?.focus();
+      try {
+        target?.focus({ preventScroll: true });
+      } catch (e) {
+        target?.focus();
+      }
     });
   }
 }
@@ -107,8 +111,18 @@ function hideDialog(id) {
   if (index !== -1) dialogOrder.splice(index, 1);
   const origin = dialogFocusOrigins.get(dialog);
   dialogFocusOrigins.delete(dialog);
-  const fallback = dialogOrder.length ? $(dialogOrder[dialogOrder.length - 1])?.querySelector(dialogFocusable) : $('toolbarNewMemo');
-  window.requestAnimationFrame(() => (origin?.isConnected ? origin : fallback)?.focus());
+  // 若仍有父级弹窗处于开启状态，回退聚焦到父级弹窗内元素；若无弹窗，绝不可强行聚焦顶部工具栏按钮导致页面跳滚到最顶部
+  const fallback = dialogOrder.length ? $(dialogOrder[dialogOrder.length - 1])?.querySelector(dialogFocusable) : null;
+  window.requestAnimationFrame(() => {
+    const target = origin?.isConnected ? origin : fallback;
+    if (target && typeof target.focus === 'function') {
+      try {
+        target.focus({ preventScroll: true });
+      } catch (e) {
+        // 部分旧浏览器不支持 preventScroll，避免报错
+      }
+    }
+  });
 }
 
 function handleDialogKeydown(event) {
@@ -6182,9 +6196,11 @@ function switchMemoContentTab(mode) {
     editTab.classList.add('active');
     if (toolbar) toolbar.style.display = 'flex';
     textarea.style.display = 'block';
-    preview.style.display = 'none';
-    textarea.focus();
-  }
+    try {
+      textarea.focus({ preventScroll: true });
+    } catch (e) {
+      textarea.focus();
+    }
 }
 
 function handleQuickDueChipClick(event) {
@@ -6353,6 +6369,14 @@ async function saveMemo() {
   button.disabled = true;
   button.textContent = '保存中…';
   setOperationFeedback('memoSaveFeedback', '');
+
+  // 记录保存前的全局滚动位置与日历格子内滚动位置，确保保存后视野绝不自动滚到最顶部
+  const targetDateKey = payload.date;
+  const dayMemosEl = targetDateKey ? $(`dayMemos-${targetDateKey}`) : null;
+  const dayMemosScrollTop = dayMemosEl ? dayMemosEl.scrollTop : 0;
+  const pageScrollX = window.scrollX ?? window.pageXOffset ?? 0;
+  const pageScrollY = window.scrollY ?? window.pageYOffset ?? 0;
+
   let data;
   try {
     data = state.selectedMemoId
@@ -6373,14 +6397,52 @@ async function saveMemo() {
   } catch (error) {
     alert(`已保存，但刷新列表失败：${error.message}`);
   }
+
+  // 严格维持保存前的页面视口位置与日历格列表位置，彻底杜绝回弹顶层
+  const restoreScroll = () => {
+    if (targetDateKey) {
+      const updatedDayMemosEl = $(`dayMemos-${targetDateKey}`);
+      if (updatedDayMemosEl && dayMemosScrollTop > 0) {
+        updatedDayMemosEl.scrollTop = dayMemosScrollTop;
+      }
+    }
+    if ((window.scrollY ?? window.pageYOffset ?? 0) !== pageScrollY || (window.scrollX ?? window.pageXOffset ?? 0) !== pageScrollX) {
+      window.scrollTo({ left: pageScrollX, top: pageScrollY, behavior: 'instant' });
+    }
+  };
+  restoreScroll();
+  window.requestAnimationFrame(restoreScroll);
+  setTimeout(restoreScroll, 50);
 }
 
 async function deleteMemo() {
   if (!state.selectedMemoId || !confirm('确认删除这个备忘录？')) return;
   const memoId = state.selectedMemoId;
+  const memo = state.memos.find((item) => String(item.id) === String(memoId));
+  const targetDateKey = memo?.date;
+  const dayMemosEl = targetDateKey ? $(`dayMemos-${targetDateKey}`) : null;
+  const dayMemosScrollTop = dayMemosEl ? dayMemosEl.scrollTop : 0;
+  const pageScrollX = window.scrollX ?? window.pageXOffset ?? 0;
+  const pageScrollY = window.scrollY ?? window.pageYOffset ?? 0;
+
   await request(`/memos/${memoId}`, { method: 'DELETE' });
   closeMemoModal();
   removeMemosLocally(memoId);
+
+  const restoreScroll = () => {
+    if (targetDateKey) {
+      const updatedDayMemosEl = $(`dayMemos-${targetDateKey}`);
+      if (updatedDayMemosEl && dayMemosScrollTop > 0) {
+        updatedDayMemosEl.scrollTop = dayMemosScrollTop;
+      }
+    }
+    if ((window.scrollY ?? window.pageYOffset ?? 0) !== pageScrollY || (window.scrollX ?? window.pageXOffset ?? 0) !== pageScrollX) {
+      window.scrollTo({ left: pageScrollX, top: pageScrollY, behavior: 'instant' });
+    }
+  };
+  restoreScroll();
+  window.requestAnimationFrame(restoreScroll);
+  setTimeout(restoreScroll, 50);
 }
 
 function openDailyDetailModal(date) {
@@ -8389,10 +8451,22 @@ function initEventListeners() {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void refreshMemosInBackground();
   });
-  $('saveMemo').addEventListener('click', saveMemo);
-  $('deleteMemo').addEventListener('click', deleteMemo);
-  $('cancelMemo').addEventListener('click', closeMemoModal);
-  $('closeMemoModal').addEventListener('click', closeMemoModal);
+  $('saveMemo').addEventListener('click', (event) => {
+    event?.preventDefault();
+    saveMemo();
+  });
+  $('deleteMemo').addEventListener('click', (event) => {
+    event?.preventDefault();
+    deleteMemo();
+  });
+  $('cancelMemo').addEventListener('click', (event) => {
+    event?.preventDefault();
+    closeMemoModal();
+  });
+  $('closeMemoModal').addEventListener('click', (event) => {
+    event?.preventDefault();
+    closeMemoModal();
+  });
   $('memoContent').addEventListener('input', updateMarkdownPreview);
   $('memoContent').addEventListener('keydown', continueOrderedMemoLine);
   $('memoTextToolbar')?.addEventListener('click', handleMemoTextToolbarClick);
