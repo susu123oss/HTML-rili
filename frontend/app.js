@@ -6589,13 +6589,16 @@ function renderWeeklyMilestoneBar(ownerId, weekStart) {
   }
 
   return `
-    <div class="wp-milestone-bar is-empty" onclick="openWeeklySummaryDialog()" title="点击设定本周核心目标与交付物">
-      <div class="wp-milestone-empty-inner">
-        <span class="wp-milestone-empty-icon"><i class="fas fa-bullseye"></i></span>
-        <span class="wp-milestone-empty-text">本周尚未明确核心目标与交付物</span>
+    <div class="wp-milestone-bar is-empty wp-goal-lock-banner" title="请先设定本周目标，才能添加每日计划">
+      <div class="wp-goal-lock-left">
+        <span class="wp-goal-lock-icon"><i class="fas fa-lock"></i></span>
+        <div class="wp-goal-lock-text">
+          <strong>尚未设定本周目标</strong>
+          <span>请先填写本周核心目标与交付物，才能开始排列每日计划</span>
+        </div>
       </div>
-      <button type="button" class="wp-milestone-set-btn" onclick="event.stopPropagation();openWeeklySummaryDialog()">
-        <i class="fas fa-plus-circle"></i> 设定目标与交付
+      <button type="button" class="wp-goal-set-cta" onclick="openWeeklySummaryDialog()">
+        <i class="fas fa-bullseye"></i> 立即设定目标与交付
       </button>
     </div>`;
 }
@@ -6772,6 +6775,10 @@ function renderWeeklyPlanPage() {
   const mobileDayIndex = state.weeklyMobileDay ?? (todayIndex >= 0 ? todayIndex : 0);
   const boardEmpty = weekDays.every(day => day.memos.length === 0);
 
+  // 互锁：必须先设置本周目标才允许添加每日计划
+  const thisWeekSummary = weeklySummaryFor(targetUserId, monKey);
+  const hasGoals = Boolean(thisWeekSummary.goals?.trim());
+
   // Only overdue plans are called out; future plans remain ordinary pending work.
   const personalOverdue = overdue.filter(m => Number(m.ownerId) === targetUserId);
   const rolloverBannerHtml = personalOverdue.length > 0 ? `
@@ -6817,8 +6824,13 @@ function renderWeeklyPlanPage() {
               <span class="wp-day-count-badge">${day.memos.length}项</span>
             </div>
 
-            <div class="wp-day-quick-add">
-              <input type="text" class="wp-day-input" placeholder="+ 添加计划，回车保存" title="回车保存，默认截止18:00" onkeydown="if(event.key==='Enter')addPlanForSpecificDate('${day.dateKey}', this)">
+            <div class="wp-day-quick-add${hasGoals ? '' : ' is-locked'}">
+              ${hasGoals
+                ? `<input type="text" class="wp-day-input" placeholder="+ 添加计划，回车保存" title="回车保存，默认截止18:00" onkeydown="if(event.key==='Enter')addPlanForSpecificDate('${day.dateKey}', this)">`
+                : `<button type="button" class="wp-day-locked-hint" onclick="openWeeklySummaryDialog()" title="请先设定本周目标">
+                    <i class="fas fa-lock"></i> 请先设定本周目标
+                  </button>`
+              }
             </div>
 
             <div class="wp-day-task-list" id="wpDayList-${day.dateKey}">
@@ -7150,40 +7162,97 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
   const thisWeekMemos = state.weeklyMemos.filter(m =>
     m.planKind === 'plan' && m.date >= monKey && m.date <= sunKey);
 
+  // 生成头像颜色（按用户 ID 确定性取色）
+  const avatarColors = ['#4361ee','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#db2777','#0284c7'];
+  function getAvatarColor(uid) { return avatarColors[Number(uid) % avatarColors.length]; }
+  function getInitials(u) {
+    const name = u.displayName || u.username || '?';
+    return name.slice(0, 2);
+  }
+
   container.innerHTML = `
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; background: var(--ui-surface); padding: 14px 18px; border-radius: var(--border-radius); border: 1px solid var(--ui-border); box-shadow: var(--box-shadow);">
-      <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--ui-text);">
-        <i class="fas fa-users-cog text-primary" style="margin-right: 8px;"></i>研发团队本周目标与执行
-      </h3>
-      <span style="font-size: 0.82rem; color: var(--ui-text-muted);">查看周期：${monKey} ~ ${sunKey}</span>
+    <div class="wp-team-header">
+      <div class="wp-team-header-left">
+        <i class="fas fa-users-cog"></i>
+        <div>
+          <h3>团队本周执行看板</h3>
+          <span>${monKey} — ${sunKey}</span>
+        </div>
+      </div>
+      <div class="wp-team-header-stats">
+        <div class="wp-team-hstat">
+          <span>${users.length}</span>
+          <small>成员</small>
+        </div>
+        <div class="wp-team-hstat">
+          <span>${thisWeekMemos.length}</span>
+          <small>计划总数</small>
+        </div>
+        <div class="wp-team-hstat">
+          <span>${thisWeekMemos.filter(m => m.completed).length}</span>
+          <small>已完成</small>
+        </div>
+      </div>
     </div>
-    <div class="team-plan-grid">
+    <div class="wp-team-grid">
       ${users.map(u => {
         const uMemos = thisWeekMemos.filter(m => Number(m.ownerId) === Number(u.id));
         const summary = weeklySummaryFor(u.id, monKey);
         const done = uMemos.filter(m => m.completed).length;
-        const overdue = uMemos.filter(m => !m.completed && !m.rolloverToId
+        const overdueCount = uMemos.filter(m => !m.completed && !m.rolloverToId
           && m.dueTime && new Date(m.dueTime).getTime() < Date.now()).length;
+        const total = uMemos.length;
+        const pct = total ? Math.round((done / total) * 100) : 0;
+        const hasGoal = Boolean(summary.goals?.trim());
+        const color = getAvatarColor(u.id);
+        const statusClass = !hasGoal ? 'no-goal' : overdueCount ? 'has-overdue' : done === total && total > 0 ? 'all-done' : 'in-progress';
+        const statusLabel = !hasGoal ? '未设目标' : overdueCount ? `${overdueCount} 项逾期` : done === total && total > 0 ? '全部完成' : '进行中';
+        const statusIcon = !hasGoal ? 'fa-minus-circle' : overdueCount ? 'fa-exclamation-circle' : done === total && total > 0 ? 'fa-check-circle' : 'fa-spinner';
+
         return `
-          <div class="team-plan-card">
-            <div class="team-plan-user">
-              <div>
-                <span style="color: var(--ui-text);">${escapeHtml(u.displayName || u.username)}</span>
-                <span style="font-size: 0.72rem; font-weight: normal; color: var(--ui-text-muted); margin-left: 4px;">${escapeHtml(u.jobTitle || '工程师')}</span>
+          <div class="wp-team-card wp-team-status-${statusClass}">
+            <div class="wp-team-card-head">
+              <div class="wp-team-avatar" style="background:${color}">${getInitials(u)}</div>
+              <div class="wp-team-user-info">
+                <strong>${escapeHtml(u.displayName || u.username)}</strong>
+                <span>${escapeHtml(u.jobTitle || '工程师')}</span>
               </div>
-              <span class="weekly-metric-chip" style="font-size: 0.7rem; padding: 2px 6px;">${done}/${uMemos.length} 完成${overdue ? ` · ${overdue} 逾期` : ''}</span>
+              <div class="wp-team-status-badge wp-team-status-${statusClass}">
+                <i class="fas ${statusIcon}"></i> ${statusLabel}
+              </div>
             </div>
-            ${summary.goals ? `<div class="wp-team-goal"><strong>目标：</strong>${escapeHtml(summary.goals)}</div>` : ''}
-            ${summary.deliverables ? `<div class="wp-team-goal"><strong>交付：</strong>${escapeHtml(summary.deliverables)}</div>` : ''}
-            ${summary.risks ? `<div class="wp-team-goal"><strong>风险：</strong>${escapeHtml(summary.risks)}</div>` : ''}
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem;">
-              ${uMemos.length === 0 ? '<span style="color: var(--ui-text-muted); font-size: 0.74rem;">本周尚未排定计划</span>' : ''}
-              ${uMemos.map((m, i) => `
-                <div style="background: var(--ui-surface); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--ui-border);">
-                  <div style="font-weight: 600; color: var(--ui-text);">${i + 1}. ${escapeHtml(m.title)}</div>
-                  <div style="font-size: 0.7rem; color: var(--ui-text-muted); margin-top: 2px;">${m.date} · ${m.completed ? '已完成' : m.rolloverToId ? '已顺延' : '待完成'}</div>
-                </div>
-              `).join('')}
+
+            ${hasGoal ? `
+            <div class="wp-team-goals-row">
+              <div class="wp-team-goal-item">
+                <span class="wp-team-goal-label"><i class="fas fa-flag"></i> 目标</span>
+                <span class="wp-team-goal-val">${escapeHtml((summary.goals || '').split('\n')[0])}</span>
+              </div>
+              ${summary.deliverables ? `
+              <div class="wp-team-goal-item">
+                <span class="wp-team-goal-label"><i class="fas fa-box"></i> 交付</span>
+                <span class="wp-team-goal-val">${escapeHtml(summary.deliverables.split('\n')[0])}</span>
+              </div>` : ''}
+            </div>` : `<div class="wp-team-no-goal"><i class="fas fa-exclamation-triangle"></i> 本周暂未设定目标</div>`}
+
+            <div class="wp-team-progress-row">
+              <div class="wp-team-progress-bar">
+                <div class="wp-team-progress-fill" style="width:${pct}%;background:${color}"></div>
+              </div>
+              <span class="wp-team-progress-label">${done}/${total} 完成 ${pct}%</span>
+            </div>
+
+            <div class="wp-team-task-pills">
+              ${total === 0
+                ? '<span class="wp-team-no-tasks">本周暂无计划</span>'
+                : uMemos.map(m => {
+                    const cls = m.completed ? 'done' : m.rolloverToId ? 'rolled' : !m.completed && m.dueTime && new Date(m.dueTime).getTime() < Date.now() ? 'overdue' : 'open';
+                    const icon = m.completed ? 'fa-check' : m.rolloverToId ? 'fa-share' : cls === 'overdue' ? 'fa-exclamation' : 'fa-circle';
+                    return `<span class="wp-team-pill wp-team-pill-${cls}" title="${escapeHtml(m.title)} · ${m.date}">
+                      <i class="fas ${icon}"></i> ${escapeHtml(m.title.length > 18 ? m.title.slice(0, 18) + '…' : m.title)}
+                    </span>`;
+                  }).join('')
+              }
             </div>
           </div>
         `;
@@ -7191,6 +7260,7 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
     </div>
   `;
 }
+
 
 window.openWeeklyPlanPage = openWeeklyPlanPage;
 window.closeWeeklyPlanPage = closeWeeklyPlanPage;

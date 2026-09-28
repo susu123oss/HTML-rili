@@ -4385,6 +4385,353 @@ html[data-theme='dark'] .wp-chip-name {
   background: rgba(67, 97, 238, 0.08);
 }
 
+/* ── 目标互锁：未设目标时的锁定 CTA 横幅 ────────────────── */
+.wp-goal-lock-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+  border: 1.5px solid #fbbf24;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.wp-goal-lock-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.wp-goal-lock-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(251, 191, 36, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #b45309;
+  flex-shrink: 0;
+}
+.wp-goal-lock-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wp-goal-lock-text strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #92400e;
+}
+.wp-goal-lock-text span {
+  font-size: 0.78rem;
+  color: #b45309;
+}
+.wp-goal-set-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.wp-goal-set-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.45);
+}
+
+/* ── 锁定的每日计划添加区 ─────────────────────────────── */
+.wp-day-quick-add.is-locked {
+  background: var(--ui-bg, #f8fafc);
+  border-radius: 8px;
+}
+.wp-day-locked-hint {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1.5px dashed var(--ui-border, #e2e8f0);
+  border-radius: 8px;
+  color: var(--ui-text-muted, #94a3b8);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.wp-day-locked-hint:hover {
+  border-color: #f59e0b;
+  color: #d97706;
+}
+.wp-day-locked-hint .fas {
+  font-size: 0.7rem;
+}
+
+/* ── 全员看板重设计 ──────────────────────────────────── */
+.wp-team-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px 22px;
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.wp-team-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.wp-team-header-left > .fas {
+  font-size: 1.5rem;
+  color: var(--tblr-primary, #4361ee);
+}
+.wp-team-header-left h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ui-text, #1e293b);
+}
+.wp-team-header-left span {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted, #64748b);
+}
+.wp-team-header-stats {
+  display: flex;
+  gap: 24px;
+}
+.wp-team-hstat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.wp-team-hstat span {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ui-text, #1e293b);
+  line-height: 1;
+}
+.wp-team-hstat small {
+  font-size: 0.7rem;
+  color: var(--ui-text-muted, #64748b);
+}
+
+/* 团队看板卡片网格 */
+.wp-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.wp-team-card {
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.wp-team-card:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+.wp-team-card.wp-team-status-has-overdue {
+  border-top: 3px solid #ef4444;
+}
+.wp-team-card.wp-team-status-all-done {
+  border-top: 3px solid #10b981;
+}
+.wp-team-card.wp-team-status-no-goal {
+  border-top: 3px solid #94a3b8;
+}
+.wp-team-card.wp-team-status-in-progress {
+  border-top: 3px solid #4361ee;
+}
+
+/* 卡片头部：头像 + 用户信息 + 状态 */
+.wp-team-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wp-team-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: -0.5px;
+}
+.wp-team-user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wp-team-user-info strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ui-text, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wp-team-user-info span {
+  font-size: 0.72rem;
+  color: var(--ui-text-muted, #64748b);
+}
+.wp-team-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.wp-team-status-badge.wp-team-status-no-goal {
+  background: #f1f5f9; color: #64748b;
+}
+.wp-team-status-badge.wp-team-status-has-overdue {
+  background: #fee2e2; color: #dc2626;
+}
+.wp-team-status-badge.wp-team-status-all-done {
+  background: #d1fae5; color: #059669;
+}
+.wp-team-status-badge.wp-team-status-in-progress {
+  background: #ede9fe; color: #7c3aed;
+}
+
+/* 目标与交付行 */
+.wp-team-goals-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  background: var(--ui-bg, #f8fafc);
+  border-radius: 8px;
+  border: 1px solid var(--ui-border, #e2e8f0);
+}
+.wp-team-goal-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.wp-team-goal-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tblr-primary, #4361ee);
+  white-space: nowrap;
+}
+.wp-team-goal-val {
+  font-size: 0.78rem;
+  color: var(--ui-text, #1e293b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.wp-team-no-goal {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: center;
+  padding: 6px;
+}
+
+/* 进度条 */
+.wp-team-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wp-team-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--ui-border, #e2e8f0);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.wp-team-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+.wp-team-progress-label {
+  font-size: 0.72rem;
+  color: var(--ui-text-muted, #64748b);
+  white-space: nowrap;
+}
+
+/* 任务 pills */
+.wp-team-task-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.wp-team-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wp-team-pill-open {
+  background: #eff6ff; color: #1d4ed8;
+}
+.wp-team-pill-done {
+  background: #f0fdf4; color: #15803d;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+.wp-team-pill-overdue {
+  background: #fef2f2; color: #b91c1c;
+}
+.wp-team-pill-rolled {
+  background: #fdf4ff; color: #7e22ce;
+}
+.wp-team-no-tasks {
+  font-size: 0.73rem;
+  color: var(--ui-text-muted, #94a3b8);
+}
+
+@media (max-width: 768px) {
+  .wp-team-header { flex-direction: column; align-items: flex-start; }
+  .wp-team-header-stats { gap: 16px; }
+  .wp-team-grid { grid-template-columns: 1fr; }
+  .wp-goal-lock-banner { flex-direction: column; align-items: flex-start; }
+  .wp-goal-set-cta { width: 100%; justify-content: center; }
+}
+
 /* ── 周目标与复盘独立弹窗 (高颜值全屏居中 Dialog) ────────── */
 dialog.wp-summary-dialog {
   /* inset:auto must come before top/left so top/left 50% wins the cascade */
