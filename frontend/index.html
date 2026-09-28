@@ -2809,16 +2809,38 @@
             }
         }
 
-        /* 日历日期的备忘录列表滚动容器：隐藏滚动条，保持完整滚轮滚动 */
+        /* 日历日期的备忘录列表：极细4px悬浮胶囊上下滚动条（悬停点亮、平滑拖拽、禁用丑陋上下箭头） */
         .day-memos {
-            scrollbar-width: none !important;
-            -ms-overflow-style: none !important;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+            -ms-overflow-style: auto;
+            padding-right: 2px;
+            box-sizing: border-box;
         }
         
         .day-memos::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
+            display: block !important;
+            width: 4px !important;
+            height: 4px !important;
+        }
+
+        .day-memos::-webkit-scrollbar-track {
+            background: transparent !important;
+        }
+
+        .day-memos::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.38) !important;
+            border-radius: 999px !important;
+            transition: background 0.2s ease;
+        }
+
+        .day-memos:hover::-webkit-scrollbar-thumb,
+        .calendar-day:hover .day-memos::-webkit-scrollbar-thumb {
+            background: rgba(67, 97, 238, 0.65) !important;
+        }
+
+        .day-memos::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color, #4361ee) !important;
         }
 
         .day-memos::-webkit-scrollbar-button {
@@ -3870,7 +3892,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="./theme.css?v=20260928_pure_v3">
+    <link rel="stylesheet" href="./theme.css?v=20260928_scrollbar_v4">
 </head>
 <body>
     <div class="container">

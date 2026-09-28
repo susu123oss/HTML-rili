@@ -348,15 +348,45 @@ html[data-theme] #functionsModal .export-info :is(h4, strong) {
    现代化极简滚动条系统 (Global & Day Memos Scrollbar System)
    ======================================================== */
 
-/* 1. 日历格内备忘录：完全隐形滚动条，保持完整鼠标滚轮/触控滑动体验，彻底杜绝箭头与挤压内容 */
+/* 1. 日历格内备忘录：极细4px悬浮胶囊上下滚动条（悬停点亮、平滑拖拽、禁用丑陋上下箭头） */
 .day-memos,
 .calendar-day .day-memos {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+  -ms-overflow-style: auto;
+  padding-right: 2px;
+  box-sizing: border-box;
 }
 
 .day-memos::-webkit-scrollbar,
-.calendar-day .day-memos::-webkit-scrollbar,
+.calendar-day .day-memos::-webkit-scrollbar {
+  display: block !important;
+  width: 4px !important;
+  height: 4px !important;
+}
+
+.day-memos::-webkit-scrollbar-track,
+.calendar-day .day-memos::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.day-memos::-webkit-scrollbar-thumb,
+.calendar-day .day-memos::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.38) !important;
+  border-radius: 999px !important;
+  transition: background 0.2s ease;
+}
+
+.day-memos:hover::-webkit-scrollbar-thumb,
+.calendar-day:hover .day-memos::-webkit-scrollbar-thumb {
+  background: rgba(67, 97, 238, 0.65) !important;
+}
+
+.day-memos::-webkit-scrollbar-thumb:hover,
+.calendar-day .day-memos::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color, #4361ee) !important;
+}
+
 .day-memos::-webkit-scrollbar-button,
 .calendar-day .day-memos::-webkit-scrollbar-button {
   display: none !important;
