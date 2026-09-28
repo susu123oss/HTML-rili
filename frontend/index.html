@@ -3961,6 +3961,9 @@
                 </select>
             </div>
             <div class="toolbar-buttons">
+                <button class="toolbar-btn toolbar-btn-primary" id="toolbarWeeklyPlan" type="button" title="周工作规划、未完事项滚入与智能周报">
+                    <i class="fas fa-calendar-week"></i> 周计划与周报
+                </button>
                 <button class="toolbar-btn toolbar-btn-primary" id="toolbarPublish">
                     <i class="fas fa-bullhorn"></i> 任务发布
                 </button>
@@ -4526,6 +4529,36 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="closeFunctionsModalBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 周计划与研发复盘模态窗口 -->
+    <div class="modal" id="weeklyPlanModal">
+        <div class="modal-content weekly-plan-modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-calendar-week" style="color: var(--primary-color);"></i> 周工作规划与研发复盘
+                    <span class="weekly-plan-subtitle" id="weeklyPlanSubtitle">第40周 (09/28 - 10/04)</span>
+                </div>
+                <div class="weekly-plan-header-actions">
+                    <div class="weekly-plan-view-toggle" id="weeklyPlanViewToggle" style="display: none;">
+                        <button type="button" class="btn btn-sm active" id="wpViewPersonalBtn"><i class="fas fa-user"></i> 个人计划</button>
+                        <button type="button" class="btn btn-sm" id="wpViewTeamBtn"><i class="fas fa-users"></i> 全员看板</button>
+                    </div>
+                    <button class="close-modal" id="closeWeeklyPlanModal" aria-label="关闭周计划与复盘">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body weekly-plan-body" id="weeklyPlanBody">
+                <!-- 动态内容渲染 -->
+            </div>
+            <div class="modal-footer weekly-plan-footer">
+                <div class="weekly-footer-left">
+                    <button type="button" class="btn btn-outline-primary" id="wpCopyReportBtn">
+                        <i class="far fa-copy"></i> <span id="wpCopyReportBtnText">一键复制本周研发周报</span>
+                    </button>
+                </div>
+                <button type="button" class="btn btn-secondary" id="closeWeeklyPlanModalBtn">关闭</button>
             </div>
         </div>
     </div>

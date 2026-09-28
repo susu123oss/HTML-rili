@@ -3517,6 +3517,360 @@ html[data-theme='dark'] .task-time-exact {
   color: #cbd5e1;
 }
 
+/* ── 周计划与研发复盘弹窗 (Weekly Plan Modal) ────────── */
+.weekly-plan-modal-content {
+  width: 95% !important;
+  max-width: 980px !important;
+  max-height: calc(100vh - 50px) !important;
+  max-height: calc(100dvh - 50px) !important;
+  border-radius: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.weekly-plan-subtitle {
+  font-size: 0.92rem;
+  font-weight: 500;
+  margin-left: 10px;
+  color: var(--ui-text-muted, #64748b);
+}
+
+.weekly-plan-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.weekly-plan-view-toggle {
+  display: inline-flex;
+  background: var(--ui-surface-soft, #f1f5f9);
+  padding: 3px;
+  border-radius: 8px;
+  gap: 4px;
+}
+
+.weekly-plan-view-toggle .btn {
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  color: var(--ui-text-muted, #64748b);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.weekly-plan-view-toggle .btn.active {
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-primary, #206bc4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.weekly-plan-body {
+  padding: 16px 20px !important;
+  overflow-y: auto !important;
+  flex: 1 1 auto !important;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.weekly-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--ui-surface-soft, #f8fafc);
+  border: 1px solid var(--ui-border, #e2e8f0);
+}
+
+.weekly-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weekly-nav-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border, #cbd5e1);
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-text, #1e293b);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.weekly-nav-btn:hover {
+  background: var(--ui-surface-soft, #f1f5f9);
+}
+
+.weekly-metrics-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.weekly-metric-chip {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  color: var(--ui-text, #1e293b);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.weekly-metric-chip.rate {
+  background: rgba(32, 107, 196, 0.1);
+  color: #206bc4;
+  border-color: rgba(32, 107, 196, 0.25);
+}
+
+.weekly-metric-chip.completed {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.weekly-metric-chip.pending {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.weekly-dual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .weekly-dual-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.weekly-col-card {
+  border-radius: 12px;
+  border: 1px solid var(--ui-border, #e2e8f0);
+  background: var(--ui-surface, #ffffff);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.weekly-col-header {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ui-border, #e2e8f0);
+  background: var(--ui-surface-soft, #f8fafc);
+  color: var(--ui-text, #1e293b);
+}
+
+.weekly-task-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.wp-task-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ui-border, #e2e8f0);
+  background: var(--ui-surface-soft, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.1s ease, border-color 0.2s ease;
+}
+
+.wp-task-item:hover {
+  border-color: var(--ui-primary, #206bc4);
+}
+
+.wp-task-item.pending-urgent {
+  background: rgba(239, 68, 68, 0.04);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.wp-task-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wp-task-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ui-text, #0f172a);
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+.wp-task-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--ui-text-muted, #64748b);
+  margin-top: 2px;
+}
+
+.wp-rollover-btn {
+  padding: 4px 9px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #206bc4;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+
+.wp-rollover-btn:hover {
+  background: #17549c;
+}
+
+.weekly-quick-add-box {
+  padding: 10px 12px;
+  border-top: 1px solid var(--ui-border, #e2e8f0);
+  background: var(--ui-surface-soft, #f8fafc);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.weekly-quick-add-box input {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border, #cbd5e1);
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-text, #1e293b);
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.weekly-quick-add-box select {
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border, #cbd5e1);
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-text, #1e293b);
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.weekly-plan-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px !important;
+}
+
+/* 团队视图矩阵 */
+.team-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.team-plan-card {
+  border-radius: 12px;
+  border: 1px solid var(--ui-border, #e2e8f0);
+  background: var(--ui-surface-soft, #f8fafc);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.team-plan-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--ui-border, #e2e8f0);
+}
+
+html[data-theme='dark'] .weekly-plan-subtitle {
+  color: #94a3b8;
+}
+html[data-theme='dark'] .wp-task-title {
+  color: #f1f5f9;
+}
+html[data-theme='dark'] .weekly-quick-add-box input,
+html[data-theme='dark'] .weekly-quick-add-box select {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .weekly-plan-modal-content {
+    width: 96vw !important;
+    max-height: 94vh !important;
+    margin: 3vh auto !important;
+  }
+  .weekly-dual-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .weekly-quick-add-box {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .weekly-quick-add-box input {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+  .weekly-quick-add-box select {
+    flex: 1;
+    min-width: 120px;
+  }
+  .weekly-quick-add-box button {
+    flex: 1;
+    white-space: nowrap;
+  }
+  .weekly-plan-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  .weekly-plan-footer button {
+    width: 100%;
+  }
+  .weekly-footer-left {
+    width: 100%;
+  }
+}
+
+
+
 
 
 
