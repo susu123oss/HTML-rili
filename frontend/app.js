@@ -5795,8 +5795,13 @@ function selectMemoPickerDate(dateStr) {
 
   const dueInput = $('memoDueTime');
   if (dueInput && dueInput.value) {
-    const timePart = dueInput.value.split('T')[1] || '18:00';
-    dueInput.value = `${dateStr}T${timePart}`;
+    const [dueDatePart, dueTimePart] = dueInput.value.split('T');
+    // 只有当截止日期早于新开始日期时，才自动顺延校正截止日期至开始日期当天
+    if (dueDatePart && dueDatePart < dateStr) {
+      setMemoDuePickerValue(`${dateStr}T${dueTimePart || '18:00'}`);
+    }
+  } else if (dueInput && !dueInput.value) {
+    setMemoDuePickerValue(`${dateStr}T18:00`);
   }
 
   hideMemoCalendarPopup();
@@ -6183,8 +6188,11 @@ function handleQuickDueChipClick(event) {
     target.setHours(18, 0, 0, 0);
   }
 
+  // 快捷截止时间仅设置“截止时间”，绝不覆盖修改任务的“开始日期”
   const dateInput = $('memoDate');
-  if (dateInput) dateInput.value = dateKey(target);
+  if (dateInput && !dateInput.value) {
+    dateInput.value = dateKey(new Date());
+  }
   setMemoDuePickerValue(toLocalDateTimeInput(target));
 
   document.querySelectorAll('.quick-due-chip').forEach(c => c.classList.remove('active'));
