@@ -4242,15 +4242,46 @@ function applyRoleScopedUi() {
 
 function applyMainView() {
   const dashboardVisible = canManageWorkspace() && state.activeView === 'dashboard';
+  const weeklyPlanVisible = state.activeView === 'weeklyPlan';
+  const calendarVisible = !dashboardVisible && !weeklyPlanVisible;
+
   setElementVisible('dashboardPage', dashboardVisible);
+  setElementVisible('weeklyPlanPage', weeklyPlanVisible);
+
   const calendarContainer = document.querySelector('.calendar-container');
   if (calendarContainer) {
-    calendarContainer.hidden = dashboardVisible;
-    calendarContainer.style.display = dashboardVisible ? 'none' : '';
+    calendarContainer.hidden = !calendarVisible;
+    calendarContainer.style.display = calendarVisible ? '' : 'none';
   }
-  setElementVisible('teamLeaderboard', canManageWorkspace() && !dashboardVisible);
+  setElementVisible('teamLeaderboard', canManageWorkspace() && calendarVisible);
   $('toolbarDashboard')?.classList.toggle('active', dashboardVisible);
+
   if (dashboardVisible) renderDashboard();
+  if (weeklyPlanVisible) renderWeeklyPlanPage();
+}
+
+function openWeeklyPlanPage(refDate) {
+  state.activeView = 'weeklyPlan';
+  state.weeklyPlanDate = refDate ? new Date(refDate) : new Date(state.currentDate || new Date());
+  state.weeklyPlanView = state.weeklyPlanView || 'personal';
+  closeFunctionsModal();
+  applyMainView();
+  try {
+    window.location.hash = 'weekly-plan';
+  } catch (e) {}
+  window.requestAnimationFrame(() => $('weeklyPlanPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+}
+
+function closeWeeklyPlanPage() {
+  state.activeView = 'calendar';
+  if (window.location.hash === '#weekly-plan') {
+    try {
+      history.pushState("", document.title, window.location.pathname + window.location.search);
+    } catch (e) {}
+  }
+  renderTeamLeaderboard();
+  applyMainView();
+  window.requestAnimationFrame(() => $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }
 
 function openDashboardPage() {
@@ -5512,6 +5543,9 @@ function createMonthCalendar(monthDate, index) {
             <button class="stat-item pending ${state.calendarStatusFilter === 'pending' ? 'active' : ''}" data-status-filter="pending" title="只显示未完成任务" aria-label="只显示未完成${monthMemos.length - completed}条任务" type="button"><i class="fas fa-clock"></i><span class="stat-count-pending">${monthMemos.length - completed}</span></button>
           </div>
           ${createProgressCircle(progressPercent, index)}
+          <button class="calendar-weekly-plan-btn" onclick="openWeeklyPlanPage()" type="button" title="进入周计划与周报独立全屏工作台">
+            <i class="fas fa-calendar-week"></i> 周计划与周报
+          </button>
           <button class="complete-all-btn" data-month="${monthKey(monthDate)}" type="button"><i class="fas fa-check-double"></i> 一键完成</button>
         </div>
       </div>
@@ -6365,45 +6399,40 @@ function getWeekNumber(d) {
   return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
 }
 
-function openWeeklyPlanModal(refDate) {
-  state.weeklyPlanDate = refDate ? new Date(refDate) : new Date(state.currentDate || new Date());
-  state.weeklyPlanView = 'personal';
-
-  const viewToggle = $('weeklyPlanViewToggle');
-  if (viewToggle) {
-    viewToggle.style.display = canManageWorkspace() ? 'inline-flex' : 'none';
-  }
-  switchWeeklyPlanView('personal');
-  renderWeeklyPlanContent();
-  showDialog('weeklyPlanModal');
-}
-
-function closeWeeklyPlanModal() {
-  hideDialog('weeklyPlanModal');
-}
-
-function switchWeeklyPlanView(view) {
-  state.weeklyPlanView = view;
-  $('wpViewPersonalBtn')?.classList.toggle('active', view === 'personal');
-  $('wpViewTeamBtn')?.classList.toggle('active', view === 'team');
-  renderWeeklyPlanContent();
+function formatMemoDue(m) {
+  if (!m.dueTime) return '18:00';
+  const d = new Date(m.dueTime);
+  if (Number.isNaN(d.getTime())) return '18:00';
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function shiftWeeklyPlanWeek(offset) {
   const cur = new Date(state.weeklyPlanDate || new Date());
   cur.setDate(cur.getDate() + offset * 7);
   state.weeklyPlanDate = cur;
-  renderWeeklyPlanContent();
+  renderWeeklyPlanPage();
+}
+
+function setWeeklyPlanToCurrentWeek() {
+  state.weeklyPlanDate = new Date();
+  renderWeeklyPlanPage();
+}
+
+function switchWeeklyPlanView(view) {
+  state.weeklyPlanView = view;
+  $('wpPageViewPersonalBtn')?.classList.toggle('active', view === 'personal');
+  $('wpPageViewTeamBtn')?.classList.toggle('active', view === 'team');
+  renderWeeklyPlanPage();
 }
 
 function showWeeklyFeedback(message, type = 'success') {
-  const container = $('weeklyPlanBody');
+  const container = $('wpWorkspaceBody');
   if (!container) return;
   const old = container.querySelector('.wp-feedback-toast');
   if (old) old.remove();
   const toast = document.createElement('div');
   toast.className = `wp-feedback-toast operation-feedback ${type}`;
-  toast.style.margin = '0 0 10px';
+  toast.style.margin = '0 0 14px';
   toast.innerHTML = `<i class="fas fa-check-circle"></i> ${escapeHtml(message)}`;
   container.prepend(toast);
   setTimeout(() => toast.remove(), 3500);
@@ -6416,9 +6445,9 @@ function getWeeklyTargetUserId() {
   return Number(state.user?.id);
 }
 
-function renderWeeklyPlanContent() {
-  const container = $('weeklyPlanBody');
-  if (!container) return;
+function renderWeeklyPlanPage() {
+  const page = $('weeklyPlanPage');
+  if (!page || state.activeView !== 'weeklyPlan') return;
 
   const { monday, sunday, nextMonday, nextSunday } = getWeekRange(state.weeklyPlanDate);
   const weekNum = getWeekNumber(monday);
@@ -6427,19 +6456,21 @@ function renderWeeklyPlanContent() {
   const nextMonKey = dateKey(nextMonday);
   const nextSunKey = dateKey(nextSunday);
 
-  const subTitle = $('weeklyPlanSubtitle');
-  if (subTitle) {
-    subTitle.textContent = `${monday.getFullYear()}年 第${weekNum}周 (${monday.getMonth() + 1}/${monday.getDate()} - ${sunday.getMonth() + 1}/${sunday.getDate()})`;
+  const weekLabel = $('wpPageWeekLabel');
+  if (weekLabel) {
+    weekLabel.textContent = `${monday.getFullYear()}年 第${weekNum}周 (${monday.getMonth() + 1}/${monday.getDate()} ~ ${sunday.getMonth() + 1}/${sunday.getDate()})`;
   }
 
-  const copyBtn = $('wpCopyReportBtn');
+  const viewToggle = $('wpPageViewToggle');
+  if (viewToggle) {
+    viewToggle.style.display = canManageWorkspace() ? 'inline-flex' : 'none';
+    $('wpPageViewPersonalBtn')?.classList.toggle('active', state.weeklyPlanView === 'personal');
+    $('wpPageViewTeamBtn')?.classList.toggle('active', state.weeklyPlanView === 'team');
+  }
+
+  const copyBtn = $('wpPageCopyReportBtn');
   if (copyBtn) {
     copyBtn.style.display = (state.weeklyPlanView === 'team') ? 'none' : 'inline-flex';
-  }
-
-  if (state.weeklyPlanView === 'team' && canManageWorkspace()) {
-    renderTeamWeeklyPlanView(container, nextMonKey, nextSunKey);
-    return;
   }
 
   const targetUserId = getWeeklyTargetUserId();
@@ -6451,105 +6482,230 @@ function renderWeeklyPlanContent() {
   const pending = thisWeekMemos.filter(m => !m.completed);
   const planRate = thisWeekMemos.length ? Math.round((completed.length / thisWeekMemos.length) * 100) : 100;
 
-  const nextWeekDays = [];
-  for (let i = 0; i < 5; i++) {
-    const d = new Date(nextMonday);
-    d.setDate(nextMonday.getDate() + i);
-    const dayNames = ['周一', '周二', '周三', '周四', '周五'];
-    nextWeekDays.push({ key: dateKey(d), label: `下${dayNames[i]} (${d.getMonth() + 1}/${d.getDate()})` });
+  // Render Metrics Ribbon
+  const metricsRibbon = $('wpPageMetricsRibbon');
+  if (metricsRibbon) {
+    metricsRibbon.innerHTML = `
+      <div class="wp-metric-box">
+        <div class="wp-metric-val">${thisWeekMemos.length}</div>
+        <div class="wp-metric-label"><i class="fas fa-tasks text-primary"></i> 本周事项总数</div>
+      </div>
+      <div class="wp-metric-box success">
+        <div class="wp-metric-val" style="color: var(--ui-success);">${completed.length}</div>
+        <div class="wp-metric-label"><i class="fas fa-check-circle text-success"></i> 已达成事项</div>
+      </div>
+      <div class="wp-metric-box danger">
+        <div class="wp-metric-val" style="color: var(--ui-danger);">${pending.length}</div>
+        <div class="wp-metric-label"><i class="fas fa-exclamation-circle text-danger"></i> 滞后/待办事项</div>
+      </div>
+      <div class="wp-metric-box primary">
+        <div class="wp-metric-val" style="color: var(--ui-primary);">${planRate}%</div>
+        <div class="wp-metric-label"><i class="fas fa-chart-line text-primary"></i> 本周计划达成率</div>
+      </div>
+      <div class="wp-metric-box info">
+        <div class="wp-metric-val" style="color: #0284c7;">${nextWeekMemos.length}</div>
+        <div class="wp-metric-label"><i class="fas fa-calendar-check text-info"></i> 下周已预排目标</div>
+      </div>
+    `;
   }
 
-  container.innerHTML = `
-    <div class="weekly-nav-bar">
-      <div class="weekly-nav-controls">
-        <button type="button" class="weekly-nav-btn" onclick="shiftWeeklyPlanWeek(-1)" title="上一周"><i class="fas fa-chevron-left"></i></button>
-        <span style="font-weight: 700; font-size: 0.88rem; color: var(--ui-text);">第${weekNum}周</span>
-        <button type="button" class="weekly-nav-btn" onclick="shiftWeeklyPlanWeek(1)" title="下一周"><i class="fas fa-chevron-right"></i></button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openWeeklyPlanModal(new Date())" style="margin-left: 6px; padding: 2px 8px; font-size: 0.75rem;">本周</button>
-      </div>
+  const workspaceBody = $('wpWorkspaceBody');
+  if (!workspaceBody) return;
 
-      <div class="weekly-metrics-row">
-        <span class="weekly-metric-chip completed"><i class="fas fa-check-circle"></i> 本周完成 ${completed.length} / ${thisWeekMemos.length}</span>
-        <span class="weekly-metric-chip pending"><i class="fas fa-exclamation-circle"></i> 滞后/待办 ${pending.length}</span>
-        <span class="weekly-metric-chip rate"><i class="fas fa-chart-line"></i> 计划达成率 ${planRate}%</span>
-        <span class="weekly-metric-chip" style="background: rgba(32, 107, 196, 0.08); color: var(--ui-primary);"><i class="fas fa-calendar-check"></i> 下周已规划 ${nextWeekMemos.length} 项</span>
-      </div>
-    </div>
+  if (state.weeklyPlanView === 'team' && canManageWorkspace()) {
+    renderTeamWeeklyPlanView(workspaceBody, nextMonKey, nextSunKey);
+    return;
+  }
 
-    <div class="weekly-dual-grid">
-      <div class="weekly-col-card">
-        <div class="weekly-col-header">
-          <span><i class="fas fa-clipboard-check text-success" style="margin-right: 6px;"></i>【本周复盘】实际完成与滞后</span>
-          <span style="font-size: 0.76rem; font-weight: normal; color: var(--ui-text-muted);">${monKey.slice(5)} ~ ${sunKey.slice(5)}</span>
+  // Personal View: Generate 7 Days columns (Monday through Sunday)
+  const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  const weekDays = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dKey = dateKey(d);
+    const isToday = (dKey === dateKey(new Date()));
+    const dMemos = userMemos.filter(m => m.date === dKey);
+    weekDays.push({
+      dateKey: dKey,
+      dayName: dayNames[i],
+      dateLabel: `${d.getMonth() + 1}/${d.getDate()}`,
+      isToday,
+      memos: dMemos
+    });
+  }
+
+  workspaceBody.innerHTML = `
+    <div class="wp-dual-workspace">
+      <!-- 左栏：本周复盘与未完事项待流转池 -->
+      <div class="wp-review-panel card">
+        <div class="wp-panel-header">
+          <div class="wp-panel-title">
+            <i class="fas fa-clipboard-check text-success"></i>
+            <span>本周复盘与滞后流转</span>
+          </div>
+          <span class="wp-panel-badge">${monKey.slice(5)} ~ ${sunKey.slice(5)}</span>
         </div>
-        <div class="weekly-task-list">
-          ${thisWeekMemos.length === 0 ? '<div class="empty-state" style="padding: 24px 10px;"><i class="fas fa-inbox"></i><p>本周尚无事项记录</p></div>' : ''}
+
+        <div class="wp-review-scroll-list">
+          <div class="wp-review-section-title">
+            <span class="text-danger"><i class="fas fa-exclamation-circle"></i> 滞后/待办事项 (${pending.length})</span>
+            <small style="color: var(--ui-text-muted);">一键顺延滚入下周</small>
+          </div>
+          ${pending.length === 0 ? '<div class="wp-empty-hint"><i class="fas fa-check-circle text-success"></i> 本周无滞后待办事项</div>' : ''}
           ${pending.map(m => `
-            <div class="wp-task-item pending-urgent" id="wpTask-${m.id}">
-              <div class="wp-task-title-row">
-                <span class="wp-task-title"><i class="fas fa-clock text-danger" style="margin-right: 5px;"></i>${escapeHtml(m.title)}</span>
-                <span class="task-status-pill pending" style="margin: 0;">未完成</span>
+            <div class="wp-rollover-card pending" id="wpCard-${m.id}">
+              <div class="wp-card-title-row">
+                <span class="wp-card-title">${escapeHtml(m.title)}</span>
+                <span class="task-status-pill pending">待办</span>
               </div>
-              <div class="wp-task-meta">
-                <span><i class="far fa-calendar-alt"></i> ${m.date}</span>
-                <button type="button" class="wp-rollover-btn" onclick="rollOverMemoToNextWeek('${m.id}')" title="将此未完成事项流转到下周计划">
+              <div class="wp-card-meta-row">
+                <span class="wp-card-time"><i class="far fa-calendar-alt"></i> ${m.date}</span>
+                <button type="button" class="wp-rollover-action-btn" onclick="rollOverMemoToNextWeek('${m.id}')" title="将此未完成事项流转到下周计划">
                   <i class="fas fa-share"></i> 滚入下周计划
                 </button>
               </div>
             </div>
           `).join('')}
+
+          <div class="wp-review-section-title" style="margin-top: 14px;">
+            <span class="text-success"><i class="fas fa-check-circle"></i> 本周已达成事项 (${completed.length})</span>
+          </div>
+          ${completed.length === 0 ? '<div class="wp-empty-hint"><i class="far fa-clock"></i> 暂无已完成事项</div>' : ''}
           ${completed.map(m => `
-            <div class="wp-task-item" style="opacity: 0.85;">
-              <div class="wp-task-title-row">
-                <span class="wp-task-title" style="text-decoration: line-through; color: var(--ui-text-muted);"><i class="fas fa-check-circle text-success" style="margin-right: 5px;"></i>${escapeHtml(m.title)}</span>
-                <span class="task-status-pill completed" style="margin: 0;">已完成</span>
+            <div class="wp-rollover-card completed">
+              <div class="wp-card-title-row">
+                <span class="wp-card-title completed">${escapeHtml(m.title)}</span>
+                <span class="task-status-pill completed">达成</span>
               </div>
-              <div class="wp-task-meta">
-                <span><i class="far fa-calendar-alt"></i> ${m.date}</span>
-                <span style="font-size: 0.72rem; color: var(--ui-success);"><i class="fas fa-check"></i> 达成</span>
+              <div class="wp-card-meta-row">
+                <span class="wp-card-time"><i class="far fa-calendar-alt"></i> ${m.date}</span>
+                <span class="text-success" style="font-size: 0.72rem; font-weight: 600;"><i class="fas fa-check"></i> 已完成</span>
               </div>
             </div>
           `).join('')}
         </div>
       </div>
 
-      <div class="weekly-col-card">
-        <div class="weekly-col-header" style="background: rgba(32, 107, 196, 0.05); color: var(--ui-primary);">
-          <span><i class="fas fa-bullseye" style="margin-right: 6px;"></i>【下周计划】承诺交付目标</span>
-          <span style="font-size: 0.76rem; font-weight: normal;">第${weekNum + 1}周 (${nextMonKey.slice(5)} ~ ${nextSunKey.slice(5)})</span>
+      <!-- 右栏：全屏周日程与攻坚计划大看板 -->
+      <div class="wp-board-panel card">
+        <div class="wp-board-header">
+          <div class="wp-board-title-group">
+            <i class="fas fa-calendar-alt text-primary"></i>
+            <span class="wp-board-title">第${weekNum}周 周日程规划日历列表</span>
+            <span class="wp-board-week-range">${monKey} ~ ${sunKey}</span>
+          </div>
+          <div class="wp-board-quick-legend">
+            <span><i class="fas fa-lightbulb text-warning" style="margin-right: 4px;"></i>在下方各日输入框填写计划，按回车即可加入</span>
+          </div>
         </div>
-        <div class="weekly-task-list" id="wpNextWeekList">
-          ${nextWeekMemos.length === 0 ? '<div class="empty-state" style="padding: 24px 10px;"><i class="fas fa-calendar-plus"></i><p>下周尚未排定任务，提前规划下周目标让工作更有序！</p></div>' : ''}
-          ${nextWeekMemos.map(m => `
-            <div class="wp-task-item" id="wpTask-${m.id}">
-              <div class="wp-task-title-row">
-                <span class="wp-task-title">
-                  ${m.title.startsWith('[') ? '' : '<span class="task-status-pill pending" style="margin: 0 4px 0 0; padding: 1px 5px; font-size: 0.7rem;">计划</span>'}
-                  ${escapeHtml(m.title)}
-                </span>
-                ${m.completed ? '<span class="task-status-pill completed" style="margin: 0;">提前完成</span>' : '<span class="task-status-pill pending" style="margin: 0;">计划中</span>'}
+
+        <div class="wp-columns-grid">
+          ${weekDays.map(day => `
+            <div class="wp-day-column ${day.isToday ? 'is-today' : ''}">
+              <div class="wp-day-col-header">
+                <div class="wp-day-date-box">
+                  <span class="wp-day-name">${day.dayName}</span>
+                  <span class="wp-day-date">${day.dateLabel}</span>
+                </div>
+                ${day.isToday ? '<span class="wp-today-badge">今日</span>' : ''}
+                <span class="wp-day-count-badge">${day.memos.length} 项</span>
               </div>
-              ${m.content ? `<div style="font-size: 0.75rem; color: var(--ui-text-muted); line-height: 1.35; margin-top: 2px;">${escapeHtml(m.content.slice(0, 70))}</div>` : ''}
-              <div class="wp-task-meta">
-                <span><i class="far fa-calendar-alt"></i> 计划执行日：${m.date}</span>
-                <span style="font-size: 0.72rem; color: var(--ui-primary);">${getCountdown(m) || '下周待办'}</span>
+
+              <div class="wp-day-task-list" id="wpDayList-${day.dateKey}">
+                ${day.memos.length === 0 ? '<div class="wp-day-empty">暂无安排</div>' : ''}
+                ${day.memos.map(m => `
+                  <div class="wp-day-task-card ${m.completed ? 'completed' : ''}" style="border-left-color: ${m.color || '#206bc4'};">
+                    <div class="wp-day-card-top">
+                      <input type="checkbox" class="wp-day-checkbox" ${m.completed ? 'checked' : ''} onchange="toggleMemoCompleteFromBoard('${m.id}', this.checked)" title="标记完成状态">
+                      <span class="wp-day-card-title ${m.completed ? 'completed' : ''}" onclick="openMemoModal('${m.id}')" title="点击查看编辑">${escapeHtml(m.title)}</span>
+                    </div>
+                    ${m.content ? `<div class="wp-day-card-content">${escapeHtml(m.content.slice(0, 60))}</div>` : ''}
+                    <div class="wp-day-card-footer">
+                      <span class="wp-day-card-due"><i class="far fa-clock"></i> ${formatMemoDue(m)}</span>
+                      <div class="wp-card-actions">
+                        <button type="button" class="wp-icon-btn" onclick="openMemoModal('${m.id}')" title="编辑详情"><i class="fas fa-edit"></i></button>
+                        <button type="button" class="wp-icon-btn text-danger" onclick="deleteMemoFromBoard('${m.id}')" title="删除"><i class="fas fa-trash-alt"></i></button>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+
+              <div class="wp-day-quick-add">
+                <input type="text" class="wp-day-input" placeholder="+ 添加攻坚计划，回车保存" onkeydown="if(event.key==='Enter')addPlanForSpecificDate('${day.dateKey}', this)">
               </div>
             </div>
           `).join('')}
-        </div>
-
-        <div class="weekly-quick-add-box">
-          <input type="text" id="wpNewPlanTitle" placeholder="输入下周攻坚任务/交付物..." onkeydown="if(event.key==='Enter')addNextWeekPlanMemo()">
-          <select id="wpNewPlanDate">
-            ${nextWeekDays.map(d => `<option value="${d.key}">${d.label}</option>`).join('')}
-          </select>
-          <button type="button" class="btn btn-sm btn-primary" onclick="addNextWeekPlanMemo()" style="white-space: nowrap;">
-            <i class="fas fa-plus"></i> 加入计划
-          </button>
         </div>
       </div>
     </div>
   `;
+}
+
+async function addPlanForSpecificDate(dateStr, inputElem) {
+  const title = inputElem?.value?.trim();
+  if (!title) return;
+
+  const planTitle = title.startsWith('[') ? title : '[计划] ' + title;
+  const targetUserId = getWeeklyTargetUserId();
+
+  try {
+    const res = await request('/memos', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: planTitle,
+        date: dateStr,
+        ownerId: targetUserId,
+        dueTime: `${dateStr}T18:00:00`,
+        color: '#206bc4'
+      })
+    });
+
+    if (res.memo) {
+      state.memos.push(res.memo);
+    }
+    inputElem.value = '';
+    renderMultiMonthCalendar();
+    renderWeeklyPlanPage();
+    showWeeklyFeedback(`✔ 计划「${planTitle}」已成功排入 ${dateStr}！`);
+  } catch (err) {
+    alert(`添加计划失败：${err.message}`);
+  }
+}
+
+async function toggleMemoCompleteFromBoard(memoId, isCompleted) {
+  try {
+    const res = await request(`/memos/${memoId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ completed: isCompleted })
+    });
+    const idx = state.memos.findIndex(m => String(m.id) === String(memoId));
+    if (idx !== -1) {
+      state.memos[idx] = res.memo || { ...state.memos[idx], completed: isCompleted };
+    }
+    renderMultiMonthCalendar();
+    renderWeeklyPlanPage();
+    showWeeklyFeedback(`事项已标记为 ${isCompleted ? '已完成' : '未完成'}`);
+  } catch (err) {
+    alert(`更新状态失败：${err.message}`);
+  }
+}
+
+async function deleteMemoFromBoard(memoId) {
+  if (!confirm('确定要删除该事项吗？')) return;
+  try {
+    await request(`/memos/${memoId}`, { method: 'DELETE' });
+    const idx = state.memos.findIndex(m => String(m.id) === String(memoId));
+    if (idx !== -1) {
+      state.memos.splice(idx, 1);
+    }
+    renderMultiMonthCalendar();
+    renderWeeklyPlanPage();
+    showWeeklyFeedback('已删除事项');
+  } catch (err) {
+    alert(`删除失败：${err.message}`);
+  }
 }
 
 async function rollOverMemoToNextWeek(memoId) {
@@ -6588,43 +6744,10 @@ async function rollOverMemoToNextWeek(memoId) {
     }
 
     renderMultiMonthCalendar();
-    renderWeeklyPlanContent();
+    renderWeeklyPlanPage();
     showWeeklyFeedback(`✔ 事项「${memo.title}」已成功滚入下周计划 (${targetDate})！`);
   } catch (err) {
     alert(`流转失败：${err.message}`);
-  }
-}
-
-async function addNextWeekPlanMemo() {
-  const titleInput = $('wpNewPlanTitle');
-  const dateInput = $('wpNewPlanDate');
-  const title = titleInput?.value?.trim();
-  const date = dateInput?.value;
-  if (!title || !date) return;
-
-  try {
-    const targetUserId = getWeeklyTargetUserId();
-    const res = await request('/memos', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: title.startsWith('[') ? title : '[计划] ' + title,
-        date: date,
-        ownerId: targetUserId,
-        content: '',
-        color: '#206bc4',
-        dueTime: `${date}T18:00:00`
-      })
-    });
-
-    if (res.memo) {
-      state.memos.push(res.memo);
-    }
-    titleInput.value = '';
-    renderMultiMonthCalendar();
-    renderWeeklyPlanContent();
-    showWeeklyFeedback('✔ 下周计划目标已添加！');
-  } catch (err) {
-    alert(`添加失败：${err.message}`);
   }
 }
 
@@ -6677,10 +6800,10 @@ function copyWeeklyReportMarkdown() {
   report += `\n三、协同需求与风险提示\n  - 无\n`;
 
   navigator.clipboard.writeText(report).then(() => {
-    const btnText = $('wpCopyReportBtnText');
+    const btnText = $('wpPageCopyReportText');
     if (btnText) {
       btnText.textContent = '已复制周报到剪贴板！✓';
-      setTimeout(() => { btnText.textContent = '一键复制本周研发周报'; }, 2000);
+      setTimeout(() => { btnText.textContent = '一键复制周报'; }, 2000);
     }
   }).catch(() => {
     alert(report);
@@ -6692,11 +6815,11 @@ function renderTeamWeeklyPlanView(container, nextMonKey, nextSunKey) {
   const nextWeekMemos = state.memos.filter(m => m.date >= nextMonKey && m.date <= nextSunKey);
 
   container.innerHTML = `
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-      <h3 style="font-size: 0.92rem; font-weight: 700; margin: 0; color: var(--ui-text);">
-        <i class="fas fa-users-cog text-primary" style="margin-right: 6px;"></i>研发团队全员下周计划一览
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; background: var(--ui-surface); padding: 14px 18px; border-radius: var(--border-radius); border: 1px solid var(--ui-border); box-shadow: var(--box-shadow);">
+      <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--ui-text);">
+        <i class="fas fa-users-cog text-primary" style="margin-right: 8px;"></i>研发团队全员周计划与承诺交付物一览
       </h3>
-      <span style="font-size: 0.78rem; color: var(--ui-text-muted);">规划周期：${nextMonKey} ~ ${nextSunKey}</span>
+      <span style="font-size: 0.82rem; color: var(--ui-text-muted);">规划周期：${nextMonKey} ~ ${nextSunKey}</span>
     </div>
     <div class="team-plan-grid">
       ${users.map(u => {
@@ -6726,12 +6849,15 @@ function renderTeamWeeklyPlanView(container, nextMonKey, nextSunKey) {
   `;
 }
 
+window.openWeeklyPlanPage = openWeeklyPlanPage;
+window.closeWeeklyPlanPage = closeWeeklyPlanPage;
 window.shiftWeeklyPlanWeek = shiftWeeklyPlanWeek;
-window.openWeeklyPlanModal = openWeeklyPlanModal;
-window.closeWeeklyPlanModal = closeWeeklyPlanModal;
+window.setWeeklyPlanToCurrentWeek = setWeeklyPlanToCurrentWeek;
 window.switchWeeklyPlanView = switchWeeklyPlanView;
 window.rollOverMemoToNextWeek = rollOverMemoToNextWeek;
-window.addNextWeekPlanMemo = addNextWeekPlanMemo;
+window.addPlanForSpecificDate = addPlanForSpecificDate;
+window.toggleMemoCompleteFromBoard = toggleMemoCompleteFromBoard;
+window.deleteMemoFromBoard = deleteMemoFromBoard;
 window.copyWeeklyReportMarkdown = copyWeeklyReportMarkdown;
 
 function getCountdown(memo) {
@@ -7881,12 +8007,14 @@ function initEventListeners() {
   $('floatingFunctions').addEventListener('click', () => openFunctionsModal('taskPublish'));
   $('closeFunctionsModal').addEventListener('click', closeFunctionsModal);
   $('closeFunctionsModalBtn').addEventListener('click', closeFunctionsModal);
-  $('toolbarWeeklyPlan')?.addEventListener('click', () => openWeeklyPlanModal());
-  $('closeWeeklyPlanModal')?.addEventListener('click', closeWeeklyPlanModal);
-  $('closeWeeklyPlanModalBtn')?.addEventListener('click', closeWeeklyPlanModal);
-  $('wpViewPersonalBtn')?.addEventListener('click', () => switchWeeklyPlanView('personal'));
-  $('wpViewTeamBtn')?.addEventListener('click', () => switchWeeklyPlanView('team'));
-  $('wpCopyReportBtn')?.addEventListener('click', copyWeeklyReportMarkdown);
+  $('wpBackToCalendar')?.addEventListener('click', closeWeeklyPlanPage);
+  $('wpPagePrevWeek')?.addEventListener('click', () => shiftWeeklyPlanWeek(-1));
+  $('wpPageNextWeek')?.addEventListener('click', () => shiftWeeklyPlanWeek(1));
+  $('wpPageThisWeek')?.addEventListener('click', setWeeklyPlanToCurrentWeek);
+  $('wpPageViewPersonalBtn')?.addEventListener('click', () => switchWeeklyPlanView('personal'));
+  $('wpPageViewTeamBtn')?.addEventListener('click', () => switchWeeklyPlanView('team'));
+  $('wpPageCopyReportBtn')?.addEventListener('click', copyWeeklyReportMarkdown);
+  $('wpPageRefreshBtn')?.addEventListener('click', async () => { await loadMemos(); renderWeeklyPlanPage(); });
   $('toolbarPublish').addEventListener('click', () => openFunctionsModal('taskPublish'));
   $('toolbarNewMemo')?.addEventListener('click', () => openMemoModal(null, new Date()));
   $('btnSelectAllAssignees')?.addEventListener('click', selectAllTaskAssignees);

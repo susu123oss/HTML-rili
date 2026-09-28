@@ -3517,87 +3517,131 @@ html[data-theme='dark'] .task-time-exact {
   color: #cbd5e1;
 }
 
-/* ── 周计划与研发复盘弹窗 (Weekly Plan Modal) ────────── */
-.weekly-plan-modal-content {
-  width: 95% !important;
-  max-width: 980px !important;
-  max-height: calc(100vh - 50px) !important;
-  max-height: calc(100dvh - 50px) !important;
-  border-radius: 16px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-}
-
-.weekly-plan-subtitle {
-  font-size: 0.92rem;
-  font-weight: 500;
-  margin-left: 10px;
-  color: var(--ui-text-muted, #64748b);
-}
-
-.weekly-plan-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.weekly-plan-view-toggle {
-  display: inline-flex;
-  background: var(--ui-surface-soft, #f1f5f9);
-  padding: 3px;
-  border-radius: 8px;
-  gap: 4px;
-}
-
-.weekly-plan-view-toggle .btn {
-  padding: 4px 10px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  border-radius: 6px;
+/* ── 月历卡片头部“周计划与周报”全屏工作台入口按钮 ────────── */
+.calendar-weekly-plan-btn {
+  background: linear-gradient(135deg, #4361ee, #3a0ca3);
+  color: #ffffff;
   border: none;
-  color: var(--ui-text-muted, #64748b);
-  background: transparent;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.86rem;
+  white-space: nowrap;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 2px 8px rgba(67, 97, 238, 0.25);
 }
 
-.weekly-plan-view-toggle .btn.active {
-  background: var(--ui-surface, #ffffff);
-  color: var(--ui-primary, #206bc4);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.calendar-weekly-plan-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+  filter: brightness(1.06);
 }
 
-.weekly-plan-body {
-  padding: 16px 20px !important;
-  overflow-y: auto !important;
-  flex: 1 1 auto !important;
+.calendar-weekly-plan-btn:active {
+  transform: translateY(0);
+}
+
+/* ── 周计划与研发复盘全屏独立工作台 (Weekly Plan Page) ────────── */
+.weekly-plan-page {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 18px 24px;
+  min-height: calc(100vh - 120px);
+  animation: wpFadeIn 0.25s ease-out;
 }
 
-.weekly-nav-bar {
+@keyframes wpFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.wp-hero-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--ui-surface-soft, #f8fafc);
+  gap: 16px;
+  background: var(--ui-surface, #ffffff);
   border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 14px;
+  padding: 14px 20px;
+  box-shadow: var(--ui-shadow, 0 4px 16px rgba(0, 0, 0, 0.04));
 }
 
-.weekly-nav-controls {
+.wp-hero-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
 }
 
-.weekly-nav-btn {
-  width: 30px;
-  height: 30px;
+.wp-back-btn {
+  padding: 8px 14px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  border: 1px solid var(--ui-border, #cbd5e1);
+  background: var(--ui-surface-soft, #f8fafc);
+  color: var(--ui-text, #1e293b);
+  transition: all 0.15s ease;
+}
+
+.wp-back-btn:hover {
+  background: var(--ui-border, #e2e8f0);
+  transform: translateX(-2px);
+}
+
+.wp-hero-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wp-hero-kicker {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ui-text-muted, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wp-hero-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ui-text, #0f172a);
+}
+
+.wp-hero-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wp-week-nav-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ui-surface-soft, #f8fafc);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 4px 8px;
+}
+
+.wp-nav-arrow-btn {
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   border: 1px solid var(--ui-border, #cbd5e1);
   background: var(--ui-surface, #ffffff);
@@ -3606,94 +3650,205 @@ html[data-theme='dark'] .task-time-exact {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.weekly-nav-btn:hover {
-  background: var(--ui-surface-soft, #f1f5f9);
+.wp-nav-arrow-btn:hover {
+  background: var(--ui-border, #e2e8f0);
 }
 
-.weekly-metrics-row {
+.wp-current-week-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ui-text, #0f172a);
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.wp-today-chip {
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.wp-hero-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.weekly-metric-chip {
-  padding: 4px 10px;
+.wp-view-toggle-wrap {
+  display: inline-flex;
+  background: var(--ui-surface-soft, #f1f5f9);
+  padding: 3px;
   border-radius: 8px;
-  font-size: 0.76rem;
-  font-weight: 600;
-  background: var(--ui-surface, #ffffff);
+  gap: 4px;
   border: 1px solid var(--ui-border, #e2e8f0);
-  color: var(--ui-text, #1e293b);
+}
+
+.wp-view-toggle-wrap .btn {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ui-text-muted, #64748b);
+  transition: all 0.15s ease;
+}
+
+.wp-view-toggle-wrap .btn.active {
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-primary, #4361ee);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
+}
+
+#wpPageCopyReportBtn {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
 }
 
-.weekly-metric-chip.rate {
-  background: rgba(32, 107, 196, 0.1);
-  color: #206bc4;
-  border-color: rgba(32, 107, 196, 0.25);
+#wpPageCopyReportBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
 }
 
-.weekly-metric-chip.completed {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.25);
+#wpPageRefreshBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.weekly-metric-chip.pending {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.25);
-}
-
-.weekly-dual-grid {
+/* ── 关键指标横条 ────────── */
+.wp-metrics-ribbon {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
-@media (max-width: 768px) {
-  .weekly-dual-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.weekly-col-card {
-  border-radius: 12px;
-  border: 1px solid var(--ui-border, #e2e8f0);
+.wp-metric-box {
   background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 12px 18px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: 4px;
+  box-shadow: var(--ui-shadow, 0 2px 8px rgba(0, 0, 0, 0.03));
 }
 
-.weekly-col-header {
-  padding: 10px 14px;
-  font-size: 0.85rem;
+.wp-metric-val {
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--ui-text, #0f172a);
+}
+
+.wp-metric-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ui-text-muted, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── 双栏工作台核心区域 ────────── */
+.wp-dual-workspace {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* 左侧：复盘与滞后流转池 */
+.wp-review-panel {
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--ui-shadow, 0 4px 16px rgba(0, 0, 0, 0.04));
+}
+
+.wp-panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ui-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--ui-surface-soft, #f8fafc);
+}
+
+.wp-panel-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ui-text, #0f172a);
+}
+
+.wp-panel-badge {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ui-text-muted, #64748b);
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.wp-review-scroll-list {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+}
+
+.wp-review-section-title {
+  font-size: 0.78rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--ui-border, #e2e8f0);
-  background: var(--ui-surface-soft, #f8fafc);
-  color: var(--ui-text, #1e293b);
+  padding-bottom: 2px;
 }
 
-.weekly-task-list {
+.wp-empty-hint {
   padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 380px;
-  overflow-y: auto;
-  flex: 1;
+  font-size: 0.78rem;
+  color: var(--ui-text-muted, #94a3b8);
+  text-align: center;
+  background: var(--ui-surface-soft, #f8fafc);
+  border-radius: 8px;
+  border: 1px dashed var(--ui-border, #e2e8f0);
 }
 
-.wp-task-item {
+.wp-rollover-card {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--ui-border, #e2e8f0);
@@ -3701,44 +3856,49 @@ html[data-theme='dark'] .task-time-exact {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  transition: transform 0.1s ease, border-color 0.2s ease;
+  transition: all 0.15s ease;
 }
 
-.wp-task-item:hover {
-  border-color: var(--ui-primary, #206bc4);
+.wp-rollover-card.pending {
+  border-left: 3px solid #ef4444;
 }
 
-.wp-task-item.pending-urgent {
-  background: rgba(239, 68, 68, 0.04);
-  border-color: rgba(239, 68, 68, 0.3);
+.wp-rollover-card.completed {
+  border-left: 3px solid #10b981;
+  opacity: 0.85;
 }
 
-.wp-task-title-row {
+.wp-card-title-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
 
-.wp-task-title {
-  font-size: 0.84rem;
+.wp-card-title {
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--ui-text, #0f172a);
-  word-break: break-all;
   line-height: 1.35;
+  flex: 1;
+  word-break: break-all;
 }
 
-.wp-task-meta {
+.wp-card-title.completed {
+  text-decoration: line-through;
+  color: var(--ui-text-muted, #94a3b8);
+}
+
+.wp-card-meta-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 0.74rem;
   color: var(--ui-text-muted, #64748b);
-  margin-top: 2px;
 }
 
-.wp-rollover-btn {
-  padding: 4px 9px;
+.wp-rollover-action-btn {
+  padding: 3px 9px;
   font-size: 0.73rem;
   font-weight: 600;
   border-radius: 6px;
@@ -3752,45 +3912,268 @@ html[data-theme='dark'] .task-time-exact {
   transition: background 0.15s ease;
 }
 
-.wp-rollover-btn:hover {
+.wp-rollover-action-btn:hover {
   background: #17549c;
 }
 
-.weekly-quick-add-box {
-  padding: 10px 12px;
-  border-top: 1px solid var(--ui-border, #e2e8f0);
-  background: var(--ui-surface-soft, #f8fafc);
+/* 右侧：全屏周日程与攻坚规划大看板 */
+.wp-board-panel {
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 14px;
+  overflow: hidden;
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  box-shadow: var(--ui-shadow, 0 4px 16px rgba(0, 0, 0, 0.04));
 }
 
-.weekly-quick-add-box input {
-  flex: 1;
-  padding: 7px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--ui-border, #cbd5e1);
-  background: var(--ui-surface, #ffffff);
-  color: var(--ui-text, #1e293b);
-  font-size: 0.8rem;
-  outline: none;
-}
-
-.weekly-quick-add-box select {
-  padding: 7px 8px;
-  border-radius: 8px;
-  border: 1px solid var(--ui-border, #cbd5e1);
-  background: var(--ui-surface, #ffffff);
-  color: var(--ui-text, #1e293b);
-  font-size: 0.8rem;
-  outline: none;
-}
-
-.weekly-plan-footer {
+.wp-board-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--ui-border, #e2e8f0);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px !important;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: var(--ui-surface-soft, #f8fafc);
+}
+
+.wp-board-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wp-board-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ui-text, #0f172a);
+}
+
+.wp-board-week-range {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ui-text-muted, #64748b);
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.wp-board-quick-legend {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted, #64748b);
+  display: flex;
+  align-items: center;
+}
+
+/* 7天日历网格 */
+.wp-columns-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  background: var(--ui-bg, #f4f6f8);
+  overflow-x: auto;
+}
+
+.wp-day-column {
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wp-day-column:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.wp-day-column.is-today {
+  border: 2px solid var(--ui-primary, #4361ee);
+  background: rgba(67, 97, 238, 0.015);
+}
+
+.wp-day-col-header {
+  padding: 10px 10px 8px;
+  border-bottom: 1px solid var(--ui-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--ui-surface-soft, #f8fafc);
+  border-radius: 10px 10px 0 0;
+}
+
+.wp-day-date-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-day-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--ui-text, #0f172a);
+}
+
+.wp-day-date {
+  font-size: 0.72rem;
+  color: var(--ui-text-muted, #64748b);
+}
+
+.wp-today-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--ui-primary, #4361ee);
+  color: #ffffff;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.wp-day-count-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ui-text-muted, #64748b);
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+
+.wp-day-task-list {
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 420px);
+}
+
+.wp-day-empty {
+  text-align: center;
+  color: var(--ui-text-muted, #94a3b8);
+  font-size: 0.74rem;
+  padding: 24px 4px;
+}
+
+.wp-day-task-card {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-left-width: 3px;
+  background: var(--ui-surface-soft, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.wp-day-task-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.wp-day-task-card.completed {
+  opacity: 0.72;
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.wp-day-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.wp-day-checkbox {
+  margin-top: 3px;
+  cursor: pointer;
+  accent-color: var(--ui-primary, #4361ee);
+}
+
+.wp-day-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ui-text, #0f172a);
+  cursor: pointer;
+  flex: 1;
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.wp-day-card-title.completed {
+  text-decoration: line-through;
+  color: var(--ui-text-muted, #94a3b8);
+}
+
+.wp-day-card-content {
+  font-size: 0.72rem;
+  color: var(--ui-text-muted, #64748b);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wp-day-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--ui-text-muted, #94a3b8);
+}
+
+.wp-day-card-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.wp-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wp-icon-btn {
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 0.7rem;
+  color: var(--ui-text-muted, #64748b);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.wp-icon-btn:hover {
+  color: var(--ui-primary, #4361ee);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.wp-day-quick-add {
+  padding: 8px 10px;
+  border-top: 1px solid var(--ui-border, #e2e8f0);
+  background: var(--ui-surface-soft, #f8fafc);
+  border-radius: 0 0 10px 10px;
+}
+
+.wp-day-input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--ui-border, #cbd5e1);
+  font-size: 0.76rem;
+  outline: none;
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-text, #1e293b);
+  transition: border-color 0.15s ease;
+}
+
+.wp-day-input:focus {
+  border-color: var(--ui-primary, #4361ee);
+  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.15);
 }
 
 /* 团队视图矩阵 */
@@ -3818,54 +4201,162 @@ html[data-theme='dark'] .task-time-exact {
   border-bottom: 1px solid var(--ui-border, #e2e8f0);
 }
 
-html[data-theme='dark'] .weekly-plan-subtitle {
-  color: #94a3b8;
+/* 暗色主题适配 (Dark Mode) */
+html[data-theme='dark'] .calendar-weekly-plan-btn {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
 }
-html[data-theme='dark'] .wp-task-title {
+html[data-theme='dark'] .wp-hero-card,
+html[data-theme='dark'] .wp-metric-box,
+html[data-theme='dark'] .wp-review-panel,
+html[data-theme='dark'] .wp-board-panel,
+html[data-theme='dark'] .wp-day-column {
+  background: #1e293b;
+  border-color: #334155;
+}
+html[data-theme='dark'] .wp-hero-title,
+html[data-theme='dark'] .wp-metric-val,
+html[data-theme='dark'] .wp-panel-title,
+html[data-theme='dark'] .wp-board-title,
+html[data-theme='dark'] .wp-day-name,
+html[data-theme='dark'] .wp-card-title,
+html[data-theme='dark'] .wp-day-card-title {
   color: #f1f5f9;
 }
-html[data-theme='dark'] .weekly-quick-add-box input,
-html[data-theme='dark'] .weekly-quick-add-box select {
+html[data-theme='dark'] .wp-panel-header,
+html[data-theme='dark'] .wp-board-header,
+html[data-theme='dark'] .wp-day-col-header,
+html[data-theme='dark'] .wp-day-quick-add,
+html[data-theme='dark'] .wp-week-nav-bar,
+html[data-theme='dark'] .wp-view-toggle-wrap {
+  background: #0f172a;
+  border-color: #334155;
+}
+html[data-theme='dark'] .wp-columns-grid {
+  background: #0b1120;
+}
+html[data-theme='dark'] .wp-rollover-card,
+html[data-theme='dark'] .wp-day-task-card,
+html[data-theme='dark'] .team-plan-card {
+  background: #0f172a;
+  border-color: #334155;
+}
+html[data-theme='dark'] .wp-back-btn,
+html[data-theme='dark'] .wp-nav-arrow-btn,
+html[data-theme='dark'] .wp-current-week-label,
+html[data-theme='dark'] .wp-day-input {
   background: #1e293b;
   border-color: #334155;
   color: #f1f5f9;
 }
+html[data-theme='dark'] .wp-view-toggle-wrap .btn.active {
+  background: #1e293b;
+  color: #60a5fa;
+}
+html[data-theme='dark'] .wp-panel-badge,
+html[data-theme='dark'] .wp-board-week-range,
+html[data-theme='dark'] .wp-day-count-badge {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
 
-@media (max-width: 768px) {
-  .weekly-plan-modal-content {
-    width: 96vw !important;
-    max-height: 94vh !important;
-    margin: 3vh auto !important;
+/* 响应式适配 (Responsive Media Queries) */
+@media (max-width: 1200px) {
+  .wp-columns-grid {
+    grid-template-columns: repeat(7, minmax(130px, 1fr));
   }
-  .weekly-dual-grid {
+}
+@media (max-width: 992px) {
+  .wp-dual-workspace {
     grid-template-columns: 1fr;
+  }
+  .wp-review-panel {
+    order: 2;
+  }
+  .wp-board-panel {
+    order: 1;
+  }
+  .wp-review-scroll-list {
+    max-height: 300px;
+  }
+}
+@media (max-width: 768px) {
+  .weekly-plan-page {
+    padding: 10px 8px;
     gap: 12px;
   }
-  .weekly-quick-add-box {
-    flex-wrap: wrap;
+  .wp-hero-card {
+    padding: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .wp-hero-left {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  .wp-hero-title {
+    font-size: 1.05rem;
+  }
+  .wp-hero-center {
+    width: 100%;
+  }
+  .wp-week-nav-bar {
+    width: 100%;
+    justify-content: space-between;
+    padding: 4px 6px;
+  }
+  .wp-current-week-label {
+    font-size: 0.78rem;
+    padding: 0 4px;
+  }
+  .wp-hero-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .calendar-weekly-plan-btn {
+    min-width: 0;
+    height: 38px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+  .wp-metrics-ribbon {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .wp-metrics-ribbon .wp-metric-box:last-child {
+    grid-column: 1 / -1;
+  }
+  .wp-metric-box {
+    padding: 10px 12px;
+  }
+  .wp-metric-val {
+    font-size: 1.3rem;
+  }
+  .wp-metric-label {
+    font-size: 0.72rem;
+  }
+  .wp-board-header {
+    padding: 10px 12px;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 6px;
   }
-  .weekly-quick-add-box input {
-    width: 100%;
-    flex: 1 1 100%;
+  .wp-board-title {
+    font-size: 0.88rem;
   }
-  .weekly-quick-add-box select {
-    flex: 1;
-    min-width: 120px;
+  .wp-board-quick-legend {
+    font-size: 0.72rem;
   }
-  .weekly-quick-add-box button {
-    flex: 1;
-    white-space: nowrap;
+  .wp-columns-grid {
+    grid-template-columns: repeat(7, minmax(130px, 1fr));
+    gap: 8px;
+    padding: 10px 8px;
   }
-  .weekly-plan-footer {
-    flex-direction: column-reverse;
-    gap: 10px;
-  }
-  .weekly-plan-footer button {
-    width: 100%;
-  }
-  .weekly-footer-left {
-    width: 100%;
+  .wp-day-column {
+    min-height: 400px;
   }
 }
 
