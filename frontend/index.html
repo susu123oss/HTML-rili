@@ -45,18 +45,19 @@
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             color: var(--dark-color);
             min-height: 100vh;
-            padding: 20px;
+            padding: 12px 16px;
         }
 
         .container {
-            max-width: 1800px;
+            max-width: 1760px;
+            width: 96%;
             margin: 0 auto;
         }
 		
-		/* 在 .container 样式后添加 */
+		/* 单月视图宽度扩展，避免左右大面积留白 */
 		.container.single-month {
-			max-width: 85%;
-			width: 85%;
+			max-width: 1760px;
+			width: 96%;
 			margin: 0 auto;
 		}
 
@@ -3892,7 +3893,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="./theme.css?v=20260928_scrollbar_v4">
+    <link rel="stylesheet" href="./theme.css?v=20260928_width_v5">
 </head>
 <body>
     <div class="container">

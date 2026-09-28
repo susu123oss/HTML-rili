@@ -1759,12 +1759,16 @@ html[data-theme='dark'] :is(#dailyDetailModal .task-item.completed, .task-item.c
 }
 
 /* ========================================================
-   首屏空间垂直高度优化 (Workbench Spacing Compression)
+   工作台全局宽度与左右留白优化 (Workbench Width & Margins Optimization)
+   - 彻底优化宽屏/常规桌面显示器下过大的左右空白
+   - 扩展最大宽度至 1760px / 96%，让日历与排行榜充分舒展
    ======================================================== */
-.container {
-  max-width: 1440px !important;
+.container,
+.container.single-month {
+  max-width: 1760px !important;
+  width: 96% !important;
   margin: 0 auto !important;
-  padding: 12px 20px !important;
+  padding: 12px 16px !important;
   box-sizing: border-box !important;
 }
 
