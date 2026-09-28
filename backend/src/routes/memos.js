@@ -373,10 +373,14 @@ memosRouter.post('/', authRequired, async (req, res, next) => {
   try {
     const { ownerId, date, title, content = '', color = '#4f7cff', completed = false, dueTime = null } = req.body || {};
     const targetOwnerId = ownerId || req.user.id;
-    const normalizedDueTime = normalizeDueTime(dueTime);
+    let normalizedDueTime = normalizeDueTime(dueTime);
 
     if (!date || !title) {
       return res.status(400).json({ message: '日期和标题不能为空' });
+    }
+
+    if (!normalizedDueTime && date) {
+      normalizedDueTime = normalizeDueTime(`${date}T18:00:00`);
     }
 
     if (!normalizedDueTime) {
@@ -409,7 +413,7 @@ memosRouter.post('/', authRequired, async (req, res, next) => {
   }
 });
 
-memosRouter.patch('/:id', authRequired, async (req, res, next) => {
+async function handleUpdateMemo(req, res, next) {
   try {
     const numId = Number(req.params.id);
     if (!Number.isInteger(numId) || numId <= 0) {
@@ -418,7 +422,7 @@ memosRouter.patch('/:id', authRequired, async (req, res, next) => {
     const memoResult = await query(
       `
       SELECT memos.id, memos.owner_id AS "ownerId", users.department_id AS "departmentId",
-             memos.due_time AS "dueTime"
+             memos.due_time AS "dueTime", to_char(memos.date, 'YYYY-MM-DD') AS date
       FROM memos
       JOIN users ON users.id = memos.owner_id
       WHERE memos.id = $1
@@ -437,7 +441,10 @@ memosRouter.patch('/:id', authRequired, async (req, res, next) => {
 
     const { date, title, content, color, completed, dueTime } = req.body || {};
     const hasDueTime = Object.prototype.hasOwnProperty.call(req.body || {}, 'dueTime');
-    const normalizedDueTime = normalizeDueTime(hasDueTime ? dueTime : memo.dueTime);
+    let normalizedDueTime = normalizeDueTime(hasDueTime ? dueTime : memo.dueTime);
+    if (!normalizedDueTime && (date || memo.date)) {
+      normalizedDueTime = normalizeDueTime(`${date || memo.date}T18:00:00`);
+    }
     if (!normalizedDueTime) {
       return res.status(400).json({ message: '请添加有效的截止时间' });
     }
@@ -471,7 +478,10 @@ memosRouter.patch('/:id', authRequired, async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
-});
+}
+
+memosRouter.patch('/:id', authRequired, handleUpdateMemo);
+memosRouter.put('/:id', authRequired, handleUpdateMemo);
 
 memosRouter.delete('/:id', authRequired, async (req, res, next) => {
   try {

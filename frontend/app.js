@@ -6562,15 +6562,23 @@ async function rollOverMemoToNextWeek(memoId) {
     const titlePrefix = memo.title.includes('流转') || memo.title.includes('计划') ? '' : '[上周流转] ';
     const updatedTitle = titlePrefix + memo.title;
 
+    let targetDueTime = `${targetDate}T18:00:00`;
+    if (memo.dueTime) {
+      const d = new Date(memo.dueTime);
+      if (!Number.isNaN(d.getTime())) {
+        targetDueTime = `${targetDate}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+      }
+    }
+
     const updatedData = {
-      ...memo,
       title: updatedTitle,
       date: targetDate,
-      ownerId: memo.ownerId || state.user?.id
+      dueTime: targetDueTime,
+      completed: false
     };
 
     const res = await request(`/memos/${memoId}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(updatedData)
     });
 
@@ -6595,14 +6603,16 @@ async function addNextWeekPlanMemo() {
   if (!title || !date) return;
 
   try {
+    const targetUserId = getWeeklyTargetUserId();
     const res = await request('/memos', {
       method: 'POST',
       body: JSON.stringify({
         title: title.startsWith('[') ? title : '[计划] ' + title,
         date: date,
-        ownerId: state.user?.id,
+        ownerId: targetUserId,
         content: '',
-        color: '#206bc4'
+        color: '#206bc4',
+        dueTime: `${date}T18:00:00`
       })
     });
 
