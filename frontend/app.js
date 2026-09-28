@@ -4215,7 +4215,7 @@ function injectUserBar() {
 
 function applyRoleScopedUi() {
   const visible = canManageWorkspace();
-  ['toolbarPublish', 'toolbarDashboard', 'toolbarImport', 'floatingFunctions', 'viewRecentTasks'].forEach((id) => setElementVisible(id, visible));
+  ['toolbarPublish', 'toolbarDashboard', 'toolbarImport', 'navDataManagement', 'navSettings', 'floatingFunctions', 'viewRecentTasks'].forEach((id) => setElementVisible(id, visible));
   setElementVisible('memberSelectWrap', visible);
   document.querySelectorAll('.admin-only-tab').forEach((tab) => {
     tab.hidden = state.user?.role !== 'admin';
@@ -4380,7 +4380,7 @@ function applyTheme(preference) {
 
   const topbarBtn = $('themeToggleBtn');
   if (topbarBtn) {
-    topbarBtn.innerHTML = `<i class="${iconClass} theme-spin"></i>`;
+    topbarBtn.innerHTML = `<i class="${iconClass}"></i><span class="nav-label">${labelText}</span>`;
     topbarBtn.title = titleText;
     topbarBtn.blur();
   }
@@ -8465,7 +8465,6 @@ function handleDayMemosWheel(event) {
 }
 
 function initEventListeners() {
-  document.addEventListener('wheel', handleDayMemosWheel, { passive: false });
   document.addEventListener('keydown', handleDialogKeydown);
   document.addEventListener('keydown', (event) => {
     if ((event.key === 'Enter' || event.key === ' ') && event.target.matches?.('.day-number-text[role="button"]')) {
@@ -8801,8 +8800,10 @@ function decorateTablerUI() {
     }
   }
   ['toolbarPublish', 'toolbarDashboard', 'toolbarExport'].forEach((id) => {
-    $(id)?.classList.remove('toolbar-btn-primary', 'toolbar-btn-success', 'btn-primary', 'btn-success');
-    $(id)?.classList.add('toolbar-btn-secondary');
+    const el = $(id);
+    if (!el || el.closest('.app-sidebar')) return;
+    el.classList.remove('toolbar-btn-primary', 'toolbar-btn-success', 'btn-primary', 'btn-success');
+    el.classList.add('toolbar-btn-secondary');
   });
   const grid = $('multiMonthCalendar');
   if (grid && !$('mobileAgenda')) {

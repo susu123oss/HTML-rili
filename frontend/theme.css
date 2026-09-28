@@ -5198,13 +5198,20 @@ html[data-theme='dark'] .logo-badge {
   overflow: hidden;
 }
 
-.nav-item {
+.nav-item,
+.app-sidebar .nav-item,
+.app-sidebar button.nav-item,
+.app-sidebar .nav-item.toolbar-btn,
+.app-sidebar .nav-item.toolbar-btn-secondary,
+.app-sidebar .nav-item.toolbar-btn-primary,
+.app-sidebar .nav-item.btn,
+.app-sidebar .nav-item.btn-outline-secondary {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
   border-radius: 9px;
-  color: var(--text-muted);
+  color: var(--text-muted) !important;
   text-decoration: none;
   font-size: 0.88rem;
   font-weight: 500;
@@ -5212,31 +5219,62 @@ html[data-theme='dark'] .logo-badge {
   white-space: nowrap;
   overflow: hidden;
   border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
   background: transparent !important;
   width: 100%;
   cursor: pointer;
   text-align: left;
-  outline: none;
+  outline: none !important;
   box-shadow: none !important;
 }
 
-.nav-item:hover {
+.nav-item:hover,
+.app-sidebar .nav-item:hover,
+.app-sidebar button.nav-item:hover,
+.app-sidebar .nav-item.toolbar-btn:hover,
+.app-sidebar .nav-item.btn-outline-secondary:hover {
   background-color: var(--ui-surface-hover, #f1f5f9) !important;
   color: var(--text-main) !important;
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
-html[data-theme='dark'] .nav-item:hover {
+html[data-theme='dark'] .nav-item:hover,
+html[data-theme='dark'] .app-sidebar .nav-item:hover {
   background-color: #334155 !important;
   color: #f8fafc !important;
+  border: none !important;
 }
 
-.nav-item.active {
+.nav-item.active,
+.app-sidebar .nav-item.active,
+.app-sidebar button.nav-item.active {
   background-color: rgba(37, 99, 235, 0.1) !important;
   color: #2563eb !important;
-  font-weight: 600;
+  font-weight: 600 !important;
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
-html[data-theme='dark'] .nav-item.active {
+html[data-theme='dark'] .nav-item.active,
+html[data-theme='dark'] .app-sidebar .nav-item.active {
   background-color: rgba(37, 99, 235, 0.25) !important;
   color: #60a5fa !important;
+  border: none !important;
+}
+
+/* 平滑无感深浅主题切换过渡 (避免突兀闪屏) */
+html, body, .app-layout, .app-sidebar, .app-header, .app-main, .month-calendar, .team-leaderboard, .card {
+  transition: background-color 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s ease !important;
+}
+
+/* 保证鼠标悬停在日历格子上都能自然顺畅上下滚动整个网页 */
+.day-memos,
+.calendar-day,
+.calendar-grid,
+.month-calendar {
+  overscroll-behavior: auto !important;
 }
 
 .nav-item i {
