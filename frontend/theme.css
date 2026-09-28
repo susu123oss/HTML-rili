@@ -3402,6 +3402,122 @@ html[data-theme='light'] .memo-calendar-popup {
   margin-left: 6px;
 }
 
+/* ── 桌面端任务悬浮卡片 (Memo Hover Tooltip) ───────────── */
+.memo-hover-tooltip {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  width: 270px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--ui-border);
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-text, #1e293b);
+  transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1), transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transform: scale(0.96) translateY(4px);
+}
+.memo-hover-tooltip.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+.mht-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+.mht-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.mht-title {
+  flex: 1;
+  word-break: break-all;
+  color: var(--ui-text);
+  line-height: 1.35;
+}
+.mht-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: var(--ui-text-muted, #64748b);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ui-border);
+}
+.mht-badge {
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+.mht-badge.completed { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.mht-badge.pending { background: rgba(37, 99, 235, 0.15); color: #3b82f6; }
+.mht-content {
+  margin-top: 5px;
+  font-size: 0.76rem;
+  color: var(--ui-text-muted, #64748b);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+/* ── 移动端日程聚焦脉冲动画 ────────────────────────── */
+@keyframes agendaPulse {
+  0% { box-shadow: 0 0 0 0 rgba(32, 107, 196, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(32, 107, 196, 0); }
+  100% { box-shadow: none; }
+}
+.mobile-agenda.agenda-pulse {
+  animation: agendaPulse 0.6s ease-out;
+}
+
+/* ── 每日详情弹窗任务项徽章与快速勾选 ──────────────── */
+.task-item {
+  position: relative;
+  transition: transform 0.1s ease, border-color 0.2s ease;
+}
+.task-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+.task-status-pill.completed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+.task-status-pill.pending {
+  background: rgba(37, 99, 235, 0.15);
+  color: #3b82f6;
+}
+.task-time-exact {
+  font-weight: 500;
+  color: var(--ui-text, #334155);
+  margin-left: 4px;
+}
+html[data-theme='dark'] .task-time-exact {
+  color: #cbd5e1;
+}
+
+
 
 
 

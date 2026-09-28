@@ -197,18 +197,15 @@ const workbookXml = (worksheets) => `<?xml version="1.0" encoding="UTF-8"?>
 </Workbook>`;
 
 exportsRouter.get('/calendar', authRequired, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: '只有管理员可以导出 Excel' });
-  }
-
+  const isStaff = req.user.role !== 'admin';
   const startMonth = parseStartMonth(req.query.startMonth);
   const monthCount = parseMonthCount(req.query.months);
   if (!startMonth || !monthCount) {
     return res.status(400).json({ message: '月份参数无效' });
   }
 
-  const requestedUserIds = parseUserIds(req.query.userIds);
-  if (String(req.query.userIds || 'all') !== 'all' && requestedUserIds.length === 0) {
+  const requestedUserIds = isStaff ? [Number(req.user.id)] : parseUserIds(req.query.userIds);
+  if (!isStaff && String(req.query.userIds || 'all') !== 'all' && requestedUserIds.length === 0) {
     return res.status(400).json({ message: '请选择要导出的人员' });
   }
 

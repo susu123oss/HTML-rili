@@ -33,7 +33,7 @@ const state = {
   initialLoadSessionVersion: null,
   memoRequestController: null,
   currentDate: new Date(),
-  monthsToShow: Number(localStorage.getItem('calendarMonthCount') || 2),
+  monthsToShow: Number(localStorage.getItem('calendarMonthCount') || (typeof window !== 'undefined' && window.innerWidth <= 768 ? 1 : 2)),
   selectedUserId: 'all',
   calendarStatusFilter: 'all',
   selectedMemoId: null,
@@ -4217,10 +4217,25 @@ function applyRoleScopedUi() {
   });
   setElementVisible('toolbarExport', state.user?.role === 'admin');
   setElementVisible('toolbarMore', visible);
-  $('toolbarNewMemo')?.classList.toggle('toolbar-btn-full', !visible);
+
+  const toolbarButtons = document.querySelector('.toolbar-buttons');
+  let staffExport = $('toolbarStaffExport');
+  if (!visible && toolbarButtons && !staffExport) {
+    staffExport = document.createElement('button');
+    staffExport.id = 'toolbarStaffExport';
+    staffExport.type = 'button';
+    staffExport.className = 'toolbar-btn toolbar-btn-secondary btn btn-outline-secondary';
+    staffExport.innerHTML = '<span class="tabler-icon" data-icon="file-spreadsheet" aria-hidden="true"></span><span>导出月报</span>';
+    staffExport.title = '导出我的工作日历记录 (Excel)';
+    staffExport.addEventListener('click', exportStaffCalendarExcel);
+    toolbarButtons.append(staffExport);
+    addTablerIcon(staffExport, 'file-spreadsheet');
+  }
+  if (staffExport) setElementVisible('toolbarStaffExport', !visible);
+
+  $('toolbarNewMemo')?.classList.toggle('toolbar-btn-full', false);
   if (!visible) state.activeView = 'calendar';
   applyMainView();
-  const toolbarButtons = document.querySelector('.toolbar-buttons');
   if (toolbarButtons) toolbarButtons.style.display = '';
   if (!visible && $('functionsModal')?.classList.contains('active')) closeFunctionsModal();
 }
@@ -5997,6 +6012,84 @@ function initMemoDuePicker() {
   });
 }
 
+function initMemoHoverTooltip() {
+  let tooltip = $('memoHoverTooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'memoHoverTooltip';
+    tooltip.className = 'memo-hover-tooltip';
+    document.body.appendChild(tooltip);
+  }
+
+  const calendar = $('multiMonthCalendar');
+  if (!calendar || calendar.dataset.tooltipBound === 'true') return;
+  calendar.dataset.tooltipBound = 'true';
+
+  let currentTarget = null;
+
+  calendar.addEventListener('mouseover', (e) => {
+    if (window.matchMedia?.('(max-width: 768px)').matches) return;
+    const memoItem = e.target.closest('.day-memo-item[data-memo-id]');
+    if (!memoItem || memoItem === currentTarget) return;
+    currentTarget = memoItem;
+
+    const memoId = memoItem.dataset.memoId;
+    const memo = state.memos.find((m) => String(m.id) === String(memoId));
+    if (!memo) return;
+
+    const dotColor = memo.completed ? '#94a3b8' : (memo.color || '#3b82f6');
+    const deadline = memoDeadlineDate(memo);
+    const timeText = deadline
+      ? `${deadline.getFullYear()}/${deadline.getMonth() + 1}/${deadline.getDate()} ${pad(deadline.getHours())}:${pad(deadline.getMinutes())}`
+      : (memo.date || '无时间');
+
+    tooltip.innerHTML = `
+      <div class="mht-header">
+        <span class="mht-dot" style="background:${escapeHtml(dotColor)}"></span>
+        <div class="mht-title">${escapeHtml(memoFullTitle(memo))}</div>
+      </div>
+      ${memo.contentPreview ? `<div class="mht-content">${escapeHtml(memo.contentPreview)}</div>` : ''}
+      <div class="mht-meta">
+        <span><i class="far fa-clock"></i> ${escapeHtml(timeText)}</span>
+        <span class="mht-badge ${memo.completed ? 'completed' : 'pending'}">${memo.completed ? '已完成' : '进行中'}</span>
+      </div>
+    `;
+
+    positionTooltip(memoItem);
+    tooltip.classList.add('visible');
+  });
+
+  function positionTooltip(el) {
+    const rect = el.getBoundingClientRect();
+    const ttWidth = 270;
+    const spaceRight = window.innerWidth - rect.right;
+    let left = spaceRight >= ttWidth + 12 ? rect.right + 8 : rect.left - ttWidth - 8;
+    if (left < 10) left = 10;
+    let top = rect.top - 8;
+    if (top + 160 > window.innerHeight) top = window.innerHeight - 170;
+    if (top < 10) top = 10;
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  }
+
+  calendar.addEventListener('mouseout', (e) => {
+    const memoItem = e.target.closest('.day-memo-item[data-memo-id]');
+    if (!memoItem) return;
+    const related = e.relatedTarget;
+    if (memoItem.contains(related)) return;
+    currentTarget = null;
+    tooltip.classList.remove('visible');
+  });
+
+  window.addEventListener('scroll', () => {
+    if (currentTarget) {
+      currentTarget = null;
+      tooltip.classList.remove('visible');
+    }
+  }, { passive: true });
+}
+
 function toLocalDateTimeInput(value) {
   const date = new Date(value);
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -6254,20 +6347,32 @@ function getCountdown(memo) {
 }
 
 function createTaskItem(memo) {
-  const dueDate = memo.dueTime ? new Date(memo.dueTime).toLocaleDateString('zh-CN') : '无截止日期';
+  let dueDateText = '无截止时间';
+  if (memo.dueTime) {
+    const d = new Date(memo.dueTime);
+    if (!Number.isNaN(d.getTime())) {
+      dueDateText = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+  }
   const content = String(memo.contentPreview ?? memo.content ?? '');
   const contentPreview = content
     ? `${content.replace(new RegExp('[#*`]', 'g'), '').slice(0, 60)}${Number(memo.contentLength || content.length) > 60 ? '...' : ''}`
     : '无内容';
   const itemColor = memo.completed ? '#94a3b8' : (memo.color || '#4361ee');
+  const statusBadge = memo.completed
+    ? '<span class="task-status-pill completed"><i class="fas fa-check-circle"></i> 已完成</span>'
+    : '<span class="task-status-pill pending"><i class="fas fa-clock"></i> 进行中</span>';
   return `
     <div class="task-item ${memo.completed ? 'completed' : ''}" style="border-left-color:${itemColor}">
       <div class="task-header">
-        <div class="task-title ${memo.completed ? 'completed' : ''}">${escapeHtml(memoFullTitle(memo))}</div>
+        <div class="task-title ${memo.completed ? 'completed' : ''}">
+          ${escapeHtml(memoFullTitle(memo))}
+          ${statusBadge}
+        </div>
         <div class="task-color" style="background-color:${itemColor}"></div>
       </div>
       <div class="task-due">
-        <i class="far fa-calendar-alt"></i> ${dueDate} ${getCountdown(memo)}
+        <i class="far fa-clock"></i> <span class="task-time-exact">${dueDateText}</span> ${getCountdown(memo)}
       </div>
       <div class="task-content">${escapeHtml(contentPreview)}</div>
       <div class="task-actions">
@@ -6762,11 +6867,13 @@ function updateReminderSelectionUI() {
   if (selectAllCb) {
     selectAllCb.checked = totalCount > 0 && filtered.every((m) => state.selectedReminderIds.has(String(m.id)));
     selectAllCb.indeterminate = selectedCount > 0 && selectedCount < totalCount;
+    selectAllCb.disabled = totalCount === 0;
   }
 
   const urgeBtn = $('reminderUrgeBtn');
   if (urgeBtn) {
-    urgeBtn.style.display = canManageWorkspace() ? 'inline-flex' : 'none';
+    urgeBtn.style.display = canManageWorkspace() && totalCount > 0 ? 'inline-flex' : 'none';
+    urgeBtn.disabled = selectedCount === 0;
     urgeBtn.innerHTML = selectedCount > 0
       ? `<i class="fas fa-bullhorn"></i> 批量催办 (${selectedCount})`
       : '<i class="fas fa-bullhorn"></i> 批量催办';
@@ -6774,6 +6881,8 @@ function updateReminderSelectionUI() {
 
   const batchCompleteBtn = $('reminderBatchCompleteBtn');
   if (batchCompleteBtn) {
+    batchCompleteBtn.style.display = totalCount > 0 ? 'inline-flex' : 'none';
+    batchCompleteBtn.disabled = selectedCount === 0;
     batchCompleteBtn.innerHTML = selectedCount > 0
       ? `<i class="fas fa-check-double"></i> 一键完成 (${selectedCount})`
       : '<i class="fas fa-check-double"></i> 一键完成';
@@ -7047,8 +7156,39 @@ async function checkEngineerNotifications() {
 }
 
 function openExcelExportPanel() {
-  if (!canManageWorkspace()) return;
+  if (!canManageWorkspace()) {
+    exportStaffCalendarExcel();
+    return;
+  }
   openFunctionsModal('dataManagement');
+}
+
+async function exportStaffCalendarExcel() {
+  try {
+    const months = visibleMonths();
+    const startMonth = monthKey(months[0] || state.currentDate);
+    const count = String(state.monthsToShow || 1);
+    const params = new URLSearchParams({
+      startMonth,
+      months: count
+    });
+    const response = await fetch(`${apiBase}/exports/calendar?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${state.token}` }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || '导出失败');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${state.user?.displayName || '我的'}工作日历_${startMonth}.xls`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    alert(error.message || '导出失败');
+  }
 }
 
 function defaultExcelSelectedUserIds() {
@@ -7428,6 +7568,14 @@ function initEventListeners() {
     if (dashboardUserTarget) { event.stopPropagation(); jumpToUserCalendar(dashboardUserTarget.dataset.dashboardUserId); return; }
     const dashboardRiskTarget = event.target.closest('.dashboard-risk-item[data-memo-id]');
     if (dashboardRiskTarget) { event.stopPropagation(); await openDashboardMemo(dashboardRiskTarget.dataset.memoId); return; }
+    const statusFilter = event.target.closest('[data-status-filter]');
+    if (statusFilter) {
+      event.stopPropagation();
+      const targetFilter = statusFilter.dataset.statusFilter;
+      const nextFilter = (state.calendarStatusFilter === targetFilter && targetFilter !== 'all') ? 'all' : targetFilter;
+      setCalendarStatusFilter(nextFilter);
+      return;
+    }
     const leaderboardTarget = event.target.closest('.leaderboard-card[data-user-id], .leaderboard-champion[data-user-id]');
     if (leaderboardTarget) { event.stopPropagation(); jumpToUserCalendar(leaderboardTarget.dataset.userId); return; }
     const agendaItem = event.target.closest('.mobile-agenda-item[data-memo-id]');
@@ -7492,7 +7640,13 @@ function initEventListeners() {
       if (window.matchMedia?.('(max-width: 768px)').matches) {
         state.selectedAgendaDate = targetDate;
         renderMobileAgenda();
-        $('mobileAgenda')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const agenda = $('mobileAgenda');
+        if (agenda) {
+          agenda.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          agenda.classList.remove('agenda-pulse');
+          void agenda.offsetWidth;
+          agenda.classList.add('agenda-pulse');
+        }
         return;
       }
       const key = typeof targetDate === 'string' ? targetDate : dateKey(targetDate);
@@ -7750,5 +7904,6 @@ initSystemThemeListener();
 initEventListeners();
 initMemoDatePicker();
 initMemoDuePicker();
+initMemoHoverTooltip();
 patchStaticText();
 restoreSession();
