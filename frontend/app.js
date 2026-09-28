@@ -256,6 +256,15 @@ function showLoginOverlay(message = '') {
     overlay = document.createElement('div');
     overlay.id = 'serverLoginOverlay';
     overlay.innerHTML = `
+      <!-- 动态流体极光光斑与科技微网格背景 -->
+      <div class="login-animated-bg" aria-hidden="true">
+        <div class="login-bg-grid"></div>
+        <div class="login-blob login-blob-1"></div>
+        <div class="login-blob login-blob-2"></div>
+        <div class="login-blob login-blob-3"></div>
+        <div class="login-blob login-blob-4"></div>
+      </div>
+
       <div class="login-corner-bar">
         <button type="button" class="login-theme-toggle" id="loginThemeToggle" title="切换模式：浅色 / 深色 / 跟随系统">
           <i class="${themeToggleIconClass(state.themePreference, state.themeMode)}"></i>
@@ -620,12 +629,142 @@ function injectServerCss() {
       display: none;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 15% 20%, rgba(67, 97, 238, 0.22) 0%, transparent 45%),
-                  radial-gradient(circle at 85% 80%, rgba(123, 31, 162, 0.22) 0%, transparent 45%),
-                  #090d16;
+      background: #090d16;
+      --login-grid-color: rgba(255, 255, 255, 0.035);
+      --login-blob-1-color: rgba(59, 130, 246, 0.42);
+      --login-blob-2-color: rgba(139, 92, 246, 0.38);
+      --login-blob-3-color: rgba(6, 182, 212, 0.35);
+      --login-blob-4-color: rgba(168, 85, 247, 0.30);
       padding: 24px;
       overflow-y: auto;
       box-sizing: border-box;
+    }
+
+    /* 动态极光流体与科技网格全屏层 */
+    .login-animated-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    /* 细腻科技微网格与径向遮罩 */
+    .login-bg-grid {
+      position: absolute;
+      inset: 0;
+      background-size: 38px 38px;
+      background-image: 
+        linear-gradient(to right, var(--login-grid-color) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--login-grid-color) 1px, transparent 1px);
+      mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.4) 65%, transparent 95%);
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.4) 65%, transparent 95%);
+    }
+
+    /* 极光流体光斑 Blob 通用参数：GPU硬件加速合成 */
+    .login-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(85px);
+      -webkit-filter: blur(85px);
+      opacity: 0.75;
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+      pointer-events: none;
+    }
+
+    /* Blob 1：研发蓝 - 左上巡游 */
+    .login-blob-1 {
+      width: 560px;
+      height: 560px;
+      top: -120px;
+      left: -80px;
+      background: radial-gradient(circle, var(--login-blob-1-color) 0%, transparent 68%);
+      animation: login-blob-move-1 22s ease-in-out infinite alternate;
+    }
+
+    /* Blob 2：科技紫 - 右下缓动 */
+    .login-blob-2 {
+      width: 620px;
+      height: 620px;
+      bottom: -150px;
+      right: -100px;
+      background: radial-gradient(circle, var(--login-blob-2-color) 0%, transparent 70%);
+      animation: login-blob-move-2 26s ease-in-out infinite alternate;
+    }
+
+    /* Blob 3：极光青/水蓝 - 左下浮动 */
+    .login-blob-3 {
+      width: 480px;
+      height: 480px;
+      bottom: 2%;
+      left: 12%;
+      background: radial-gradient(circle, var(--login-blob-3-color) 0%, transparent 68%);
+      animation: login-blob-move-3 20s ease-in-out infinite alternate;
+    }
+
+    /* Blob 4：流光粉紫 - 右上起伏 */
+    .login-blob-4 {
+      width: 500px;
+      height: 500px;
+      top: 10%;
+      right: 15%;
+      background: radial-gradient(circle, var(--login-blob-4-color) 0%, transparent 68%);
+      animation: login-blob-move-4 24s ease-in-out infinite alternate;
+    }
+
+    @keyframes login-blob-move-1 {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+      }
+      50% {
+        transform: translate3d(150px, 100px, 0) scale(1.15) rotate(45deg);
+      }
+      100% {
+        transform: translate3d(70px, 180px, 0) scale(0.92) rotate(90deg);
+      }
+    }
+
+    @keyframes login-blob-move-2 {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+      }
+      50% {
+        transform: translate3d(-160px, -120px, 0) scale(1.18) rotate(-50deg);
+      }
+      100% {
+        transform: translate3d(-90px, -200px, 0) scale(0.95) rotate(-100deg);
+      }
+    }
+
+    @keyframes login-blob-move-3 {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      50% {
+        transform: translate3d(130px, -110px, 0) scale(1.22);
+      }
+      100% {
+        transform: translate3d(-70px, -80px, 0) scale(0.9);
+      }
+    }
+
+    @keyframes login-blob-move-4 {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      50% {
+        transform: translate3d(-140px, 130px, 0) scale(1.12);
+      }
+      100% {
+        transform: translate3d(80px, 90px, 0) scale(0.94);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-blob {
+        animation: none !important;
+      }
     }
     #serverSessionOverlay {
       position: fixed;
@@ -750,6 +889,8 @@ function injectServerCss() {
 
     /* 新企业级双栏登录容器 */
     .server-login-container {
+      position: relative;
+      z-index: 2;
       width: min(980px, 100%);
       background: #ffffff;
       border-radius: 24px;
@@ -2591,14 +2732,19 @@ function injectServerCss() {
 
     /* 浅色模式：登录界面 */
     html[data-theme="light"] #serverLoginOverlay {
-      background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.08) 0%, transparent 45%),
-                  radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
-                  #f1f5f9 !important;
+      background: linear-gradient(135deg, #eff6ff 0%, #f1f5f9 50%, #f8fafc 100%) !important;
+      --login-grid-color: rgba(37, 99, 235, 0.045);
+      --login-blob-1-color: rgba(59, 130, 246, 0.35);
+      --login-blob-2-color: rgba(147, 51, 234, 0.28);
+      --login-blob-3-color: rgba(6, 182, 212, 0.28);
+      --login-blob-4-color: rgba(99, 102, 241, 0.25);
     }
     html[data-theme="light"] .server-login-container {
-      background: #ffffff !important;
-      border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+      background: rgba(255, 255, 255, 0.94) !important;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.85) !important;
+      box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.8) !important;
     }
     html[data-theme="light"] .server-login-brand {
       background: linear-gradient(145deg, #2563eb 0%, #1e40af 100%) !important;
@@ -3809,14 +3955,19 @@ function injectServerCss() {
 
     /* 深色模式：登录界面 */
     html[data-theme="dark"] #serverLoginOverlay {
-      background: radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.18) 0%, transparent 45%),
-                  radial-gradient(circle at 85% 80%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
-                  #090d16 !important;
+      background: radial-gradient(circle at 50% 50%, #0d1527 0%, #060913 100%) !important;
+      --login-grid-color: rgba(255, 255, 255, 0.035);
+      --login-blob-1-color: rgba(37, 99, 235, 0.45);
+      --login-blob-2-color: rgba(124, 58, 237, 0.40);
+      --login-blob-3-color: rgba(14, 165, 233, 0.35);
+      --login-blob-4-color: rgba(168, 85, 247, 0.30);
     }
     html[data-theme="dark"] .server-login-container {
-      background: #0f172a !important;
+      background: rgba(15, 23, 42, 0.92) !important;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.8) !important;
+      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
     }
     html[data-theme="dark"] .server-login-brand {
       background: linear-gradient(145deg, #101935 0%, #0d1322 100%) !important;
