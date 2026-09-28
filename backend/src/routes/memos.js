@@ -556,7 +556,7 @@ async function handleUpdateMemo(req, res, next) {
       `
       SELECT memos.id, memos.owner_id AS "ownerId", users.department_id AS "departmentId",
              memos.due_time AS "dueTime", to_char(memos.date, 'YYYY-MM-DD') AS date,
-             memos.rollover_to_id AS "rolloverToId"
+             memos.rollover_to_id AS "rolloverToId", memos.rollover_from_id AS "rolloverFromId"
       FROM memos
       JOIN users ON users.id = memos.owner_id
       WHERE memos.id = $1
@@ -579,6 +579,9 @@ async function handleUpdateMemo(req, res, next) {
     const { date, title, content, color, completed, dueTime, planKind } = req.body || {};
     if (planKind !== undefined && !['memo', 'plan'].includes(planKind)) {
       return res.status(400).json({ message: '事项类型无效' });
+    }
+    if (memo.rolloverFromId && planKind === 'memo') {
+      return res.status(409).json({ message: '顺延事项必须保留计划类型' });
     }
     const hasDueTime = Object.prototype.hasOwnProperty.call(req.body || {}, 'dueTime');
     let normalizedDueTime = normalizeDueTime(hasDueTime ? dueTime : memo.dueTime);

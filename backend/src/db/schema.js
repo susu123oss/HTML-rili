@@ -44,15 +44,20 @@ export async function initDatabase() {
 
   await query(`
     ALTER TABLE memos
-      ADD COLUMN IF NOT EXISTS plan_kind TEXT NOT NULL DEFAULT 'memo',
+      ADD COLUMN IF NOT EXISTS plan_kind TEXT,
       ADD COLUMN IF NOT EXISTS rollover_from_id INTEGER REFERENCES memos(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS rollover_to_id INTEGER REFERENCES memos(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS rollover_reason TEXT NOT NULL DEFAULT ''
   `);
   // Old quick-added plans carried their type only in the title.
   await query(`
-    UPDATE memos SET plan_kind = 'plan'
-    WHERE plan_kind = 'memo' AND title ~ '^\\[计划\\]'
+    UPDATE memos SET plan_kind = CASE WHEN title LIKE '[计划]%' THEN 'plan' ELSE 'memo' END
+    WHERE plan_kind IS NULL
+  `);
+  await query(`
+    ALTER TABLE memos
+      ALTER COLUMN plan_kind SET DEFAULT 'memo',
+      ALTER COLUMN plan_kind SET NOT NULL
   `);
   await query(`
     CREATE TABLE IF NOT EXISTS weekly_summaries (

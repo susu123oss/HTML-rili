@@ -4049,6 +4049,9 @@
                         <button type="button" class="btn btn-sm active" id="wpPageViewPersonalBtn"><i class="fas fa-user"></i> 个人计划</button>
                         <button type="button" class="btn btn-sm" id="wpPageViewTeamBtn"><i class="fas fa-users"></i> 全员看板</button>
                     </div>
+                    <button type="button" class="btn btn-secondary" id="wpPageGoalsBtn" onclick="openWeeklySummaryDialog()" title="设定本周核心目标、交付物与复盘">
+                        <i class="fas fa-bullseye text-primary"></i> <span>目标与复盘</span>
+                    </button>
                     <button type="button" class="btn btn-primary" id="wpPageCopyReportBtn">
                         <i class="far fa-copy"></i> <span id="wpPageCopyReportText">预览周报</span>
                     </button>
@@ -4061,6 +4064,38 @@
             <!-- 工作台核心工作区（7天全屏周日程大看板） -->
             <div class="wp-workspace-body" id="wpWorkspaceBody"></div>
         </section>
+
+        <dialog class="wp-summary-dialog" id="wpSummaryDialog" aria-labelledby="wpSummaryTitle">
+            <div class="wp-dialog-head">
+                <div>
+                    <h2 id="wpSummaryTitle"><i class="fas fa-bullseye text-primary"></i> 本周目标与复盘</h2>
+                    <p class="wp-dialog-desc" id="wpSummaryPeriod">设定本周核心目标与交付物，并在周末复盘实际偏差与风险</p>
+                </div>
+                <button type="button" class="btn btn-icon btn-secondary" onclick="document.getElementById('wpSummaryDialog').close()" aria-label="关闭"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="wp-summary-fields-grid">
+                <div class="wp-field-item">
+                    <label for="wpFieldGoals"><i class="fas fa-flag text-primary"></i> 本周核心目标</label>
+                    <textarea id="wpFieldGoals" rows="3" placeholder="例如：完成日历高频卡顿优化与周计划体验改版..."></textarea>
+                </div>
+                <div class="wp-field-item">
+                    <label for="wpFieldDeliverables"><i class="fas fa-box-open text-success"></i> 承诺关键交付物</label>
+                    <textarea id="wpFieldDeliverables" rows="3" placeholder="例如：发布新版，输出测试报告与上线文档..."></textarea>
+                </div>
+                <div class="wp-field-item">
+                    <label for="wpFieldActual"><i class="fas fa-check-double text-info"></i> 实际进展及偏差</label>
+                    <textarea id="wpFieldActual" rows="3" placeholder="例如：核心功能已按期上线，测试报告顺延1天完成..."></textarea>
+                </div>
+                <div class="wp-field-item">
+                    <label for="wpFieldRisks"><i class="fas fa-exclamation-triangle text-warning"></i> 风险与协同需求</label>
+                    <textarea id="wpFieldRisks" rows="3" placeholder="阻塞项、所需支持；若无风险可留空..."></textarea>
+                </div>
+            </div>
+            <div class="wp-dialog-actions">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('wpSummaryDialog').close()">取消</button>
+                <button type="button" class="btn btn-primary" id="wpSaveSummaryBtn" onclick="saveWeeklySummaryFromDialog()">保存目标与复盘</button>
+            </div>
+        </dialog>
 
         <dialog class="wp-report-dialog" id="wpReportDialog" aria-labelledby="wpReportTitle">
             <div class="wp-report-head">
