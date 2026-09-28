@@ -5599,9 +5599,6 @@ function createMonthCalendar(monthDate, index) {
             <button class="stat-item pending ${state.calendarStatusFilter === 'pending' ? 'active' : ''}" data-status-filter="pending" title="只显示未完成任务" aria-label="只显示未完成${monthMemos.length - completed}条任务" type="button"><i class="fas fa-clock"></i><span class="stat-count-pending">${monthMemos.length - completed}</span></button>
           </div>
           ${createProgressCircle(progressPercent, index)}
-          <button class="calendar-weekly-plan-btn" onclick="openWeeklyPlanPage()" type="button" title="进入周计划与周报独立全屏工作台">
-            <i class="fas fa-calendar-week"></i> 周计划与周报
-          </button>
           <button class="complete-all-btn" data-month="${monthKey(monthDate)}" type="button"><i class="fas fa-check-double"></i> 一键完成</button>
         </div>
       </div>
@@ -8736,17 +8733,7 @@ function decorateTablerUI() {
     calendarNavigation.classList.add('calendar-main-nav');
   }
   $('appTopbar')?.classList.add('card');
-  document.querySelector('.workspace-subbar')?.classList.add('card');
   const toolbarButtons = document.querySelector('.toolbar-buttons');
-  if (toolbarButtons && !$('toolbarNewMemo')) {
-    const newMemo = document.createElement('button');
-    newMemo.id = 'toolbarNewMemo';
-    newMemo.type = 'button';
-    newMemo.className = 'toolbar-btn toolbar-btn-primary btn btn-primary';
-    newMemo.textContent = '新建备忘录';
-    toolbarButtons.prepend(newMemo);
-    addTablerIcon(newMemo, 'plus');
-  }
   let more = $('toolbarMore');
   if (toolbarButtons && !more) {
     more = document.createElement('details');
@@ -8944,7 +8931,13 @@ function initSystemThemeListener() {
 function initSidebarLayout() {
   const sidebar = $('appSidebar');
   const toggleBtn = $('sidebarToggle');
+  const backdrop = $('sidebarBackdrop');
   if (!sidebar) return;
+
+  const closeMobileSidebar = () => {
+    sidebar.classList.remove('mobile-open');
+    backdrop?.classList.remove('active');
+  };
 
   // 恢复之前持久化的桌面端折叠状态
   if (window.innerWidth > 768) {
@@ -8958,18 +8951,20 @@ function initSidebarLayout() {
   toggleBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (window.innerWidth <= 768) {
-      sidebar.classList.toggle('mobile-open');
+      const isOpen = sidebar.classList.toggle('mobile-open');
+      backdrop?.classList.toggle('active', isOpen);
     } else {
       sidebar.classList.toggle('collapsed');
       localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
     }
   });
 
-  // 移动端点击侧栏外部区域自动收起
+  // 移动端点击背景遮罩或外部区域自动收起
+  backdrop?.addEventListener('click', closeMobileSidebar);
   document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
       if (!sidebar.contains(e.target) && !toggleBtn?.contains(e.target)) {
-        sidebar.classList.remove('mobile-open');
+        closeMobileSidebar();
       }
     }
   });
@@ -8985,12 +8980,12 @@ function initSidebarLayout() {
       applyMainView();
       $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+    if (window.innerWidth <= 768) closeMobileSidebar();
   });
 
   $('navWeeklyPlan')?.addEventListener('click', () => {
     openWeeklyPlanPage();
-    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+    if (window.innerWidth <= 768) closeMobileSidebar();
   });
 
   $('sidebarLogoLink')?.addEventListener('click', () => {
@@ -9003,21 +8998,22 @@ function initSidebarLayout() {
       applyMainView();
       $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    if (window.innerWidth <= 768) closeMobileSidebar();
   });
 
   $('navDataManagement')?.addEventListener('click', () => {
     openFunctionsModal('dataManagement');
-    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+    if (window.innerWidth <= 768) closeMobileSidebar();
   });
 
   $('navSettings')?.addEventListener('click', () => {
     openFunctionsModal('reminderSettings');
-    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+    if (window.innerWidth <= 768) closeMobileSidebar();
   });
 
   $('toolbarStaffExport')?.addEventListener('click', () => {
     exportStaffCalendarExcel();
-    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+    if (window.innerWidth <= 768) closeMobileSidebar();
   });
 }
 

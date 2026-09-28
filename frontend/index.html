@@ -3899,6 +3899,9 @@
 </head>
 <body>
     <div class="app-layout">
+        <!-- 移动端侧栏半透明遮罩 (抽屉打开时) -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
         <!-- 左侧侧边栏 (Sidebar) -->
         <aside class="app-sidebar" id="appSidebar">
             <!-- 侧栏顶部 Logo 与系统名 -->
@@ -3937,7 +3940,7 @@
                     <span class="nav-label">事项提醒</span>
                     <span class="nav-pill" id="reminderBadge" style="display: none;">0</span>
                 </button>
-                <button class="nav-item" id="navDataManagement" title="数据管理" type="button">
+                <button class="nav-item" id="navDataManagement" title="数据管理" type="button" style="display: none;">
                     <i class="fas fa-database"></i>
                     <span class="nav-label">数据管理</span>
                 </button>
@@ -3960,7 +3963,7 @@
                     <i class="fas fa-moon"></i>
                     <span class="nav-label">深浅色主题</span>
                 </button>
-                <button class="nav-item" id="navSettings" title="系统设置" type="button">
+                <button class="nav-item" id="navSettings" title="系统设置" type="button" style="display: none;">
                     <i class="fas fa-cog"></i>
                     <span class="nav-label">系统设置</span>
                 </button>
@@ -3984,7 +3987,7 @@
         <!-- 右侧主内容展示区 (Main Content) -->
         <div class="app-main">
             <!-- 顶部通栏导航 (App Header) -->
-            <header class="app-header workspace-subbar">
+            <header class="app-header">
                 <div class="header-left">
                     <button class="sidebar-toggle-btn" id="sidebarToggle" title="折叠/展开侧栏" type="button">
                         <i class="fas fa-bars"></i>
@@ -4029,12 +4032,6 @@
                             <option value="12">12个月</option>
                         </select>
                     </div>
-
-                    <!-- 新建备忘录快捷按钮 -->
-                    <button class="btn-new-memo" id="toolbarNewMemo" title="新建备忘录" type="button">
-                        <i class="fas fa-plus"></i>
-                        <span>新建备忘录</span>
-                    </button>
                 </div>
             </header>
 
