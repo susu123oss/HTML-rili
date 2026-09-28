@@ -4254,19 +4254,35 @@ function applyMainView() {
   setElementVisible('dashboardPage', dashboardVisible);
   setElementVisible('weeklyPlanPage', weeklyPlanVisible);
 
-  // 隐藏顶部二级工具栏容器（搜索、月份选择、新建等），保持周计划页面纯净专注
-  const workspaceSubbar = document.querySelector('.workspace-subbar');
-  if (workspaceSubbar) {
-    workspaceSubbar.style.display = weeklyPlanVisible ? 'none' : '';
-  }
-
   const calendarContainer = document.querySelector('.calendar-container');
   if (calendarContainer) {
     calendarContainer.hidden = !calendarVisible;
     calendarContainer.style.display = calendarVisible ? '' : 'none';
   }
   setElementVisible('teamLeaderboard', canManageWorkspace() && calendarVisible);
+
+  // 同步侧边栏菜单激活态
+  $('navCalendar')?.classList.toggle('active', calendarVisible);
+  $('navWeeklyPlan')?.classList.toggle('active', weeklyPlanVisible);
   $('toolbarDashboard')?.classList.toggle('active', dashboardVisible);
+
+  // 同步顶部面包屑导航路径
+  const breadcrumb = $('headerBreadcrumb');
+  if (breadcrumb) {
+    if (weeklyPlanVisible) {
+      breadcrumb.innerHTML = '<i class="fas fa-tasks text-primary"></i> <span>周计划与周报</span>';
+    } else if (dashboardVisible) {
+      breadcrumb.innerHTML = '<i class="fas fa-chart-line text-primary"></i> <span>研发数据大屏</span>';
+    } else {
+      breadcrumb.innerHTML = '<i class="fas fa-calendar-alt text-primary"></i> <span>工作日历</span>';
+    }
+  }
+
+  // 周计划/大屏时隐藏月份选择器，保持顶部清爽
+  const monthSelector = $('monthCountSelectorWrap');
+  if (monthSelector) {
+    monthSelector.style.display = calendarVisible ? '' : 'none';
+  }
 
   if (dashboardVisible) renderDashboard();
   if (weeklyPlanVisible) renderWeeklyPlanPage();
@@ -4601,6 +4617,10 @@ async function startApp(sessionVersion = state.sessionVersion) {
   resetSessionViewState();
   $('serverUserName').textContent = state.user.displayName;
   $('serverUserRole').textContent = `· ${displayUserRole(state.user)} · ${state.user.departmentName}`;
+  const avatarEl = $('sidebarUserAvatar');
+  if (avatarEl && state.user?.displayName) {
+    avatarEl.textContent = state.user.displayName.trim().charAt(0) || '用';
+  }
   applyRoleScopedUi();
   updateSessionProgress(50, '正在同步团队人员列表…');
   await loadUsers(sessionVersion);
@@ -7640,6 +7660,10 @@ async function saveUserById(userId) {
     state.user = updatedCurrentUser;
     $('serverUserName').textContent = state.user.displayName;
     $('serverUserRole').textContent = `· ${displayUserRole(state.user)} · ${state.user.departmentName}`;
+    const avatarEl = $('sidebarUserAvatar');
+    if (avatarEl && state.user?.displayName) {
+      avatarEl.textContent = state.user.displayName.trim().charAt(0) || '用';
+    }
   }
   renderUserManagement();
   renderTaskAssignees();
@@ -8827,7 +8851,12 @@ function decorateTablerUI() {
   ];
   buttons.forEach(([id, icon, ...classes]) => {
     const button = $(id);
-    button?.classList.add(...classes);
+    if (!button) return;
+    if (button.closest('.app-sidebar')) {
+      // 保持侧边栏专属导航按钮原有设计与图标，不注入通用卡片按钮样式
+      return;
+    }
+    button.classList.add(...classes);
     if (icon) addTablerIcon(button, icon);
   });
 
@@ -8911,9 +8940,90 @@ function initSystemThemeListener() {
   }
 }
 
+function initSidebarLayout() {
+  const sidebar = $('appSidebar');
+  const toggleBtn = $('sidebarToggle');
+  if (!sidebar) return;
+
+  // 恢复之前持久化的桌面端折叠状态
+  if (window.innerWidth > 768) {
+    const isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+    if (isCollapsed) {
+      sidebar.classList.add('collapsed');
+    }
+  }
+
+  // 顶部折叠/展开按钮交互
+  toggleBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (window.innerWidth <= 768) {
+      sidebar.classList.toggle('mobile-open');
+    } else {
+      sidebar.classList.toggle('collapsed');
+      localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+    }
+  });
+
+  // 移动端点击侧栏外部区域自动收起
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
+      if (!sidebar.contains(e.target) && !toggleBtn?.contains(e.target)) {
+        sidebar.classList.remove('mobile-open');
+      }
+    }
+  });
+
+  // 侧边栏专属导航交互绑定
+  $('navCalendar')?.addEventListener('click', () => {
+    if (state.activeView === 'weeklyPlan') {
+      closeWeeklyPlanPage();
+    } else if (state.activeView === 'dashboard') {
+      closeDashboardPage();
+    } else {
+      state.activeView = 'calendar';
+      applyMainView();
+      $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+  });
+
+  $('navWeeklyPlan')?.addEventListener('click', () => {
+    openWeeklyPlanPage();
+    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+  });
+
+  $('sidebarLogoLink')?.addEventListener('click', () => {
+    if (state.activeView === 'weeklyPlan') {
+      closeWeeklyPlanPage();
+    } else if (state.activeView === 'dashboard') {
+      closeDashboardPage();
+    } else {
+      state.activeView = 'calendar';
+      applyMainView();
+      $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+
+  $('navDataManagement')?.addEventListener('click', () => {
+    openFunctionsModal('dataManagement');
+    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+  });
+
+  $('navSettings')?.addEventListener('click', () => {
+    openFunctionsModal('reminderSettings');
+    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+  });
+
+  $('toolbarStaffExport')?.addEventListener('click', () => {
+    exportStaffCalendarExcel();
+    if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
+  });
+}
+
 injectServerCss();
 decorateTablerUI();
 initSystemThemeListener();
+initSidebarLayout();
 initEventListeners();
 initMemoDatePicker();
 initMemoDuePicker();
