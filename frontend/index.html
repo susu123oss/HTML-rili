@@ -4050,7 +4050,7 @@
                         <button type="button" class="btn btn-sm" id="wpPageViewTeamBtn"><i class="fas fa-users"></i> 全员看板</button>
                     </div>
                     <button type="button" class="btn btn-primary" id="wpPageCopyReportBtn">
-                        <i class="far fa-copy"></i> <span id="wpPageCopyReportText">一键复制周报</span>
+                        <i class="far fa-copy"></i> <span id="wpPageCopyReportText">预览周报</span>
                     </button>
                     <button type="button" class="btn btn-secondary" id="wpPageRefreshBtn" title="刷新数据">
                         <i class="fas fa-sync-alt"></i>
@@ -4061,6 +4061,18 @@
             <!-- 工作台核心工作区（7天全屏周日程大看板） -->
             <div class="wp-workspace-body" id="wpWorkspaceBody"></div>
         </section>
+
+        <dialog class="wp-report-dialog" id="wpReportDialog" aria-labelledby="wpReportTitle">
+            <div class="wp-report-head">
+                <h2 id="wpReportTitle">周报预览</h2>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('wpReportDialog').close()">关闭</button>
+            </div>
+            <p>核对计划、实际进展和风险后，可直接在下方修改，再复制提交。</p>
+            <textarea id="wpReportPreview" aria-label="可编辑的周报内容"></textarea>
+            <div class="wp-report-actions">
+                <button type="button" class="btn btn-primary" onclick="confirmCopyWeeklyReport()">复制周报</button>
+            </div>
+        </dialog>
 
         <!-- 团队完成竞赛榜 -->
         <section class="team-leaderboard" id="teamLeaderboard" hidden>
@@ -4186,6 +4198,7 @@
                                 <input type="checkbox" id="memoCompleted"> 标记为已完成
                             </label>
                         </div>
+                        <label class="memo-weekly-plan-toggle"><input type="checkbox" id="memoWeeklyPlan"> 纳入周计划与周报</label>
                     </div>
                     
                     <div class="form-group memo-date-group">

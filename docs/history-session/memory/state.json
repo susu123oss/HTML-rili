@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "state_revision": 4,
+  "archive_revision": "sha256:988c384f91b3ac91526d959ec4a75fb1c03e6fbfbdba5c750cd53fad5c79a5ec",
+  "generated_at": "unix:1790561958",
+  "current_session": {
+    "number": 2,
+    "path": "docs/history-session/2.md",
+    "reason": "当前 ChatGPT 会话档案"
+  },
+  "current_focus": "你觉得周计划页面和逻辑还有哪些能优化的",
+  "recent_changes": [
+    "建议优先修正周范围数据加载、计划统计口径与顺延历史，再改善空状态、布局和录入体验。"
+  ],
+  "open_items": [
+    "如用户要求实施，先明确定义周计划项与普通备忘录的关系，以及顺延采用复制关联或记录历史，再改前后端与周报。",
+    "后续每轮任务完成前使用本次 bootstrap 返回的 session_key 与 current_path 调用 history_session_checkpoint。"
+  ],
+  "references": [
+    {
+      "number": 1,
+      "path": "docs/history-session/1.md",
+      "reason": "最近历史档案；可按需读取原文"
+    }
+  ]
+}

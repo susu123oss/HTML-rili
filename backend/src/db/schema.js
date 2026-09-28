@@ -43,6 +43,31 @@ export async function initDatabase() {
   `);
 
   await query(`
+    ALTER TABLE memos
+      ADD COLUMN IF NOT EXISTS plan_kind TEXT NOT NULL DEFAULT 'memo',
+      ADD COLUMN IF NOT EXISTS rollover_from_id INTEGER REFERENCES memos(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS rollover_to_id INTEGER REFERENCES memos(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS rollover_reason TEXT NOT NULL DEFAULT ''
+  `);
+  // Old quick-added plans carried their type only in the title.
+  await query(`
+    UPDATE memos SET plan_kind = 'plan'
+    WHERE plan_kind = 'memo' AND title ~ '^\\[计划\\]'
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS weekly_summaries (
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      week_start DATE NOT NULL,
+      goals TEXT NOT NULL DEFAULT '',
+      deliverables TEXT NOT NULL DEFAULT '',
+      actual TEXT NOT NULL DEFAULT '',
+      risks TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (owner_id, week_start)
+    )
+  `);
+
+  await query(`
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS job_title TEXT NOT NULL DEFAULT '技术员'
   `);
@@ -67,6 +92,8 @@ export async function initDatabase() {
   await query('CREATE INDEX IF NOT EXISTS idx_memos_date_owner_id ON memos(date, owner_id, id)');
   await query('CREATE INDEX IF NOT EXISTS idx_memos_updated_at ON memos(updated_at)');
   await query('CREATE INDEX IF NOT EXISTS idx_memos_completed ON memos(completed)');
+  await query('CREATE UNIQUE INDEX IF NOT EXISTS idx_memos_rollover_from ON memos(rollover_from_id) WHERE rollover_from_id IS NOT NULL');
+  await query('CREATE INDEX IF NOT EXISTS idx_memos_plan_kind_date ON memos(plan_kind, date)');
   await query('CREATE INDEX IF NOT EXISTS idx_users_department_id ON users(department_id)');
   await query('CREATE INDEX IF NOT EXISTS idx_users_job_title ON users(job_title)');
   await query('CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read, created_at)');

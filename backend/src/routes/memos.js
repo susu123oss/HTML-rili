@@ -1,6 +1,6 @@
 import express from 'express';
 import { createHash } from 'crypto';
-import { query } from '../db/pool.js';
+import { pool, query } from '../db/pool.js';
 import { authRequired, canAccessUser, canViewMemo, canEditMemo } from '../middleware/auth.js';
 
 export const memosRouter = express.Router();
@@ -61,6 +61,10 @@ const rowToMemo = (row, includeContent = false) => {
     ...(includeContent ? { content } : {}),
     color: row.color,
     completed: row.completed,
+    planKind: row.planKind || 'memo',
+    rolloverFromId: row.rolloverFromId || null,
+    rolloverToId: row.rolloverToId || null,
+    rolloverReason: row.rolloverReason || '',
     dueTime: row.dueTime,
     isUrged: Boolean(row.isUrged),
     lastUrgedAt: row.lastUrgedAt || null,
@@ -74,6 +78,8 @@ const memoDetailSql = `
          users.department_id AS "departmentId", departments.name AS "departmentName",
          to_char(memos.date, 'YYYY-MM-DD') AS date,
          memos.title, memos.content, memos.color, memos.completed,
+         memos.plan_kind AS "planKind", memos.rollover_from_id AS "rolloverFromId",
+         memos.rollover_to_id AS "rolloverToId", memos.rollover_reason AS "rolloverReason",
          memos.due_time AS "dueTime", memos.created_at AS "createdAt", memos.updated_at AS "updatedAt"
   FROM memos
   JOIN users ON users.id = memos.owner_id
@@ -179,6 +185,8 @@ memosRouter.get('/', authRequired, async (req, res) => {
            users.department_id AS "departmentId", departments.name AS "departmentName",
            to_char(memos.date, 'YYYY-MM-DD') AS date,
            memos.title, ${contentColumns}, memos.color, memos.completed,
+           memos.plan_kind AS "planKind", memos.rollover_from_id AS "rolloverFromId",
+           memos.rollover_to_id AS "rolloverToId", memos.rollover_reason AS "rolloverReason",
            memos.due_time AS "dueTime", memos.created_at AS "createdAt", memos.updated_at AS "updatedAt"
     FROM memos
     JOIN users ON users.id = memos.owner_id
@@ -208,6 +216,8 @@ memosRouter.get('/reminders', authRequired, async (req, res, next) => {
              to_char(memos.date, 'YYYY-MM-DD') AS date,
              memos.title, LEFT(memos.content, ${contentPreviewLength}) AS "contentPreview",
              char_length(memos.content) AS "contentLength", memos.color, memos.completed,
+             memos.plan_kind AS "planKind", memos.rollover_from_id AS "rolloverFromId",
+             memos.rollover_to_id AS "rolloverToId", memos.rollover_reason AS "rolloverReason",
              memos.due_time AS "dueTime", memos.created_at AS "createdAt", memos.updated_at AS "updatedAt",
              CASE WHEN latest_urge.created_at IS NOT NULL THEN TRUE ELSE FALSE END AS "isUrged",
              latest_urge.created_at AS "lastUrgedAt"
@@ -219,7 +229,7 @@ memosRouter.get('/reminders', authRequired, async (req, res, next) => {
         WHERE notifications.memo_id = memos.id AND notifications.type = 'urge'
         ORDER BY created_at DESC LIMIT 1
       ) latest_urge ON TRUE
-      WHERE memos.completed = FALSE${ownerWhere}
+      WHERE memos.completed = FALSE AND memos.rollover_to_id IS NULL${ownerWhere}
       ORDER BY memos.due_time ASC NULLS LAST, memos.date ASC, memos.id ASC
       `,
       params
@@ -249,7 +259,7 @@ memosRouter.post('/batch-complete', authRequired, async (req, res, next) => {
         `
         UPDATE memos
         SET completed = TRUE, updated_at = NOW()
-        WHERE id = ANY($1::int[]) AND completed = FALSE
+        WHERE id = ANY($1::int[]) AND completed = FALSE AND rollover_to_id IS NULL
         RETURNING id
         `,
         [numIds]
@@ -259,7 +269,7 @@ memosRouter.post('/batch-complete', authRequired, async (req, res, next) => {
         `
         UPDATE memos
         SET completed = TRUE, updated_at = NOW()
-        WHERE id = ANY($1::int[]) AND owner_id = $2 AND completed = FALSE
+        WHERE id = ANY($1::int[]) AND owner_id = $2 AND completed = FALSE AND rollover_to_id IS NULL
         RETURNING id
         `,
         [numIds, req.user.id]
@@ -293,7 +303,7 @@ memosRouter.post('/urge', authRequired, async (req, res, next) => {
                users.display_name AS "ownerName", memos.due_time AS "dueTime"
         FROM memos
         JOIN users ON users.id = memos.owner_id
-        WHERE memos.completed = FALSE AND memos.due_time < NOW()
+        WHERE memos.completed = FALSE AND memos.rollover_to_id IS NULL AND memos.due_time < NOW()
         `
       );
       targetMemos = queryRes.rows;
@@ -308,7 +318,7 @@ memosRouter.post('/urge', authRequired, async (req, res, next) => {
                users.display_name AS "ownerName", memos.due_time AS "dueTime"
         FROM memos
         JOIN users ON users.id = memos.owner_id
-        WHERE memos.id = ANY($1::int[]) AND memos.completed = FALSE
+        WHERE memos.id = ANY($1::int[]) AND memos.completed = FALSE AND memos.rollover_to_id IS NULL
         `,
         [numIds]
       );
@@ -350,6 +360,126 @@ memosRouter.post('/urge', authRequired, async (req, res, next) => {
   }
 });
 
+const isValidMonday = (value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return false;
+  const date = new Date(`${value}T12:00:00Z`);
+  return !Number.isNaN(date.getTime())
+    && date.toISOString().slice(0, 10) === value
+    && date.getUTCDay() === 1;
+};
+
+memosRouter.get('/weekly-summaries', authRequired, async (req, res, next) => {
+  try {
+    const startWeek = String(req.query.startWeek || '');
+    const weeks = Number(req.query.weeks || 2);
+    if (!isValidMonday(startWeek) || !Number.isInteger(weeks) || weeks < 1 || weeks > 2) {
+      return res.status(400).json({ message: '请提供有效的周一日期及 1-2 周范围' });
+    }
+    const scope = await resolveMemoScope(req.user, req.query.userId);
+    const params = [startWeek, weeks];
+    const ownerWhere = scope.ownerId ? ` AND owner_id = $${params.push(scope.ownerId)}` : '';
+    const result = await query(
+      `SELECT owner_id AS "ownerId", to_char(week_start, 'YYYY-MM-DD') AS "weekStart",
+              goals, deliverables, actual, risks, updated_at AS "updatedAt"
+       FROM weekly_summaries
+       WHERE week_start >= $1::date AND week_start < ($1::date + $2::int * 7)${ownerWhere}
+       ORDER BY week_start, owner_id`,
+      params
+    );
+    return res.json({ summaries: result.rows });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+memosRouter.put('/weekly-summaries/:weekStart', authRequired, async (req, res, next) => {
+  try {
+    const weekStart = req.params.weekStart;
+    const ownerId = Number(req.body?.ownerId || req.user.id);
+    if (!isValidMonday(weekStart) || !Number.isInteger(ownerId) || ownerId <= 0) {
+      return res.status(400).json({ message: '周计划日期或成员无效' });
+    }
+    if (!canEditMemo(req.user, ownerId)) {
+      return res.status(403).json({ message: '没有编辑该成员周目标的权限' });
+    }
+    const fields = ['goals', 'deliverables', 'actual', 'risks'].map((key) => String(req.body?.[key] || '').trim());
+    if (fields.some((value) => value.length > 5000)) {
+      return res.status(400).json({ message: '每项内容最多 5000 字' });
+    }
+    const result = await query(
+      `INSERT INTO weekly_summaries(owner_id, week_start, goals, deliverables, actual, risks)
+       VALUES($1, $2, $3, $4, $5, $6)
+       ON CONFLICT(owner_id, week_start) DO UPDATE
+       SET goals = EXCLUDED.goals, deliverables = EXCLUDED.deliverables,
+           actual = EXCLUDED.actual, risks = EXCLUDED.risks, updated_at = NOW()
+       RETURNING owner_id AS "ownerId", to_char(week_start, 'YYYY-MM-DD') AS "weekStart",
+                 goals, deliverables, actual, risks, updated_at AS "updatedAt"`,
+      [ownerId, weekStart, ...fields]
+    );
+    return res.json({ summary: result.rows[0] });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+memosRouter.post('/:id/rollover', authRequired, async (req, res, next) => {
+  const targetDate = String(req.body?.targetDate || '');
+  const targetDueTime = normalizeDueTime(req.body?.dueTime || `${targetDate}T18:00:00`);
+  const reason = String(req.body?.reason || '').trim().slice(0, 1000);
+  const memoId = Number(req.params.id);
+  const parsedDate = new Date(`${targetDate}T12:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate) || Number.isNaN(parsedDate.getTime())
+      || parsedDate.toISOString().slice(0, 10) !== targetDate
+      || !targetDueTime || !Number.isInteger(memoId) || memoId <= 0) {
+    return res.status(400).json({ message: '顺延日期或截止时间无效' });
+  }
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const sourceResult = await client.query(
+      `SELECT id, owner_id AS "ownerId", to_char(date, 'YYYY-MM-DD') AS date,
+              title, content, color, completed, plan_kind AS "planKind",
+              rollover_to_id AS "rolloverToId"
+       FROM memos WHERE id = $1 FOR UPDATE`,
+      [memoId]
+    );
+    const source = sourceResult.rows[0];
+    if (!source) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: '计划不存在' });
+    }
+    if (!canEditMemo(req.user, source.ownerId)) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ message: '没有顺延该计划的权限' });
+    }
+    if (source.planKind !== 'plan' || source.completed || source.rolloverToId || targetDate <= source.date) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: '只能将尚未完成且未顺延的计划移至更晚日期' });
+    }
+    const inserted = await client.query(
+      `INSERT INTO memos(owner_id, date, title, content, color, completed, due_time,
+                         plan_kind, rollover_from_id, rollover_reason)
+       VALUES($1, $2, $3, $4, $5, FALSE, $6, 'plan', $7, $8) RETURNING id`,
+      [source.ownerId, targetDate, source.title, source.content, source.color, targetDueTime, memoId, reason]
+    );
+    await client.query(
+      'UPDATE memos SET rollover_to_id = $2, updated_at = NOW() WHERE id = $1',
+      [memoId, inserted.rows[0].id]
+    );
+    await client.query('COMMIT');
+    const [original, successor] = await Promise.all([
+      findMemoById(memoId), findMemoById(inserted.rows[0].id)
+    ]);
+    return res.status(201).json({ original, memo: successor });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    return next(error);
+  } finally {
+    client?.release();
+  }
+});
+
 memosRouter.get('/:id', authRequired, async (req, res, next) => {
   try {
     const numId = Number(req.params.id);
@@ -371,12 +501,15 @@ memosRouter.get('/:id', authRequired, async (req, res, next) => {
 
 memosRouter.post('/', authRequired, async (req, res, next) => {
   try {
-    const { ownerId, date, title, content = '', color = '#4f7cff', completed = false, dueTime = null } = req.body || {};
+    const { ownerId, date, title, content = '', color = '#4f7cff', completed = false, dueTime = null, planKind = 'memo' } = req.body || {};
     const targetOwnerId = ownerId || req.user.id;
     let normalizedDueTime = normalizeDueTime(dueTime);
 
     if (!date || !title) {
       return res.status(400).json({ message: '日期和标题不能为空' });
+    }
+    if (!['memo', 'plan'].includes(planKind)) {
+      return res.status(400).json({ message: '事项类型无效' });
     }
 
     if (!normalizedDueTime && date) {
@@ -399,11 +532,11 @@ memosRouter.post('/', authRequired, async (req, res, next) => {
 
     const result = await query(
       `
-      INSERT INTO memos(owner_id, date, title, content, color, completed, due_time)
-      VALUES($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO memos(owner_id, date, title, content, color, completed, due_time, plan_kind)
+      VALUES($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id
       `,
-      [owner.id, date, title, content, color, completed, normalizedDueTime]
+      [owner.id, date, title, content, color, completed, normalizedDueTime, planKind]
     );
 
     const memo = await findMemoById(result.rows[0].id);
@@ -422,7 +555,8 @@ async function handleUpdateMemo(req, res, next) {
     const memoResult = await query(
       `
       SELECT memos.id, memos.owner_id AS "ownerId", users.department_id AS "departmentId",
-             memos.due_time AS "dueTime", to_char(memos.date, 'YYYY-MM-DD') AS date
+             memos.due_time AS "dueTime", to_char(memos.date, 'YYYY-MM-DD') AS date,
+             memos.rollover_to_id AS "rolloverToId"
       FROM memos
       JOIN users ON users.id = memos.owner_id
       WHERE memos.id = $1
@@ -438,8 +572,14 @@ async function handleUpdateMemo(req, res, next) {
     if (!canEditMemo(req.user, memo.ownerId)) {
       return res.status(403).json({ message: '没有修改该记录的权限' });
     }
+    if (memo.rolloverToId) {
+      return res.status(409).json({ message: '已顺延的原计划不能修改，请编辑顺延后的事项' });
+    }
 
-    const { date, title, content, color, completed, dueTime } = req.body || {};
+    const { date, title, content, color, completed, dueTime, planKind } = req.body || {};
+    if (planKind !== undefined && !['memo', 'plan'].includes(planKind)) {
+      return res.status(400).json({ message: '事项类型无效' });
+    }
     const hasDueTime = Object.prototype.hasOwnProperty.call(req.body || {}, 'dueTime');
     let normalizedDueTime = normalizeDueTime(hasDueTime ? dueTime : memo.dueTime);
     if (!normalizedDueTime && (date || memo.date)) {
@@ -458,6 +598,7 @@ async function handleUpdateMemo(req, res, next) {
           color = COALESCE($5, color),
           completed = COALESCE($6, completed),
           due_time = CASE WHEN $7 THEN $8 ELSE due_time END,
+          plan_kind = COALESCE($9, plan_kind),
           updated_at = NOW()
       WHERE id = $1
       `,
@@ -469,7 +610,8 @@ async function handleUpdateMemo(req, res, next) {
         color || null,
         typeof completed === 'boolean' ? completed : null,
         hasDueTime,
-        normalizedDueTime
+        normalizedDueTime,
+        planKind ?? null
       ]
     );
 
@@ -491,7 +633,8 @@ memosRouter.delete('/:id', authRequired, async (req, res, next) => {
     }
     const memoResult = await query(
       `
-      SELECT memos.id, memos.owner_id AS "ownerId", users.department_id AS "departmentId"
+      SELECT memos.id, memos.owner_id AS "ownerId", users.department_id AS "departmentId",
+             memos.rollover_to_id AS "rolloverToId", memos.rollover_from_id AS "rolloverFromId"
       FROM memos
       JOIN users ON users.id = memos.owner_id
       WHERE memos.id = $1
@@ -506,6 +649,9 @@ memosRouter.delete('/:id', authRequired, async (req, res, next) => {
     const memo = memoResult.rows[0];
     if (!canEditMemo(req.user, memo.ownerId)) {
       return res.status(403).json({ message: '没有删除该记录的权限' });
+    }
+    if (memo.rolloverToId || memo.rolloverFromId) {
+      return res.status(409).json({ message: '顺延链中的计划需保留以供复盘' });
     }
 
     await query('DELETE FROM memos WHERE id = $1', [numId]);

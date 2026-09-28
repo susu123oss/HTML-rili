@@ -45,6 +45,15 @@
   --warning-color: var(--ui-warning);
   --danger-color: var(--ui-danger);
 }
+.memo-weekly-plan-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  color: var(--ui-text-muted, #64748b);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
 
 html[data-theme='dark'],
 html.dark,
@@ -4250,6 +4259,119 @@ html[data-theme='dark'] .wp-chip-name {
   .wp-day-date-box {
     white-space: nowrap;
   }
+}
+
+.wp-load-state, .wp-empty-week {
+  padding: 18px;
+  border: 1px dashed var(--ui-border, #cbd5e1);
+  border-radius: 10px;
+  background: var(--ui-surface-soft, #f8fafc);
+  color: var(--ui-text-muted, #64748b);
+  font-size: 0.84rem;
+}
+.wp-load-state button {
+  margin-left: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ui-primary, #4361ee);
+  cursor: pointer;
+}
+.wp-summary-panel {
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--ui-surface, #fff);
+  padding: 12px 16px;
+}
+.wp-summary-panel summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  color: var(--ui-text, #1e293b);
+  list-style: none;
+}
+.wp-summary-panel summary::-webkit-details-marker { display: none; }
+.wp-summary-panel summary span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text-muted, #64748b);
+  font-size: 0.78rem;
+}
+.wp-summary-panel[open] summary i { transform: rotate(180deg); }
+.wp-summary-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.wp-summary-fields label { display: flex; flex-direction: column; gap: 5px; }
+.wp-summary-fields label span { color: var(--ui-text, #1e293b); font-size: 0.78rem; font-weight: 600; }
+.wp-summary-fields textarea, .wp-report-dialog textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--ui-border, #cbd5e1);
+  border-radius: 7px;
+  padding: 8px;
+  background: var(--ui-surface, #fff);
+  color: var(--ui-text, #1e293b);
+  font: inherit;
+  font-size: 0.8rem;
+}
+.wp-summary-fields textarea:focus, .wp-report-dialog textarea:focus {
+  outline: 2px solid var(--ui-primary, #4361ee);
+  outline-offset: 1px;
+}
+.wp-summary-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.wp-summary-actions button { font-size: 0.78rem; }
+.wp-columns-grid.is-empty .wp-day-column { min-height: 250px; }
+.wp-columns-grid.is-empty .wp-day-task-list { max-height: 130px; }
+.wp-mobile-days { display: none; }
+.wp-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.wp-card-tags span {
+  font-size: 0.62rem;
+  color: var(--ui-text-muted, #64748b);
+  background: var(--ui-surface, #fff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.wp-day-task-card.rolled-over { opacity: 0.68; }
+.wp-team-goal { color: var(--ui-text, #1e293b); font-size: 0.76rem; white-space: pre-line; }
+.wp-report-dialog {
+  width: min(760px, calc(100vw - 24px));
+  max-height: 90vh;
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--ui-surface, #fff);
+  color: var(--ui-text, #1e293b);
+}
+.wp-report-dialog::backdrop { background: rgba(15, 23, 42, 0.55); }
+.wp-report-head, .wp-report-actions { display: flex; justify-content: space-between; align-items: center; }
+.wp-report-head h2 { margin: 0; font-size: 1.1rem; }
+.wp-report-dialog p { color: var(--ui-text-muted, #64748b); font-size: 0.78rem; }
+.wp-report-dialog textarea { min-height: min(55vh, 500px); line-height: 1.55; }
+.wp-report-actions { justify-content: flex-end; margin-top: 12px; }
+
+@media (max-width: 768px) {
+  .wp-summary-fields { grid-template-columns: 1fr; }
+  .wp-mobile-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; margin-bottom: 8px; }
+  .wp-mobile-days button {
+    padding: 5px 1px;
+    border: 1px solid var(--ui-border, #e2e8f0);
+    border-radius: 6px;
+    background: var(--ui-surface, #fff);
+    color: var(--ui-text, #1e293b);
+    font-size: 0.78rem;
+  }
+  .wp-mobile-days button.active { border-color: var(--ui-primary, #4361ee); color: var(--ui-primary, #4361ee); font-weight: 700; }
+  .wp-mobile-days small { display: block; font-size: 0.56rem; }
+  .wp-columns-grid { display: block; overflow: visible; padding: 0; }
+  .wp-columns-grid .wp-day-column { display: none; }
+  .wp-columns-grid .wp-day-column.is-mobile-selected { display: flex; min-height: 320px; }
 }
 
 
