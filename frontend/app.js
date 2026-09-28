@@ -6201,6 +6201,7 @@ function switchMemoContentTab(mode) {
     } catch (e) {
       textarea.focus();
     }
+  }
 }
 
 function handleQuickDueChipClick(event) {
