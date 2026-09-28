@@ -4099,13 +4099,14 @@
 
         <dialog class="wp-report-dialog" id="wpReportDialog" aria-labelledby="wpReportTitle">
             <div class="wp-report-head">
-                <h2 id="wpReportTitle">周报预览</h2>
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('wpReportDialog').close()">关闭</button>
+                <h2 id="wpReportTitle"><i class="fas fa-file-alt text-primary"></i> 周报预览</h2>
+                <button type="button" class="btn btn-icon btn-secondary" onclick="document.getElementById('wpReportDialog').close()" aria-label="关闭"><i class="fas fa-times"></i></button>
             </div>
-            <p>核对计划、实际进展和风险后，可直接在下方修改，再复制提交。</p>
+            <p>核对计划、实际进展和风险后，可直接在下方编辑修改，再点击下方按钮一键复制。</p>
             <textarea id="wpReportPreview" aria-label="可编辑的周报内容"></textarea>
             <div class="wp-report-actions">
-                <button type="button" class="btn btn-primary" onclick="confirmCopyWeeklyReport()">复制周报</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('wpReportDialog').close()">关闭</button>
+                <button type="button" class="btn btn-primary" id="wpConfirmCopyBtn" onclick="confirmCopyWeeklyReport()"><i class="fas fa-copy"></i> 复制周报</button>
             </div>
         </dialog>
 

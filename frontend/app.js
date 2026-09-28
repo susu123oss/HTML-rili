@@ -6623,6 +6623,7 @@ function openWeeklySummaryDialog() {
 
   const dialog = $('wpSummaryDialog');
   if (dialog) {
+    setupDialogBackdropClose('wpSummaryDialog');
     dialog.showModal();
     fGoals?.focus();
   }
@@ -7037,23 +7038,110 @@ function buildWeeklyReportMarkdown() {
   return report;
 }
 
+function setupDialogBackdropClose(dialogId) {
+  const dialog = $(dialogId);
+  if (!dialog || dialog.dataset.backdropBound) return;
+  dialog.dataset.backdropBound = 'true';
+  dialog.addEventListener('click', (e) => {
+    const rect = dialog.getBoundingClientRect();
+    const isInDialog = (
+      rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+      rect.left <= e.clientX && e.clientX <= rect.left + rect.width
+    );
+    if (!isInDialog) {
+      dialog.close();
+    }
+  });
+}
+
+async function copyTextToClipboard(text, targetElement = null) {
+  // 1. 如果支持现代安全上下文 Clipboard API（HTTPS / localhost），优先调用
+  if (window.isSecureContext && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      console.warn('Clipboard API 写入失败，转用兼容方案:', e);
+    }
+  }
+
+  // 2. 如果目标 textarea 已在 DOM 中，直接选中文本执行 document.execCommand('copy')
+  // 这样在 HTTP 环境（非 HTTPS 公网/局域网 IP）下，通过用户点击手势触发 100% 成功
+  if (targetElement && typeof targetElement.select === 'function') {
+    try {
+      targetElement.focus();
+      targetElement.select();
+      targetElement.setSelectionRange(0, targetElement.value.length);
+      const successful = document.execCommand('copy');
+      if (successful) return true;
+    } catch (e) {
+      console.warn('Target element execCommand 复制失败:', e);
+    }
+  }
+
+  // 3. 通用离屏临时 textarea 降级方案
+  try {
+    const helper = document.createElement('textarea');
+    helper.value = text;
+    helper.setAttribute('readonly', '');
+    helper.style.position = 'fixed';
+    helper.style.left = '-9999px';
+    helper.style.top = '0';
+    helper.style.opacity = '0';
+    document.body.appendChild(helper);
+    helper.focus();
+    helper.select();
+    helper.setSelectionRange(0, text.length);
+    const successful = document.execCommand('copy');
+    document.body.removeChild(helper);
+    if (successful) return true;
+  } catch (e) {
+    console.warn('Fallback execCommand 复制失败:', e);
+  }
+
+  return false;
+}
+
 function copyWeeklyReportMarkdown() {
   const dialog = $('wpReportDialog');
   const preview = $('wpReportPreview');
   if (!dialog || !preview) return;
+  setupDialogBackdropClose('wpReportDialog');
   preview.value = buildWeeklyReportMarkdown();
   dialog.showModal();
   preview.focus();
 }
 
 async function confirmCopyWeeklyReport() {
-  const report = $('wpReportPreview')?.value || '';
-  try {
-    await navigator.clipboard.writeText(report);
-    $('wpReportDialog')?.close();
-    showWeeklyFeedback('周报已复制，可粘贴提交');
-  } catch (error) {
-    alert('复制失败，请在预览框中手动选择并复制');
+  const preview = $('wpReportPreview');
+  const report = preview?.value || '';
+  const btn = $('wpConfirmCopyBtn');
+  const originalHtml = btn ? btn.innerHTML : '<i class="fas fa-copy"></i> 复制周报';
+
+  const ok = await copyTextToClipboard(report, preview);
+  if (ok) {
+    if (btn) {
+      btn.innerHTML = '<i class="fas fa-check"></i> 已复制到剪贴板';
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-success');
+    }
+    showWeeklyFeedback('✔ 周报已成功复制到剪贴板，可直接粘贴提交！');
+    setTimeout(() => {
+      $('wpReportDialog')?.close();
+      if (btn) {
+        btn.innerHTML = originalHtml;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+      }
+    }, 600);
+  } else {
+    // 降级兜底方案：全选框内文本，让用户直接按 Ctrl+C / ⌘+C 即可复制
+    if (preview) {
+      preview.focus();
+      preview.select();
+      preview.setSelectionRange(0, report.length);
+    }
+    showWeeklyFeedback('已全选周报内容，请按 Ctrl+C 快速复制', 'warning');
   }
 }
 
