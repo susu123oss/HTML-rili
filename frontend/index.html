@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#ffffff">
     <script src="./theme-init.js"></script>
     <title>工作日历备忘录</title>
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
@@ -4148,15 +4149,67 @@
                         </div>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group memo-date-group">
                         <label for="memoDate">日期</label>
-                        <input type="date" class="form-control" id="memoDate" required>
+                        <div class="custom-date-picker-wrap" id="memoDateWrap">
+                            <input type="text" class="form-control custom-date-input" id="memoDate" required readonly placeholder="选择日期" autocomplete="off">
+                            <span class="custom-date-icon tabler-icon" data-icon="calendar" id="memoDateIcon" aria-hidden="true"></span>
+                            <div id="memoCalendarPopup" class="memo-calendar-popup card" hidden>
+                                <div class="mcp-header">
+                                    <button type="button" class="mcp-nav-btn mcp-prev" id="mcpPrevMonth" aria-label="上个月">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                    </button>
+                                    <span class="mcp-month-label" id="mcpMonthLabel">2026年 9月</span>
+                                    <button type="button" class="mcp-nav-btn mcp-next" id="mcpNextMonth" aria-label="下个月">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    </button>
+                                    <button type="button" class="mcp-today-btn" id="mcpTodayBtn">今天</button>
+                                </div>
+                                <div class="mcp-weekdays">
+                                    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+                                </div>
+                                <div class="mcp-grid" id="mcpGrid"></div>
+                                <div class="mcp-footer">
+                                    <button type="button" class="mcp-close-btn" id="mcpCloseBtn">完成</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="memoDueTime">截止时间 <span aria-hidden="true">*</span></label>
-                            <input type="datetime-local" class="form-control" id="memoDueTime" required aria-required="true">
+                            <label for="memoDueTimeDisplay">截止时间 <span aria-hidden="true">*</span></label>
+                            <!-- hidden actual value field -->
+                            <input type="hidden" id="memoDueTime">
+                            <div class="custom-date-picker-wrap" id="memoDueWrap">
+                                <input type="text" class="form-control custom-date-input" id="memoDueTimeDisplay" required readonly placeholder="选择截止日期和时间" autocomplete="off">
+                                <span class="custom-date-icon tabler-icon" data-icon="calendar" id="memoDueIcon" aria-hidden="true"></span>
+                                <div id="memoDuePopup" class="memo-calendar-popup card" hidden>
+                                    <div class="mcp-header">
+                                        <button type="button" class="mcp-nav-btn mcp-prev" id="mdpPrevMonth" aria-label="上个月">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                        </button>
+                                        <span class="mcp-month-label" id="mdpMonthLabel">2026年 9月</span>
+                                        <button type="button" class="mcp-nav-btn mcp-next" id="mdpNextMonth" aria-label="下个月">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
+                                        <button type="button" class="mcp-today-btn" id="mdpTodayBtn">今天</button>
+                                    </div>
+                                    <div class="mcp-weekdays">
+                                        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+                                    </div>
+                                    <div class="mcp-grid" id="mdpGrid"></div>
+                                    <div class="mcp-time-row">
+                                        <label class="mcp-time-label">时间</label>
+                                        <input type="number" class="mcp-time-input" id="mdpHour" min="0" max="23" placeholder="时" aria-label="小时">
+                                        <span class="mcp-time-sep">:</span>
+                                        <input type="number" class="mcp-time-input" id="mdpMinute" min="0" max="59" placeholder="分" aria-label="分钟">
+                                    </div>
+                                    <div class="mcp-footer">
+                                        <button type="button" class="mcp-close-btn" id="mdpCloseBtn">完成</button>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="quick-due-chips" id="quickDueChips">
                                 <button type="button" class="quick-due-chip" data-preset="today-end">今日 18:00</button>
                                 <button type="button" class="quick-due-chip" data-preset="tomorrow-end">明日 18:00</button>

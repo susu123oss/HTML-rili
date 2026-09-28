@@ -12,7 +12,7 @@
 
 /* Semantic colors are shared by both themes and retain the legacy aliases. */
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
   --ui-page: var(--slate-1);
   --ui-surface: #ffffff;
   --ui-surface-soft: var(--slate-2);
@@ -47,7 +47,10 @@
 }
 
 html[data-theme='dark'],
-html.dark {
+html.dark,
+:root[data-theme='dark'],
+:root.dark,
+body[data-theme='dark'] {
   color-scheme: dark !important;
   --ui-surface: var(--slate-2);
   --ui-surface-soft: var(--slate-3);
@@ -62,16 +65,19 @@ html.dark {
 }
 
 html[data-theme='light'],
-html.light {
+html.light,
+:root[data-theme='light'],
+:root.light,
+body[data-theme='light'] {
   color-scheme: light !important;
 }
 
 /* Force dark color-scheme on form controls so native datepickers & menus render dark */
-html[data-theme='dark'] :is(input, select, textarea) {
+html[data-theme='dark'] :is(input, select, textarea, button, form, .modal, .modal-content, #memoModal, #memoForm, .form-control) {
   color-scheme: dark !important;
 }
 
-html[data-theme='light'] :is(input, select, textarea) {
+html[data-theme='light'] :is(input, select, textarea, button, form, .modal, .modal-content, #memoModal, #memoForm, .form-control) {
   color-scheme: light !important;
 }
 
@@ -2757,6 +2763,274 @@ html[data-theme] .workspace-subbar .toolbar-more-menu #toolbarImport .tabler-ico
 .operation-feedback[hidden] { display: none !important; }
 #memoModal .modal-footer { flex-wrap: wrap; }
 #memoSaveFeedback { flex: 1 0 100%; }
+
+/* 自定义日期选择器包装层与日历图标 */
+.custom-date-picker-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.custom-date-picker-wrap .custom-date-input {
+  cursor: pointer !important;
+  padding-right: 38px !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.custom-date-picker-wrap .custom-date-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.75;
+  color: var(--ui-accent);
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+}
+
+/* 自定义备忘录弹出日历（支持完美暗色模式与浅色模式） */
+.memo-calendar-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  max-width: 320px;
+  z-index: 2500;
+  border-radius: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+  animation: memoCalSlideIn 0.18s ease-out;
+}
+
+@keyframes memoCalSlideIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.memo-calendar-popup[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .memo-calendar-popup {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: 320px !important;
+    max-width: calc(100vw - 32px) !important;
+    z-index: 99999 !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 100vmax rgba(0, 0, 0, 0.5) !important;
+    animation: memoCalPopCenter 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  @keyframes memoCalPopCenter {
+    from { opacity: 0; transform: translate(-50%, -46%) scale(0.96); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+}
+
+.mcp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.mcp-month-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.mcp-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
+  transition: all 0.15s ease;
+}
+
+.mcp-nav-btn:hover {
+  background: var(--ui-surface-hover);
+}
+
+.mcp-today-btn {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: auto;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-accent);
+  transition: all 0.15s ease;
+}
+
+.mcp-today-btn:hover {
+  background: var(--ui-surface-hover);
+}
+
+.mcp-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+}
+
+.mcp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.mcp-day {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.84rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  color: var(--ui-text);
+  cursor: pointer;
+  padding: 0;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.mcp-day:hover:not(.mcp-selected) {
+  background: var(--ui-surface-hover);
+}
+
+.mcp-day.mcp-other-month {
+  color: var(--ui-text-muted) !important;
+  opacity: 0.45;
+}
+
+.mcp-day.mcp-today:not(.mcp-selected) {
+  border-color: var(--ui-accent) !important;
+  color: var(--ui-accent) !important;
+  font-weight: 700;
+}
+
+.mcp-day.mcp-selected {
+  background: var(--ui-button-bg) !important;
+  color: var(--ui-button-text, #ffffff) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(32, 107, 196, 0.4) !important;
+}
+
+/* 时间行：截止时间选择器特有 */
+.mcp-time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ui-border);
+}
+.mcp-time-label {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted, #6c7c8e);
+  margin: 0;
+  flex-shrink: 0;
+}
+.mcp-time-input {
+  width: 52px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-input-bg, var(--ui-bg));
+  color: var(--ui-text);
+  font-size: 0.9rem;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.mcp-time-input::-webkit-inner-spin-button,
+.mcp-time-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.mcp-time-sep {
+  font-weight: 700;
+  color: var(--ui-text);
+}
+html[data-theme='dark'] .mcp-time-input {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.14) !important;
+  color: #fcfdfe !important;
+}
+html[data-theme='light'] .mcp-time-input {
+  background: #f5f7fa !important;
+  border-color: #dce1e7 !important;
+  color: #182433 !important;
+}
+
+.mcp-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ui-border);
+}
+
+.mcp-close-btn {
+  padding: 4px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--ui-button-bg);
+  color: var(--ui-button-text);
+  border: 0;
+  cursor: pointer;
+}
+
+/* 暗色模式专属深色提升 */
+html[data-theme='dark'] .memo-calendar-popup {
+  background: var(--ui-surface, #182234) !important;
+  border: 1px solid var(--ui-border, #2b3950) !important;
+  box-shadow: 0 16px 36px -5px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  color: var(--ui-text, #fcfdfe) !important;
+}
+
+html[data-theme='dark'] .mcp-month-label {
+  color: #fcfdfe !important;
+}
+
+html[data-theme='dark'] .mcp-today-btn {
+  background: rgba(32, 107, 196, 0.18) !important;
+  border-color: rgba(32, 107, 196, 0.4) !important;
+  color: #70b8ff !important;
+}
+
+html[data-theme='dark'] .mcp-today-btn:hover {
+  background: rgba(32, 107, 196, 0.3) !important;
+}
+
+/* 浅色模式专属细节 */
+html[data-theme='light'] .memo-calendar-popup {
+  background: #ffffff !important;
+  border: 1px solid #dce1e7 !important;
+  box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.15) !important;
+  color: #182433 !important;
+}
 
 #reminderList .reminder-group { margin-bottom: 14px; }
 #reminderList .reminder-group h3 {

@@ -18,4 +18,6 @@
   root.style.colorScheme = mode;
   const meta = document.querySelector('meta[name="color-scheme"]');
   if (meta) meta.content = mode;
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.content = mode === 'dark' ? '#182433' : '#ffffff';
 })();

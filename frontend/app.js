@@ -4286,8 +4286,11 @@ function applyTheme(preference) {
   document.documentElement.classList.toggle('dark', effectiveTheme === 'dark');
   document.documentElement.classList.toggle('light', effectiveTheme === 'light');
   document.documentElement.style.colorScheme = effectiveTheme;
+  if (document.body) document.body.style.colorScheme = effectiveTheme;
   const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
   if (colorSchemeMeta) colorSchemeMeta.content = effectiveTheme;
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  if (metaThemeColor) metaThemeColor.content = effectiveTheme === 'dark' ? '#182433' : '#ffffff';
 
   const isDark = effectiveTheme === 'dark';
   const iconClass = themeToggleIconClass(pref, effectiveTheme);
@@ -5573,7 +5576,6 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
 
   const titleInput = $('memoTitle');
   const dateInput = $('memoDate');
-  const dueTimeInput = $('memoDueTime');
   const contentInput = $('memoContent');
   const completedCheckbox = $('memoCompleted');
   const saveBtn = $('saveMemo');
@@ -5585,20 +5587,28 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   }
   if (dateInput) {
     dateInput.value = memo?.date || dateValue;
-    dateInput.readOnly = !canEdit;
+    dateInput.readOnly = true;
+    dateInput.dataset.canEdit = canEdit ? 'true' : 'false';
   }
+  hideMemoCalendarPopup();
 
   // 智能预设默认截止时间
-  if (dueTimeInput) {
+  {
+    let dtVal;
     if (memo?.dueTime) {
-      dueTimeInput.value = toLocalDateTimeInput(memo.dueTime);
+      dtVal = toLocalDateTimeInput(memo.dueTime);
     } else {
       const todayStr = dateKey(new Date());
       const nowHour = new Date().getHours();
       const defaultTime = (dateValue === todayStr && nowHour >= 18) ? '23:59' : '18:00';
-      dueTimeInput.value = `${dateValue}T${defaultTime}`;
+      dtVal = `${dateValue}T${defaultTime}`;
     }
-    dueTimeInput.readOnly = !canEdit;
+    setMemoDuePickerValue(dtVal);
+    const displayInput = $('memoDueTimeDisplay');
+    const duePicker = $('memoDueWrap');
+    if (displayInput) displayInput.readOnly = true; // always readonly; picker is the UI
+    if (duePicker) duePicker.dataset.canEdit = canEdit ? 'true' : 'false';
+    hideMemoCalendarDuePopup();
   }
 
   if (contentInput) {
@@ -5627,10 +5637,364 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
 
 function closeMemoModal() {
   if (state.memoSaveBusy) return;
+  hideMemoCalendarPopup();
+  hideMemoCalendarDuePopup();
   state.memoDetailRequestVersion += 1;
   hideDialog('memoModal');
   state.selectedMemoId = null;
   state.detailDraftFromQuickAdd = false;
+}
+
+let memoPickerState = {
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth() + 1
+};
+
+function hideMemoCalendarPopup() {
+  const popup = $('memoCalendarPopup');
+  if (popup) popup.hidden = true;
+}
+
+function showMemoCalendarPopup() {
+  const dateInput = $('memoDate');
+  if (!dateInput || dateInput.dataset.canEdit === 'false') return;
+  const popup = $('memoCalendarPopup');
+  if (!popup) return;
+
+  const val = dateInput.value;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(val || '');
+  if (match) {
+    memoPickerState.currentYear = Number(match[1]);
+    memoPickerState.currentMonth = Number(match[2]);
+  } else {
+    const now = new Date();
+    memoPickerState.currentYear = now.getFullYear();
+    memoPickerState.currentMonth = now.getMonth() + 1;
+  }
+
+  renderMemoCalendarPopup();
+  popup.hidden = false;
+}
+
+function renderMemoCalendarPopup() {
+  const popup = $('memoCalendarPopup');
+  if (!popup) return;
+
+  const { currentYear, currentMonth } = memoPickerState;
+  const label = $('mcpMonthLabel');
+  if (label) label.textContent = `${currentYear}年 ${currentMonth}月`;
+
+  const grid = $('mcpGrid');
+  if (!grid) return;
+
+  const selectedDateStr = $('memoDate')?.value || '';
+  const todayStr = dateKey(new Date());
+
+  const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
+  let startDayOfWeek = firstDayOfMonth.getDay();
+  if (startDayOfWeek === 0) startDayOfWeek = 7;
+
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const prevMonthDays = new Date(currentYear, currentMonth - 1, 0).getDate();
+
+  let html = '';
+
+  for (let i = startDayOfWeek - 1; i > 0; i--) {
+    const dayNum = prevMonthDays - i + 1;
+    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    const dStr = `${prevYear}-${pad(prevMonth)}-${pad(dayNum)}`;
+    html += `<button type="button" class="mcp-day mcp-other-month" data-date="${dStr}">${dayNum}</button>`;
+  }
+
+  for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+    const dStr = `${currentYear}-${pad(currentMonth)}-${pad(dayNum)}`;
+    const isToday = dStr === todayStr;
+    const isSelected = dStr === selectedDateStr;
+    let cls = 'mcp-day';
+    if (isSelected) cls += ' mcp-selected';
+    else if (isToday) cls += ' mcp-today';
+    html += `<button type="button" class="${cls}" data-date="${dStr}">${dayNum}</button>`;
+  }
+
+  const totalRendered = (startDayOfWeek - 1) + daysInMonth;
+  const remainder = totalRendered % 7;
+  const daysToAdd = remainder === 0 ? 0 : 7 - remainder;
+  for (let dayNum = 1; dayNum <= daysToAdd; dayNum++) {
+    const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+    const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+    const dStr = `${nextYear}-${pad(nextMonth)}-${pad(dayNum)}`;
+    html += `<button type="button" class="mcp-day mcp-other-month" data-date="${dStr}">${dayNum}</button>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function selectMemoPickerDate(dateStr) {
+  const dateInput = $('memoDate');
+  if (dateInput) {
+    dateInput.value = dateStr;
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  const dueInput = $('memoDueTime');
+  if (dueInput && dueInput.value) {
+    const timePart = dueInput.value.split('T')[1] || '18:00';
+    dueInput.value = `${dateStr}T${timePart}`;
+  }
+
+  hideMemoCalendarPopup();
+}
+
+function initMemoDatePicker() {
+  const wrap = $('memoDateWrap');
+  const dateInput = $('memoDate');
+  if (!wrap || !dateInput) return;
+  if (wrap.dataset.bound === 'true') return;
+  wrap.dataset.bound = 'true';
+
+  wrap.addEventListener('click', (e) => {
+    if (e.target.closest('#memoCalendarPopup')) return;
+    const popup = $('memoCalendarPopup');
+    if (popup && !popup.hidden) {
+      hideMemoCalendarPopup();
+    } else {
+      showMemoCalendarPopup();
+    }
+  });
+
+  $('mcpPrevMonth')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (memoPickerState.currentMonth === 1) {
+      memoPickerState.currentYear -= 1;
+      memoPickerState.currentMonth = 12;
+    } else {
+      memoPickerState.currentMonth -= 1;
+    }
+    renderMemoCalendarPopup();
+  });
+
+  $('mcpNextMonth')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (memoPickerState.currentMonth === 12) {
+      memoPickerState.currentYear += 1;
+      memoPickerState.currentMonth = 1;
+    } else {
+      memoPickerState.currentMonth += 1;
+    }
+    renderMemoCalendarPopup();
+  });
+
+  $('mcpTodayBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const todayStr = dateKey(new Date());
+    selectMemoPickerDate(todayStr);
+  });
+
+  $('mcpCloseBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideMemoCalendarPopup();
+  });
+
+  $('mcpGrid')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mcp-day[data-date]');
+    if (btn) {
+      e.stopPropagation();
+      selectMemoPickerDate(btn.dataset.date);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const popup = $('memoCalendarPopup');
+    if (popup && !popup.hidden && !wrap.contains(e.target)) {
+      hideMemoCalendarPopup();
+    }
+  });
+}
+
+/* ── 截止时间 自定义选择器 ─────────────────────────── */
+let memoDuePickerState = {
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth() + 1,
+  selectedDate: ''
+};
+
+function setMemoDuePickerValue(datetimeLocalStr) {
+  const hidden = $('memoDueTime');
+  const display = $('memoDueTimeDisplay');
+  if (!datetimeLocalStr) {
+    if (hidden) hidden.value = '';
+    if (display) display.value = '';
+    memoDuePickerState.selectedDate = '';
+    return;
+  }
+  if (hidden) hidden.value = datetimeLocalStr;
+  const [datePart, timePart] = datetimeLocalStr.split('T');
+  memoDuePickerState.selectedDate = datePart || '';
+  const [hh, mm] = (timePart || '18:00').split(':');
+  const hourEl = $('mdpHour');
+  const minEl = $('mdpMinute');
+  if (hourEl) hourEl.value = parseInt(hh, 10);
+  if (minEl) minEl.value = parseInt(mm, 10);
+  if (display && datePart) {
+    display.value = `${datePart} ${pad(parseInt(hh,10))}:${pad(parseInt(mm,10))}`;
+  }
+}
+
+function hideMemoCalendarDuePopup() {
+  const popup = $('memoDuePopup');
+  if (popup) popup.hidden = true;
+}
+
+function showMemoDuePickerPopup() {
+  const wrap = $('memoDueWrap');
+  if (wrap && wrap.dataset.canEdit === 'false') return;
+  const popup = $('memoDuePopup');
+  if (!popup) return;
+  const selDate = memoDuePickerState.selectedDate;
+  const match = /^(\d{4})-(\d{2})/.exec(selDate || '');
+  if (match) {
+    memoDuePickerState.currentYear = Number(match[1]);
+    memoDuePickerState.currentMonth = Number(match[2]);
+  } else {
+    const now = new Date();
+    memoDuePickerState.currentYear = now.getFullYear();
+    memoDuePickerState.currentMonth = now.getMonth() + 1;
+  }
+  renderMemoDueCalendar();
+  popup.hidden = false;
+}
+
+function renderMemoDueCalendar() {
+  const popup = $('memoDuePopup');
+  if (!popup) return;
+  const { currentYear, currentMonth, selectedDate } = memoDuePickerState;
+  const label = $('mdpMonthLabel');
+  if (label) label.textContent = `${currentYear}年 ${currentMonth}月`;
+  const grid = $('mdpGrid');
+  if (!grid) return;
+  const todayStr = dateKey(new Date());
+  const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
+  let startDayOfWeek = firstDayOfMonth.getDay();
+  if (startDayOfWeek === 0) startDayOfWeek = 7;
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const prevMonthDays = new Date(currentYear, currentMonth - 1, 0).getDate();
+  let html = '';
+  for (let i = startDayOfWeek - 1; i > 0; i--) {
+    const dayNum = prevMonthDays - i + 1;
+    const pMon = currentMonth === 1 ? 12 : currentMonth - 1;
+    const pYr = currentMonth === 1 ? currentYear - 1 : currentYear;
+    html += `<button type="button" class="mcp-day mcp-other-month" data-date="${pYr}-${pad(pMon)}-${pad(dayNum)}">${dayNum}</button>`;
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = `${currentYear}-${pad(currentMonth)}-${pad(d)}`;
+    let cls = 'mcp-day';
+    if (dStr === selectedDate) cls += ' mcp-selected';
+    else if (dStr === todayStr) cls += ' mcp-today';
+    html += `<button type="button" class="${cls}" data-date="${dStr}">${d}</button>`;
+  }
+  const totalRendered = (startDayOfWeek - 1) + daysInMonth;
+  const remainder = totalRendered % 7;
+  const daysToAdd = remainder === 0 ? 0 : 7 - remainder;
+  for (let d = 1; d <= daysToAdd; d++) {
+    const nMon = currentMonth === 12 ? 1 : currentMonth + 1;
+    const nYr = currentMonth === 12 ? currentYear + 1 : currentYear;
+    html += `<button type="button" class="mcp-day mcp-other-month" data-date="${nYr}-${pad(nMon)}-${pad(d)}">${d}</button>`;
+  }
+  grid.innerHTML = html;
+}
+
+function commitMemoDuePicker() {
+  const hourEl = $('mdpHour');
+  const minEl = $('mdpMinute');
+  const selDate = memoDuePickerState.selectedDate;
+  if (!selDate) return;
+  const hh = Math.max(0, Math.min(23, parseInt(hourEl?.value ?? '18', 10) || 18));
+  const mm = Math.max(0, Math.min(59, parseInt(minEl?.value ?? '0', 10) || 0));
+  setMemoDuePickerValue(`${selDate}T${pad(hh)}:${pad(mm)}`);
+}
+
+function initMemoDuePicker() {
+  const wrap = $('memoDueWrap');
+  if (!wrap) return;
+  if (wrap.dataset.bound === 'true') return;
+  wrap.dataset.bound = 'true';
+
+  const displayInput = $('memoDueTimeDisplay');
+  if (displayInput) {
+    displayInput.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const popup = $('memoDuePopup');
+      if (popup && !popup.hidden) {
+        commitMemoDuePicker();
+        hideMemoCalendarDuePopup();
+      } else {
+        showMemoDuePickerPopup();
+      }
+    });
+  }
+  const iconEl = $('memoDueIcon');
+  if (iconEl) {
+    iconEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const popup = $('memoDuePopup');
+      if (popup && !popup.hidden) {
+        commitMemoDuePicker();
+        hideMemoCalendarDuePopup();
+      } else {
+        showMemoDuePickerPopup();
+      }
+    });
+  }
+
+  $('mdpPrevMonth')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (memoDuePickerState.currentMonth === 1) { memoDuePickerState.currentYear -= 1; memoDuePickerState.currentMonth = 12; }
+    else { memoDuePickerState.currentMonth -= 1; }
+    renderMemoDueCalendar();
+  });
+
+  $('mdpNextMonth')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (memoDuePickerState.currentMonth === 12) { memoDuePickerState.currentYear += 1; memoDuePickerState.currentMonth = 1; }
+    else { memoDuePickerState.currentMonth += 1; }
+    renderMemoDueCalendar();
+  });
+
+  $('mdpTodayBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    memoDuePickerState.selectedDate = dateKey(new Date());
+    renderMemoDueCalendar();
+  });
+
+  $('mdpGrid')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mcp-day[data-date]');
+    if (!btn) return;
+    e.stopPropagation();
+    memoDuePickerState.selectedDate = btn.dataset.date;
+    renderMemoDueCalendar();
+  });
+
+  $('mdpCloseBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    commitMemoDuePicker();
+    hideMemoCalendarDuePopup();
+  });
+
+  [$('mdpHour'), $('mdpMinute')].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', () => { if (memoDuePickerState.selectedDate) commitMemoDuePicker(); });
+    el.addEventListener('click', (e) => e.stopPropagation());
+  });
+
+  document.addEventListener('click', (e) => {
+    const popup = $('memoDuePopup');
+    if (popup && !popup.hidden && !wrap.contains(e.target)) {
+      commitMemoDuePicker();
+      hideMemoCalendarDuePopup();
+    }
+  });
 }
 
 function toLocalDateTimeInput(value) {
@@ -5686,10 +6050,9 @@ function handleQuickDueChipClick(event) {
     target.setHours(18, 0, 0, 0);
   }
 
-  const dueInput = $('memoDueTime');
   const dateInput = $('memoDate');
-  if (dueInput) dueInput.value = toLocalDateTimeInput(target);
   if (dateInput) dateInput.value = dateKey(target);
+  setMemoDuePickerValue(toLocalDateTimeInput(target));
 
   document.querySelectorAll('.quick-due-chip').forEach(c => c.classList.remove('active'));
   chip.classList.add('active');
@@ -5806,7 +6169,7 @@ async function saveMemo() {
   }
   if (!dueTime) {
     alert('请添加截止时间后再保存');
-    $('memoDueTime').focus();
+    showMemoDuePickerPopup();
     return;
   }
   const payload = {
@@ -7385,5 +7748,7 @@ injectServerCss();
 decorateTablerUI();
 initSystemThemeListener();
 initEventListeners();
+initMemoDatePicker();
+initMemoDuePicker();
 patchStaticText();
 restoreSession();
