@@ -115,6 +115,81 @@ impl ApiClient {
         }
     }
 
+    pub fn register_account(
+        &self,
+        username: &str,
+        password: &str,
+        display_name: &str,
+        job_title: &str,
+    ) -> Result<(String, User)> {
+        let url = format!("{}/auth/register", self.base_url);
+        let resp = self
+            .agent()
+            .post(&url)
+            .set("Content-Type", "application/json")
+            .send_json(json!({
+                "username": username,
+                "password": password,
+                "displayName": if display_name.is_empty() { username } else { display_name },
+                "jobTitle": job_title,
+            }));
+
+        match resp {
+            Ok(r) => {
+                let data: LoginResponse = r.into_json()?;
+                Ok((data.token, data.user))
+            }
+            Err(ureq::Error::Status(code, r)) => {
+                let body: Value = r.into_json().unwrap_or_else(|_| json!({}));
+                let msg = body
+                    .get("message")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("注册失败");
+                Err(anyhow!("HTTP {}: {}", code, msg))
+            }
+            Err(e) => Err(anyhow!("网络请求异常: {}", e)),
+        }
+    }
+
+    pub fn change_password(
+        &self,
+        username: &str,
+        old_password: &str,
+        new_password: &str,
+    ) -> Result<String> {
+        let url = format!("{}/auth/change-password", self.base_url);
+        let resp = self
+            .agent()
+            .post(&url)
+            .set("Content-Type", "application/json")
+            .send_json(json!({
+                "username": username,
+                "oldPassword": old_password,
+                "newPassword": new_password,
+            }));
+
+        match resp {
+            Ok(r) => {
+                let body: Value = r.into_json().unwrap_or_else(|_| json!({}));
+                let msg = body
+                    .get("message")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("密码修改成功，请使用新密码登录")
+                    .to_string();
+                Ok(msg)
+            }
+            Err(ureq::Error::Status(code, r)) => {
+                let body: Value = r.into_json().unwrap_or_else(|_| json!({}));
+                let msg = body
+                    .get("message")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("修改密码失败");
+                Err(anyhow!("HTTP {}: {}", code, msg))
+            }
+            Err(e) => Err(anyhow!("网络请求异常: {}", e)),
+        }
+    }
+
     pub fn fetch_users(&self) -> Result<Vec<User>> {
         let url = format!("{}/users", self.base_url);
         let resp = self
@@ -133,7 +208,7 @@ impl ApiClient {
         user_id: &str,
     ) -> Result<Vec<Memo>> {
         let mut url = format!(
-            "{}/memos?startMonth={}&months={}&includeContent=1",
+            "{}/memos?startMonth={}&months={}",
             self.base_url, start_month, months
         );
         if !user_id.is_empty() && user_id != "all" {
@@ -146,6 +221,17 @@ impl ApiClient {
             .call()?;
         let data: MemosResponse = resp.into_json()?;
         Ok(data.memos)
+    }
+
+    pub fn fetch_memo_detail(&self, memo_id: i64) -> Result<Memo> {
+        let url = format!("{}/memos/{}", self.base_url, memo_id);
+        let resp = self
+            .agent()
+            .get(&url)
+            .set("Authorization", &self.auth_header()?)
+            .call()?;
+        let data: SingleMemoResponse = resp.into_json()?;
+        Ok(data.memo)
     }
 
     pub fn fetch_reminders(&self) -> Result<Vec<Memo>> {
@@ -205,6 +291,43 @@ impl ApiClient {
         Ok(())
     }
 
+    pub fn create_memo_ext(
+        &self,
+        owner_id: Option<i64>,
+        date: &str,
+        title: &str,
+        content: &str,
+        color: &str,
+        completed: bool,
+        plan_kind: &str,
+        due_time: Option<&str>,
+    ) -> Result<Memo> {
+        let url = format!("{}/memos", self.base_url);
+        let due = due_time
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("{}T18:00:00", date));
+        let mut payload = json!({
+            "date": date,
+            "title": title,
+            "content": content,
+            "color": color,
+            "completed": completed,
+            "planKind": plan_kind,
+            "dueTime": due,
+        });
+        if let Some(uid) = owner_id {
+            payload["ownerId"] = json!(uid);
+        }
+        let resp = self
+            .agent()
+            .post(&url)
+            .set("Authorization", &self.auth_header()?)
+            .set("Content-Type", "application/json")
+            .send_json(payload)?;
+        let data: SingleMemoResponse = resp.into_json()?;
+        Ok(data.memo)
+    }
+
     pub fn create_memo(
         &self,
         owner_id: Option<i64>,
@@ -214,21 +337,46 @@ impl ApiClient {
         color: &str,
         completed: bool,
     ) -> Result<Memo> {
-        let url = format!("{}/memos", self.base_url);
-        let mut payload = json!({
-            "date": date,
-            "title": title,
-            "content": content,
-            "color": color,
-            "completed": completed,
-            "dueTime": format!("{}T18:00:00", date),
-        });
-        if let Some(uid) = owner_id {
-            payload["ownerId"] = json!(uid);
+        self.create_memo_ext(owner_id, date, title, content, color, completed, "memo", None)
+    }
+
+    pub fn update_memo_ext(
+        &self,
+        memo_id: i64,
+        date: Option<&str>,
+        title: Option<&str>,
+        content: Option<&str>,
+        color: Option<&str>,
+        completed: Option<bool>,
+        plan_kind: Option<&str>,
+        due_time: Option<&str>,
+    ) -> Result<Memo> {
+        let url = format!("{}/memos/{}", self.base_url, memo_id);
+        let mut payload = json!({});
+        if let Some(d) = date {
+            payload["date"] = json!(d);
+        }
+        if let Some(t) = title {
+            payload["title"] = json!(t);
+        }
+        if let Some(c) = content {
+            payload["content"] = json!(c);
+        }
+        if let Some(col) = color {
+            payload["color"] = json!(col);
+        }
+        if let Some(comp) = completed {
+            payload["completed"] = json!(comp);
+        }
+        if let Some(pk) = plan_kind {
+            payload["planKind"] = json!(pk);
+        }
+        if let Some(dt) = due_time {
+            payload["dueTime"] = json!(dt);
         }
         let resp = self
             .agent()
-            .post(&url)
+            .put(&url)
             .set("Authorization", &self.auth_header()?)
             .set("Content-Type", "application/json")
             .send_json(payload)?;
@@ -244,28 +392,7 @@ impl ApiClient {
         color: Option<&str>,
         completed: Option<bool>,
     ) -> Result<Memo> {
-        let url = format!("{}/memos/{}", self.base_url, memo_id);
-        let mut payload = json!({});
-        if let Some(t) = title {
-            payload["title"] = json!(t);
-        }
-        if let Some(c) = content {
-            payload["content"] = json!(c);
-        }
-        if let Some(col) = color {
-            payload["color"] = json!(col);
-        }
-        if let Some(comp) = completed {
-            payload["completed"] = json!(comp);
-        }
-        let resp = self
-            .agent()
-            .put(&url)
-            .set("Authorization", &self.auth_header()?)
-            .set("Content-Type", "application/json")
-            .send_json(payload)?;
-        let data: SingleMemoResponse = resp.into_json()?;
-        Ok(data.memo)
+        self.update_memo_ext(memo_id, None, title, content, color, completed, None, None)
     }
 
     pub fn delete_memo(&self, memo_id: i64) -> Result<()> {
@@ -285,13 +412,15 @@ impl ApiClient {
             .trim()
             .to_string();
         let new_title = format!("[结转] {}", clean_title);
-        self.create_memo(
+        self.create_memo_ext(
             Some(memo.owner_id),
             &next_date,
             &new_title,
             memo.body_text(),
             &memo.color,
             false,
+            &memo.plan_kind,
+            None,
         )
     }
 

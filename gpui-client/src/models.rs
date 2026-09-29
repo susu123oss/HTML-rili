@@ -229,3 +229,38 @@ pub fn shift_days(date_str: &str, days: i64) -> String {
         .unwrap_or_else(|_| Local::now().date_naive());
     (d + Duration::days(days)).format("%Y-%m-%d").to_string()
 }
+
+pub fn short_md(date_str: &str) -> String {
+    if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        format!("{}/{}", d.month(), d.day())
+    } else {
+        date_str.to_string()
+    }
+}
+
+pub fn iso_week_label(monday_str: &str) -> String {
+    let d = NaiveDate::parse_from_str(monday_str, "%Y-%m-%d")
+        .unwrap_or_else(|_| Local::now().date_naive());
+    let sun = d + Duration::days(6);
+    let iso = d.iso_week();
+    format!(
+        "{}年 第{:02}周 ({}/{} ~ {}/{})",
+        iso.year(),
+        iso.week(),
+        d.month(),
+        d.day(),
+        sun.month(),
+        sun.day()
+    )
+}
+
+pub fn friday_of_date(date_str: &str) -> String {
+    let mon = monday_of_date(date_str);
+    shift_days(&mon, 4)
+}
+
+pub fn next_monday_of_date(date_str: &str) -> String {
+    let mon = monday_of_date(date_str);
+    shift_days(&mon, 7)
+}
+
