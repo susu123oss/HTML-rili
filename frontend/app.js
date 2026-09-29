@@ -9027,69 +9027,65 @@ async function navigateToAndHighlightMemos(memoIds) {
     closeWeeklyPlanPage();
   }
 
-  // 3. 查找目标事项日期（优先内存查找，若未载入则通过接口获取）
-  let targetMemos = (state.memos || []).filter(m => memoIds.some(id => String(id) === String(m.id)));
-  let targetDate = null;
-  if (targetMemos.length) {
-    targetDate = targetMemos[0].date;
-  } else {
-    try {
-      const res = await request(`/memos/${memoIds[0]}`);
-      if (res && res.memo) {
-        targetDate = res.memo.date;
-      }
-    } catch (_) {}
-  }
+  const memoIdStrs = memoIds.map(String);
+  let selector = memoIdStrs.map(id => `.day-memo-item[data-memo-id="${id}"]`).join(',');
+  let existingBtns = selector ? document.querySelectorAll(selector) : [];
 
-  // 4. 确保当前日历展示了包含该日期的月份
-  if (targetDate) {
-    const targetMonthKey = targetDate.slice(0, 7);
-    const isVisible = visibleMonths().some(d => monthKey(d) === targetMonthKey);
-    if (!isVisible) {
-      const [y, m] = targetDate.split('-').map(Number);
-      state.currentDate = new Date(y, m - 1, 1);
-      await loadMemos();
+  // 3. 如果元素不在当前 DOM 中，定位目标月份并重新拉取事项
+  if (!existingBtns.length) {
+    let targetMemos = (state.memos || []).filter(m => memoIdStrs.includes(String(m.id)));
+    let targetDate = targetMemos[0]?.date;
+    if (!targetDate) {
+      try {
+        const res = await request(`/memos/${memoIds[0]}`);
+        if (res?.memo) targetDate = res.memo.date;
+      } catch (_) {}
     }
+
+    if (targetDate) {
+      const targetMonthKey = targetDate.slice(0, 7);
+      const isVisible = visibleMonths().some(d => monthKey(d) === targetMonthKey);
+      if (!isVisible) {
+        const [y, m] = targetDate.split('-').map(Number);
+        state.currentDate = new Date(y, m - 1, 1);
+      }
+    }
+    await loadMemos({ force: true });
   }
 
-  // 5. 等待日历渲染后，高亮闪烁目标事项并平滑滚动定位
-  setTimeout(() => {
-    let firstFoundEl = null;
+  // 4. 执行高亮闪烁与平滑滚动
+  executeMemosHighlight(memoIdStrs);
+}
 
-    memoIds.forEach((id) => {
-      const cellBtns = document.querySelectorAll(`.day-memo-item[data-memo-id="${id}"]`);
-      cellBtns.forEach((btn) => {
-        if (!firstFoundEl) firstFoundEl = btn;
+function executeMemosHighlight(memoIdStrs) {
+  let firstFoundEl = null;
 
-        btn.classList.remove('memo-praise-highlight');
-        void btn.offsetWidth; // 触发 reflow 重置动画
-        btn.classList.add('memo-praise-highlight');
+  memoIdStrs.forEach((id) => {
+    const cellBtns = document.querySelectorAll(`.day-memo-item[data-memo-id="${id}"]`);
+    cellBtns.forEach((btn) => {
+      if (!firstFoundEl) firstFoundEl = btn;
 
-        const dayCell = btn.closest('.calendar-day');
-        if (dayCell) {
-          dayCell.classList.remove('calendar-day-praise-flash');
-          void dayCell.offsetWidth;
-          dayCell.classList.add('calendar-day-praise-flash');
-          setTimeout(() => dayCell.classList.remove('calendar-day-praise-flash'), 3500);
-        }
+      btn.classList.remove('memo-praise-highlight');
+      void btn.offsetWidth; // 触发 reflow 重置动画
+      btn.classList.add('memo-praise-highlight');
 
-        setTimeout(() => {
-          btn.classList.remove('memo-praise-highlight');
-        }, 3600);
-      });
-    });
-
-    if (firstFoundEl) {
-      firstFoundEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    } else if (targetDate) {
-      const dayCell = document.querySelector(`.calendar-day[data-date="${targetDate}"]`);
+      const dayCell = btn.closest('.calendar-day');
       if (dayCell) {
-        dayCell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        dayCell.classList.remove('calendar-day-praise-flash');
+        void dayCell.offsetWidth;
         dayCell.classList.add('calendar-day-praise-flash');
         setTimeout(() => dayCell.classList.remove('calendar-day-praise-flash'), 3500);
       }
-    }
-  }, 120);
+
+      setTimeout(() => {
+        btn.classList.remove('memo-praise-highlight');
+      }, 3600);
+    });
+  });
+
+  if (firstFoundEl) {
+    firstFoundEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  }
 }
 
 async function markNotificationsRead(notifications) {
