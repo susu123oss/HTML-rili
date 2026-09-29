@@ -1,0 +1,5 @@
+[build]
+target-dir = "C:/gpui-target"
+
+[env]
+GPUI_FXC_PATH = "C:/gpui-target/fxc.exe"
