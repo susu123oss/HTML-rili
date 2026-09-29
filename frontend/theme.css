@@ -7283,3 +7283,355 @@ html[data-theme='dark'] .btn-quick-report:hover {
   font-weight: 700 !important;
 }
 
+/* ================= 备忘录编辑弹窗重新排版与充裕高度 ================= */
+#memoModal .modal-content {
+  width: min(860px, 94vw) !important;
+  max-width: 860px !important;
+  max-height: 92vh !important;
+}
+
+.memo-title-row-compact {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+.memo-title-field {
+  flex: 1 1 auto !important;
+}
+.memo-title-input {
+  height: 42px !important;
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 0 12px !important;
+}
+.memo-switches-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+.memo-toggle-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 38px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--ui-border, #cbd5e1) !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  color: var(--ui-text-muted, #64748b) !important;
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: all 0.15s ease !important;
+  margin: 0 !important;
+}
+.memo-toggle-chip:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border-color: #3b82f6 !important;
+  color: var(--ui-primary, #2563eb) !important;
+}
+.memo-toggle-chip:has(input:checked) {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: #10b981 !important;
+  color: #059669 !important;
+}
+.memo-toggle-chip input[type="checkbox"] {
+  accent-color: #10b981 !important;
+  cursor: pointer !important;
+}
+
+/* 元数据三列网格 */
+.memo-meta-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1.35fr 1fr !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+  padding: 10px 12px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  border-radius: 10px !important;
+}
+.memo-meta-col {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+.memo-meta-col label {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text-muted, #64748b) !important;
+  margin-bottom: 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+.memo-meta-col .custom-date-input {
+  height: 36px !important;
+  font-size: 0.88rem !important;
+  border-radius: 6px !important;
+}
+.quick-due-chips.compact {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  margin-top: 4px !important;
+}
+.quick-due-chips.compact .quick-due-chip {
+  padding: 2px 7px !important;
+  font-size: 0.72rem !important;
+  height: 22px !important;
+}
+.color-options.compact {
+  display: grid !important;
+  grid-template-columns: repeat(5, 24px) !important;
+  gap: 6px !important;
+  margin-top: 4px !important;
+}
+.color-options.compact .color-option {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* 充裕的内容编辑器 */
+.memo-editor-group {
+  margin-bottom: 0 !important;
+}
+.memo-text-editor.full-featured {
+  display: flex !important;
+  flex-direction: column !important;
+  border: 1px solid var(--ui-border, #cbd5e1) !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  background: var(--ui-surface, #ffffff) !important;
+}
+.memo-editor-topbar {
+  display: flex !important;
+  flex-direction: column !important;
+  border-bottom: 1px solid var(--ui-border, #e2e8f0) !important;
+}
+.memo-editor-topbar .memo-text-toolbar {
+  border-bottom: 1px solid var(--ui-border, #f1f5f9) !important;
+}
+.memo-editor-topbar .memo-template-chips-bar {
+  border: none !important;
+  border-radius: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 5px 10px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+}
+#memoModal #memoContent {
+  min-height: 280px !important;
+  height: 300px !important;
+  max-height: 55vh !important;
+  padding: 12px 14px !important;
+  font-size: 0.94rem !important;
+  line-height: 1.65 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  resize: vertical !important;
+  background: transparent !important;
+}
+#memoModal .markdown-preview {
+  min-height: 280px !important;
+  max-height: 55vh !important;
+  padding: 12px 14px !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+/* 深色模式适配 */
+html[data-theme='dark'] .memo-toggle-chip {
+  background: #182433 !important;
+  border-color: #2b3d56 !important;
+  color: #94a3b8 !important;
+}
+html[data-theme='dark'] .memo-toggle-chip:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: #60a5fa !important;
+  color: #93c5fd !important;
+}
+html[data-theme='dark'] .memo-toggle-chip:has(input:checked) {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: #10b981 !important;
+  color: #34d399 !important;
+}
+html[data-theme='dark'] .memo-meta-grid {
+  background: #111a27 !important;
+  border-color: #23354d !important;
+}
+html[data-theme='dark'] .memo-text-editor.full-featured {
+  background: #151f2c !important;
+  border-color: #2b3d56 !important;
+}
+html[data-theme='dark'] .memo-editor-topbar {
+  border-bottom-color: #23354d !important;
+}
+html[data-theme='dark'] .memo-editor-topbar .memo-text-toolbar {
+  border-bottom-color: #1e2c3d !important;
+}
+html[data-theme='dark'] .memo-editor-topbar .memo-template-chips-bar {
+  background: #111a27 !important;
+}
+
+/* 响应式适配移动端 */
+@media (max-width: 768px) {
+  #memoModal .modal-content {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+  .memo-title-row-compact {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .memo-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  #memoModal #memoContent {
+    min-height: 180px !important;
+    height: 200px !important;
+  }
+}
+
+/* ================= 顶栏与弹窗一键自动结转待办按钮 ================= */
+.btn-quick-carryover {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  border-radius: 9px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  background: var(--ui-surface, #ffffff) !important;
+  color: #059669 !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+}
+.btn-quick-carryover:hover {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: #10b981 !important;
+  transform: translateY(-1px) !important;
+}
+html[data-theme='dark'] .btn-quick-carryover {
+  background: #182433 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+}
+html[data-theme='dark'] .btn-quick-carryover:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: #10b981 !important;
+}
+@media (max-width: 768px) {
+  .btn-quick-carryover {
+    display: none !important;
+  }
+}
+
+.btn-daily-carryover {
+  color: #059669 !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  font-weight: 600 !important;
+}
+.btn-daily-carryover:hover {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: #10b981 !important;
+  color: #047857 !important;
+}
+html[data-theme='dark'] .btn-daily-carryover {
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+/* ================= 事项提醒窗口内审阅与点赞互动动态展示 ================= */
+.reminder-notifs-box {
+  margin-bottom: 12px !important;
+  padding: 10px 12px !important;
+  background: rgba(59, 130, 246, 0.05) !important;
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  border-radius: 10px !important;
+}
+.reminder-notifs-head {
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text, #1e293b) !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+.reminder-notifs-items {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+.reminder-notif-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  padding: 8px 10px !important;
+  background: var(--ui-surface, #ffffff) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+}
+.reminder-notif-item.review {
+  border-left: 3px solid #10b981 !important;
+}
+.reminder-notif-item.like {
+  border-left: 3px solid #f59e0b !important;
+}
+.reminder-notif-item.urge {
+  border-left: 3px solid #ef4444 !important;
+}
+.notif-icon-col {
+  font-size: 1.1rem !important;
+  margin-top: 2px !important;
+  flex-shrink: 0 !important;
+}
+.notif-content-col {
+  flex: 1 1 auto !important;
+}
+.notif-item-title {
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text, #1e293b) !important;
+  margin-bottom: 2px !important;
+}
+.notif-item-desc {
+  font-size: 0.82rem !important;
+  color: var(--ui-text-muted, #475569) !important;
+  line-height: 1.4 !important;
+}
+.notif-item-meta {
+  font-size: 0.72rem !important;
+  color: var(--ui-text-muted, #94a3b8) !important;
+  margin-top: 2px !important;
+}
+html[data-theme='dark'] .reminder-notifs-box {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+html[data-theme='dark'] .reminder-notif-item {
+  background: #151f2c !important;
+  border-color: #2b3d56 !important;
+}
+html[data-theme='dark'] .notif-item-title {
+  color: #f1f5f9 !important;
+}
+html[data-theme='dark'] .notif-item-desc {
+  color: #cbd5e1 !important;
+}
+
+
+

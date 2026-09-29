@@ -68,6 +68,8 @@ const rowToMemo = (row, includeContent = false) => {
     dueTime: row.dueTime,
     isUrged: Boolean(row.isUrged),
     lastUrgedAt: row.lastUrgedAt || null,
+    isReviewed: Boolean(row.isReviewed),
+    isLiked: Boolean(row.isLiked),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
   };
@@ -80,7 +82,8 @@ const memoDetailSql = `
          memos.title, memos.content, memos.color, memos.completed,
          memos.plan_kind AS "planKind", memos.rollover_from_id AS "rolloverFromId",
          memos.rollover_to_id AS "rolloverToId", memos.rollover_reason AS "rolloverReason",
-         memos.due_time AS "dueTime", memos.created_at AS "createdAt", memos.updated_at AS "updatedAt"
+         memos.due_time AS "dueTime", memos.is_reviewed AS "isReviewed", memos.is_liked AS "isLiked",
+         memos.created_at AS "createdAt", memos.updated_at AS "updatedAt"
   FROM memos
   JOIN users ON users.id = memos.owner_id
   LEFT JOIN departments ON departments.id = users.department_id
@@ -195,7 +198,7 @@ memosRouter.get('/', authRequired, async (req, res) => {
            memos.title, ${contentColumns}, memos.color, memos.completed,
            memos.plan_kind AS "planKind", memos.rollover_from_id AS "rolloverFromId",
            memos.rollover_to_id AS "rolloverToId", memos.rollover_reason AS "rolloverReason",
-           memos.due_time AS "dueTime", memos.created_at AS "createdAt", memos.updated_at AS "updatedAt"
+           memos.due_time AS "dueTime", memos.is_reviewed AS "isReviewed", memos.is_liked AS "isLiked", memos.created_at AS "createdAt", memos.updated_at AS "updatedAt"
     FROM memos
     JOIN users ON users.id = memos.owner_id
     JOIN departments ON departments.id = users.department_id
@@ -226,7 +229,7 @@ memosRouter.get('/reminders', authRequired, async (req, res, next) => {
              char_length(memos.content) AS "contentLength", memos.color, memos.completed,
              memos.plan_kind AS "planKind", memos.rollover_from_id AS "rolloverFromId",
              memos.rollover_to_id AS "rolloverToId", memos.rollover_reason AS "rolloverReason",
-             memos.due_time AS "dueTime", memos.created_at AS "createdAt", memos.updated_at AS "updatedAt",
+             memos.due_time AS "dueTime", memos.is_reviewed AS "isReviewed", memos.is_liked AS "isLiked", memos.created_at AS "createdAt", memos.updated_at AS "updatedAt",
              CASE WHEN latest_urge.created_at IS NOT NULL THEN TRUE ELSE FALSE END AS "isUrged",
              latest_urge.created_at AS "lastUrgedAt"
       FROM memos
@@ -425,6 +428,75 @@ memosRouter.put('/weekly-summaries/:weekStart', authRequired, async (req, res, n
       [ownerId, weekStart, ...fields]
     );
     return res.json({ summary: result.rows[0] });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: '仅管理员可进行审阅与点赞' });
+  }
+  const memoId = Number(req.params.id);
+  const action = req.body?.action;
+  if (!Number.isInteger(memoId) || memoId <= 0 || !['toggle-read', 'toggle-like'].includes(action)) {
+    return res.status(400).json({ message: '请求参数无效' });
+  }
+
+  try {
+    const memoRes = await query(
+      `SELECT id, owner_id AS "ownerId", title, is_reviewed AS "isReviewed", is_liked AS "isLiked" FROM memos WHERE id = $1`,
+      [memoId]
+    );
+    if (!memoRes.rows.length) {
+      return res.status(404).json({ message: '事项不存在' });
+    }
+    const memo = memoRes.rows[0];
+
+    let newReviewed = memo.isReviewed;
+    let newLiked = memo.isLiked;
+
+    if (action === 'toggle-read') {
+      newReviewed = !newReviewed;
+      await query(`UPDATE memos SET is_reviewed = $1, updated_at = NOW() WHERE id = $2`, [newReviewed, memoId]);
+      if (newReviewed && Number(memo.ownerId) !== Number(req.user.id)) {
+        await query(
+          `INSERT INTO notifications(user_id, memo_id, type, title, content, sender_id, sender_name)
+           VALUES($1, $2, 'review', $3, $4, $5, $6)`,
+          [
+            memo.ownerId,
+            memo.id,
+            '工作事项已审阅',
+            `管理员【${req.user.displayName || req.user.username}】已审阅您的工作事项【${memo.title}】`,
+            req.user.id,
+            req.user.displayName || '系统管理员'
+          ]
+        );
+      }
+    } else if (action === 'toggle-like') {
+      newLiked = !newLiked;
+      await query(`UPDATE memos SET is_liked = $1, updated_at = NOW() WHERE id = $2`, [newLiked, memoId]);
+      if (newLiked && Number(memo.ownerId) !== Number(req.user.id)) {
+        await query(
+          `INSERT INTO notifications(user_id, memo_id, type, title, content, sender_id, sender_name)
+           VALUES($1, $2, 'like', $3, $4, $5, $6)`,
+          [
+            memo.ownerId,
+            memo.id,
+            '工作点赞 +1',
+            `管理员【${req.user.displayName || req.user.username}】为您的工作事项【${memo.title}】点赞！`,
+            req.user.id,
+            req.user.displayName || '系统管理员'
+          ]
+        );
+      }
+    }
+
+    return res.json({
+      ok: true,
+      isReviewed: newReviewed,
+      isLiked: newLiked
+    });
   } catch (error) {
     return next(error);
   }

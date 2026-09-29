@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260929_worklog_v1" defer></script>
+    <script src="./app.js?v=20260929_worklog_v2" defer></script>
     <style>
         * {
             margin: 0;
@@ -3920,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_worklog_v1" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_worklog_v2" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4119,6 +4119,11 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 一键结转昨日待办到今日日历 -->
+                    <button class="btn btn-outline-success btn-quick-carryover" id="btnQuickCarryoverToday" type="button" title="一键将昨日未完成的事项自动复制到今日日历格子">
+                        <i class="fas fa-history"></i> <span>结转昨日未完</span>
+                    </button>
 
                     <!-- 快捷生成周报按钮 -->
                     <button class="btn btn-outline-primary btn-quick-report" id="btnQuickWeeklyReport" type="button" title="一键生成本周工作总结与周报">
@@ -4373,53 +4378,57 @@
                 <div class="modal-title">备忘录编辑</div>
                 <button class="close-modal" id="closeMemoModal" title="关闭" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body memo-modal-body">
                 <form id="memoForm" autocomplete="off">
-                    <div class="form-group memo-title-group">
-                        <label for="memoTitle">标题</label>
-                        <div class="memo-title-row">
-                            <input type="text" class="form-control" id="memoTitle" autocomplete="off" required>
-                            <label class="memo-title-completed">
-                                <input type="checkbox" id="memoCompleted"> 标记为已完成
+                    <div class="memo-title-row-compact">
+                        <div class="memo-title-field">
+                            <input type="text" class="form-control memo-title-input" id="memoTitle" placeholder="输入备忘录或日志标题..." autocomplete="off" required>
+                        </div>
+                        <div class="memo-switches-group">
+                            <label class="memo-toggle-chip" title="标记此事项是否已完成">
+                                <input type="checkbox" id="memoCompleted">
+                                <span><i class="fas fa-check-circle"></i> 已完成</span>
+                            </label>
+                            <label class="memo-toggle-chip" title="纳入周计划看板与周报统计">
+                                <input type="checkbox" id="memoWeeklyPlan">
+                                <span><i class="fas fa-calendar-week"></i> 纳入周计划</span>
                             </label>
                         </div>
-                        <label class="memo-weekly-plan-toggle"><input type="checkbox" id="memoWeeklyPlan"> 纳入周计划与周报</label>
                     </div>
                     
-                    <div class="form-group memo-date-group">
-                        <label for="memoDate">日期</label>
-                        <div class="custom-date-picker-wrap" id="memoDateWrap">
-                            <input type="text" class="form-control custom-date-input" id="memoDate" required readonly placeholder="选择日期" autocomplete="off">
-                            <span class="custom-date-icon tabler-icon" data-icon="calendar" id="memoDateIcon" aria-hidden="true"></span>
-                            <div id="memoCalendarPopup" class="memo-calendar-popup card" hidden>
-                                <div class="mcp-header">
-                                    <button type="button" class="mcp-nav-btn mcp-prev" id="mcpPrevMonth" aria-label="上个月">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                                    </button>
-                                    <span class="mcp-month-label" id="mcpMonthLabel">2026年 9月</span>
-                                    <button type="button" class="mcp-nav-btn mcp-next" id="mcpNextMonth" aria-label="下个月">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                    </button>
-                                    <button type="button" class="mcp-today-btn" id="mcpTodayBtn">今天</button>
-                                </div>
-                                <div class="mcp-weekdays">
-                                    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
-                                </div>
-                                <div class="mcp-grid" id="mcpGrid"></div>
-                                <div class="mcp-footer">
-                                    <button type="button" class="mcp-close-btn" id="mcpCloseBtn">完成</button>
+                    <div class="memo-meta-grid">
+                        <div class="memo-meta-col">
+                            <label for="memoDate"><i class="far fa-calendar-alt"></i> 所属日期</label>
+                            <div class="custom-date-picker-wrap" id="memoDateWrap">
+                                <input type="text" class="form-control custom-date-input" id="memoDate" required readonly placeholder="选择日期" autocomplete="off">
+                                <span class="custom-date-icon tabler-icon" data-icon="calendar" id="memoDateIcon" aria-hidden="true"></span>
+                                <div id="memoCalendarPopup" class="memo-calendar-popup card" hidden>
+                                    <div class="mcp-header">
+                                        <button type="button" class="mcp-nav-btn mcp-prev" id="mcpPrevMonth" aria-label="上个月">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                        </button>
+                                        <span class="mcp-month-label" id="mcpMonthLabel">2026年 9月</span>
+                                        <button type="button" class="mcp-nav-btn mcp-next" id="mcpNextMonth" aria-label="下个月">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
+                                        <button type="button" class="mcp-today-btn" id="mcpTodayBtn">今天</button>
+                                    </div>
+                                    <div class="mcp-weekdays">
+                                        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+                                    </div>
+                                    <div class="mcp-grid" id="mcpGrid"></div>
+                                    <div class="mcp-footer">
+                                        <button type="button" class="mcp-close-btn" id="mcpCloseBtn">完成</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="memoDueTimeDisplay">截止时间 <span aria-hidden="true">*</span></label>
-                            <!-- hidden actual value field -->
+
+                        <div class="memo-meta-col">
+                            <label for="memoDueTimeDisplay"><i class="far fa-clock"></i> 截止时间 <span aria-hidden="true" style="color:var(--ui-danger, #ef4444);">*</span></label>
                             <input type="hidden" id="memoDueTime">
                             <div class="custom-date-picker-wrap" id="memoDueWrap">
-                                <input type="text" class="form-control custom-date-input" id="memoDueTimeDisplay" required readonly placeholder="选择截止日期和时间" autocomplete="off">
+                                <input type="text" class="form-control custom-date-input" id="memoDueTimeDisplay" required readonly placeholder="选择截止时间" autocomplete="off">
                                 <span class="custom-date-icon tabler-icon" data-icon="calendar" id="memoDueIcon" aria-hidden="true"></span>
                                 <div id="memoDuePopup" class="memo-calendar-popup card" hidden>
                                     <div class="mcp-header">
@@ -4447,50 +4456,53 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="quick-due-chips" id="quickDueChips">
+                            <div class="quick-due-chips compact" id="quickDueChips">
                                 <button type="button" class="quick-due-chip" data-preset="today-end">今日 18:00</button>
                                 <button type="button" class="quick-due-chip" data-preset="tomorrow-end">明日 18:00</button>
                                 <button type="button" class="quick-due-chip" data-preset="this-friday">周五 18:00</button>
                                 <button type="button" class="quick-due-chip" data-preset="next-monday">下周一 18:00</button>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>备忘录颜色</label>
-                            <div class="color-options" id="colorOptions">
+
+                        <div class="memo-meta-col memo-color-col">
+                            <label><i class="fas fa-palette"></i> 分类颜色</label>
+                            <div class="color-options compact" id="colorOptions">
                                 <!-- 颜色选项将通过JS生成 -->
                             </div>
                         </div>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group memo-editor-group">
                         <div class="memo-content-header">
-                            <label for="memoContent" style="margin-bottom: 0;">内容 (支持Markdown语法)</label>
+                            <label for="memoContent" style="margin-bottom: 0;"><i class="fas fa-align-left"></i> 内容详情 (Markdown)</label>
                             <div class="memo-tab-switcher">
                                 <button type="button" class="memo-tab-btn active" id="memoTabEdit">编辑</button>
                                 <button type="button" class="memo-tab-btn" id="memoTabPreview">实时预览</button>
                             </div>
                         </div>
-                        <div class="memo-text-editor">
-                            <div class="memo-text-toolbar" id="memoTextToolbar" aria-label="文字处理工具栏">
-                                <button class="memo-text-tool" type="button" data-format="h1" title="一级标题">H1</button>
-                                <button class="memo-text-tool" type="button" data-format="h2" title="二级标题">H2</button>
-                                <span class="memo-text-separator"></span>
-                                <button class="memo-text-tool" type="button" data-format="bold" title="加粗">B</button>
-                                <button class="memo-text-tool italic" type="button" data-format="italic" title="斜体">I</button>
-                                <button class="memo-text-tool strike" type="button" data-format="strike" title="删除线">S</button>
-                                <span class="memo-text-separator"></span>
-                                <button class="memo-text-tool icon-only" type="button" data-format="ul" title="无序列表" aria-label="无序列表"><span class="memo-list-icon bulleted" aria-hidden="true"><span></span><span></span><span></span></span></button>
-                                <button class="memo-text-tool icon-only" type="button" data-format="ol" title="有序列表" aria-label="有序列表"><span class="memo-list-icon ordered" aria-hidden="true"><span>1.</span><span>2.</span><span>3.</span></span></button>
-                                <button class="memo-text-tool icon-only" type="button" data-format="task" title="任务项" aria-label="任务项"><span class="memo-list-icon task" aria-hidden="true"><span></span><span></span><span></span></span></button>
+                        <div class="memo-text-editor full-featured">
+                            <div class="memo-editor-topbar">
+                                <div class="memo-text-toolbar" id="memoTextToolbar" aria-label="文字处理工具栏">
+                                    <button class="memo-text-tool" type="button" data-format="h1" title="一级标题">H1</button>
+                                    <button class="memo-text-tool" type="button" data-format="h2" title="二级标题">H2</button>
+                                    <span class="memo-text-separator"></span>
+                                    <button class="memo-text-tool" type="button" data-format="bold" title="加粗">B</button>
+                                    <button class="memo-text-tool italic" type="button" data-format="italic" title="斜体">I</button>
+                                    <button class="memo-text-tool strike" type="button" data-format="strike" title="删除线">S</button>
+                                    <span class="memo-text-separator"></span>
+                                    <button class="memo-text-tool icon-only" type="button" data-format="ul" title="无序列表" aria-label="无序列表"><span class="memo-list-icon bulleted" aria-hidden="true"><span></span><span></span><span></span></span></button>
+                                    <button class="memo-text-tool icon-only" type="button" data-format="ol" title="有序列表" aria-label="有序列表"><span class="memo-list-icon ordered" aria-hidden="true"><span>1.</span><span>2.</span><span>3.</span></span></button>
+                                    <button class="memo-text-tool icon-only" type="button" data-format="task" title="任务项" aria-label="任务项"><span class="memo-list-icon task" aria-hidden="true"><span></span><span></span><span></span></span></button>
+                                </div>
+                                <div class="memo-template-chips-bar" id="memoTemplateChipsBar">
+                                    <span class="template-chips-label"><i class="fas fa-magic"></i> 快速模板:</span>
+                                    <button type="button" class="btn-template-chip" data-tpl="dev" title="插入标准研发工作日志模板">⚡ 研发日志</button>
+                                    <button type="button" class="btn-template-chip" data-tpl="meeting" title="插入会议纪要与行动项模板">📝 会议纪要</button>
+                                    <button type="button" class="btn-template-chip" data-tpl="qa" title="插入装配与品质检验模板">🔍 质检/测试</button>
+                                    <button type="button" class="btn-template-chip chip-carryover" id="btnCarryoverYesterday" title="从昨天未完成的备忘或待办中自动结转过来"><i class="fas fa-history"></i> 结转昨日待办</button>
+                                </div>
                             </div>
-                            <div class="memo-template-chips-bar" id="memoTemplateChipsBar">
-                                <span class="template-chips-label"><i class="fas fa-magic"></i> 快速模板:</span>
-                                <button type="button" class="btn-template-chip" data-tpl="dev" title="插入标准研发工作日志模板">⚡ 研发日志</button>
-                                <button type="button" class="btn-template-chip" data-tpl="meeting" title="插入会议纪要与行动项模板">📝 会议纪要</button>
-                                <button type="button" class="btn-template-chip" data-tpl="qa" title="插入装配与品质检验模板">🔍 质检/测试</button>
-                                <button type="button" class="btn-template-chip chip-carryover" id="btnCarryoverYesterday" title="从昨天未完成的备忘或待办中自动结转过来"><i class="fas fa-history"></i> 结转昨日待办</button>
-                            </div>
-                            <textarea class="form-control" id="memoContent" rows="5" placeholder="输入备忘录内容，支持Markdown语法..."></textarea>
+                            <textarea class="form-control" id="memoContent" placeholder="输入备忘录或工作日志内容，支持Markdown语法..."></textarea>
                             <div class="markdown-preview is-hidden" id="markdownPreview" style="display: none;" hidden>
                                 预览将在这里显示...
                             </div>
@@ -4808,6 +4820,9 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="closeDailyDetailModalBtn">关闭</button>
+                <button class="btn btn-outline-success btn-daily-carryover" id="btnDailyCarryover" type="button" title="一键将前一天未完成的事项自动复制到当天日历格子">
+                    <i class="fas fa-history"></i> 结转昨日未完项
+                </button>
                 <button class="btn btn-primary" id="addNewMemoBtn">
                     <i class="fas fa-plus"></i> 添加详细备忘录
                 </button>

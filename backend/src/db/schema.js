@@ -47,7 +47,9 @@ export async function initDatabase() {
       ADD COLUMN IF NOT EXISTS plan_kind TEXT,
       ADD COLUMN IF NOT EXISTS rollover_from_id INTEGER REFERENCES memos(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS rollover_to_id INTEGER REFERENCES memos(id) ON DELETE SET NULL,
-      ADD COLUMN IF NOT EXISTS rollover_reason TEXT NOT NULL DEFAULT ''
+      ADD COLUMN IF NOT EXISTS rollover_reason TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS is_reviewed BOOLEAN NOT NULL DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS is_liked BOOLEAN NOT NULL DEFAULT FALSE
   `);
   // Old quick-added plans carried their type only in the title.
   await query(`
