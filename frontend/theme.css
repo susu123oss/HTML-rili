@@ -3612,6 +3612,20 @@ html[data-theme='light'] .memo-calendar-popup {
   cursor: pointer;
   animation: bannerSlideDown 0.35s ease, bannerPulse 2.5s infinite;
   max-width: 90vw;
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+  backdrop-filter: blur(8px);
+}
+
+.engineer-urge-banner:hover {
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.engineer-urge-banner.banner-praise {
+  background: linear-gradient(135deg, #059669, #0284c7);
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  animation: bannerSlideDown 0.35s ease, bannerPulsePraise 2.5s infinite;
 }
 
 @keyframes bannerSlideDown {
@@ -3621,6 +3635,10 @@ html[data-theme='light'] .memo-calendar-popup {
 @keyframes bannerPulse {
   0%, 100% { box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4); }
   50% { box-shadow: 0 8px 32px rgba(239, 68, 68, 0.7); }
+}
+@keyframes bannerPulsePraise {
+  0%, 100% { box-shadow: 0 8px 24px rgba(5, 150, 105, 0.4); }
+  50% { box-shadow: 0 8px 32px rgba(2, 132, 199, 0.6); }
 }
 
 .engineer-urge-banner .close-banner {
@@ -3636,6 +3654,12 @@ html[data-theme='light'] .memo-calendar-popup {
   cursor: pointer;
   font-size: 0.85rem;
   margin-left: 6px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.engineer-urge-banner .close-banner:hover {
+  background: rgba(255, 255, 255, 0.45);
+  transform: scale(1.1);
 }
 
 /* ── 桌面端任务悬浮卡片 (Memo Hover Tooltip) ───────────── */

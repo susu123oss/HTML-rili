@@ -8650,15 +8650,13 @@ function reminderMemoTitle(memo) {
 function updateReminderBadge() {
   const now = new Date();
   const count = reminderMemos().filter((memo) => isOverdueMemo(memo, now) || isDueSoonMemo(memo, now) || memo.isUrged).length;
-  const notifCount = Array.isArray(state.engineerNotifications) ? state.engineerNotifications.length : 0;
-  const totalCount = count + notifCount;
   const badge = $('reminderBadge');
   const bell = $('floatingReminder');
   if (!badge || !bell) return;
-  badge.textContent = totalCount > 99 ? '99+' : String(totalCount);
-  badge.style.display = totalCount ? 'flex' : 'none';
-  bell.classList.toggle('reminder-pulse', totalCount > 0);
-  bell.setAttribute('aria-label', totalCount ? `提醒中心，${totalCount} 条事项与通知` : '提醒中心');
+  badge.textContent = count > 99 ? '99+' : String(count);
+  badge.style.display = count ? 'flex' : 'none';
+  bell.classList.toggle('reminder-pulse', count > 0);
+  bell.setAttribute('aria-label', count ? `提醒中心，${count} 条未完成事项` : '提醒中心');
 }
 
 function getFilteredReminderMemos() {
@@ -8745,50 +8743,13 @@ function renderReminderList() {
 
   const errorHtml = state.reminderError ? `<p class="operation-feedback" role="alert">提醒更新失败：${escapeHtml(state.reminderError)}</p>` : '';
 
-  let notifsBoxHtml = '';
-  if (state.user?.role !== 'admin' && Array.isArray(state.engineerNotifications) && state.engineerNotifications.length) {
-    const itemsHtml = state.engineerNotifications.map((n) => {
-      let icon = '<i class="fas fa-info-circle" style="color:#3b82f6;"></i>';
-      let typeClass = n.type || 'urge';
-      if (n.type === 'review') {
-        icon = '<i class="fas fa-check-double" style="color:#10b981;"></i>';
-      } else if (n.type === 'like') {
-        icon = '<i class="fas fa-thumbs-up" style="color:#f59e0b;"></i>';
-      } else if (n.type === 'urge') {
-        icon = '<i class="fas fa-fire" style="color:#ef4444;"></i>';
-      }
-      const timeStr = n.createdAt ? new Date(n.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '';
-      return `
-        <div class="reminder-notif-item ${typeClass}" data-memo-id="${n.memoId || ''}" style="cursor:pointer;" title="点击直接查看该工作事项">
-          <div class="notif-icon-col">${icon}</div>
-          <div class="notif-content-col">
-            <div class="notif-item-title">${escapeHtml(n.title || '工作消息提醒')}</div>
-            <div class="notif-item-desc">${escapeHtml(n.content || '')}</div>
-            ${timeStr ? `<div class="notif-item-meta">${timeStr} · 来自 ${escapeHtml(n.senderName || '管理员')}</div>` : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    notifsBoxHtml = `
-      <div class="reminder-notifs-box">
-        <div class="reminder-notifs-head">
-          <i class="fas fa-bell" style="color:#3b82f6;"></i> 管理员反馈与事项提醒 (${state.engineerNotifications.length})
-        </div>
-        <div class="reminder-notifs-items">
-          ${itemsHtml}
-        </div>
-      </div>
-    `;
-  }
-
   if (!filtered.length) {
-    listEl.innerHTML = notifsBoxHtml + errorHtml + '<div class="empty-state"><i class="fas fa-check-circle" style="color:var(--ui-success, #10b981)"></i><p>当前分类下暂无事项</p></div>';
+    listEl.innerHTML = errorHtml + '<div class="empty-state"><i class="fas fa-check-circle" style="color:var(--ui-success, #10b981)"></i><p>当前分类下暂无事项</p></div>';
     updateReminderSelectionUI();
     return;
   }
 
-  listEl.innerHTML = notifsBoxHtml + errorHtml + filtered.map((memo) => {
+  listEl.innerHTML = errorHtml + filtered.map((memo) => {
     const isOverdue = isOverdueMemo(memo, now);
     const isDueSoon = isDueSoonMemo(memo, now);
     const isSelected = state.selectedReminderIds.has(String(memo.id));
@@ -8973,31 +8934,21 @@ async function batchUrgeReminders() {
 }
 
 async function showReminderModal() {
-  if (state.token) {
-    try {
-      await checkEngineerNotifications();
-    } catch (_) {}
-  }
   renderReminderList();
   showDialog('reminderModal', 'closeReminderModal');
   updateReminderBadge();
-
-  if (state.engineerNotifications.length) {
-    request('/notifications/read', { method: 'POST', body: JSON.stringify({ all: true }) })
-      .then(() => {
-        dismissEngineerUrgeBanner();
-      })
-      .catch(() => {});
-  }
 }
 
 function closeReminderModal() {
   hideDialog('reminderModal');
-  state.engineerNotifications = [];
   updateReminderBadge();
 }
 
 function showEngineerUrgeBanner(notifications) {
+  if (!Array.isArray(notifications) || !notifications.length) {
+    dismissEngineerUrgeBanner();
+    return;
+  }
   let banner = $('engineerUrgeBanner');
   if (!banner) {
     banner = document.createElement('div');
@@ -9005,34 +8956,84 @@ function showEngineerUrgeBanner(notifications) {
     banner.className = 'engineer-urge-banner';
     document.body.appendChild(banner);
   }
-  const urgeCount = notifications.filter(n => n.type === 'urge').length;
-  const reviewCount = notifications.filter(n => n.type === 'review').length;
-  const likeCount = notifications.filter(n => n.type === 'like').length;
 
-  const parts = [];
-  if (urgeCount) parts.push(`<i class="fas fa-bullhorn"></i> <strong>${urgeCount}</strong> 个任务被催办`);
-  if (reviewCount) parts.push(`<i class="fas fa-check-double"></i> <strong>${reviewCount}</strong> 条事项已审阅`);
-  if (likeCount) parts.push(`<i class="fas fa-thumbs-up"></i> <strong>${likeCount}</strong> 个事项获点赞`);
+  const urgeList = notifications.filter(n => n.type === 'urge');
+  const reviewList = notifications.filter(n => n.type === 'review');
+  const likeList = notifications.filter(n => n.type === 'like');
+  const hasUrge = urgeList.length > 0;
+
+  banner.classList.toggle('banner-praise', !hasUrge);
+
+  let contentHtml = '';
+  if (notifications.length === 1) {
+    const single = notifications[0];
+    if (single.type === 'like') {
+      contentHtml = `<i class="fas fa-thumbs-up" style="color:#fef08a;"></i> <span><strong>${escapeHtml(single.senderName || '管理员')}</strong> 为您的事项点赞：${escapeHtml(single.content || single.title)}</span>`;
+    } else if (single.type === 'review') {
+      contentHtml = `<i class="fas fa-check-circle" style="color:#a7f3d0;"></i> <span><strong>${escapeHtml(single.senderName || '管理员')}</strong> 已审阅：${escapeHtml(single.content || single.title)}</span>`;
+    } else {
+      contentHtml = `<i class="fas fa-bullhorn" style="color:#fecaca;"></i> <span><strong>催办提醒：</strong>${escapeHtml(single.content || single.title)}</span>`;
+    }
+  } else {
+    const parts = [];
+    if (urgeList.length) parts.push(`<i class="fas fa-bullhorn"></i> <strong>${urgeList.length}</strong> 个任务被催办`);
+    if (reviewList.length) parts.push(`<i class="fas fa-check-double"></i> <strong>${reviewList.length}</strong> 条事项已审阅`);
+    if (likeList.length) parts.push(`<i class="fas fa-thumbs-up"></i> <strong>${likeList.length}</strong> 个事项获点赞`);
+    contentHtml = `<span>${parts.join('，')} <span style="font-size:0.8rem;opacity:0.85;margin-left:4px;">(点击查看详情)</span></span>`;
+  }
 
   banner.innerHTML = `
-    <span>${parts.join('，') || '您有新的工作提醒，请点击查看！'}</span>
-    <button class="close-banner" type="button" title="忽略">&times;</button>
+    ${contentHtml}
+    <button class="close-banner" type="button" title="关闭通知">&times;</button>
   `;
   banner.style.display = 'flex';
+  requestAnimationFrame(() => {
+    banner.style.opacity = '1';
+    banner.style.transform = 'translateX(-50%)';
+  });
 
-  banner.onclick = (e) => {
+  banner.onclick = async (e) => {
     if (e.target.closest('.close-banner')) {
       e.stopPropagation();
+      await markNotificationsRead(notifications);
       dismissEngineerUrgeBanner();
       return;
     }
-    showReminderModal();
+
+    const notifWithMemo = notifications.find(n => n.memoId);
+    await markNotificationsRead(notifications);
+    dismissEngineerUrgeBanner();
+
+    if (notifWithMemo && notifWithMemo.memoId) {
+      await openMemoModal(notifWithMemo.memoId);
+    } else if (hasUrge) {
+      showReminderModal();
+    }
   };
+}
+
+async function markNotificationsRead(notifications) {
+  if (!state.token) return;
+  const ids = Array.isArray(notifications) ? notifications.map(n => n.id).filter(Boolean) : [];
+  state.engineerNotifications = [];
+  try {
+    if (ids.length) {
+      await request('/notifications/read', { method: 'POST', body: JSON.stringify({ ids }) });
+    } else {
+      await request('/notifications/read', { method: 'POST', body: JSON.stringify({ all: true }) });
+    }
+  } catch (_) {}
 }
 
 function dismissEngineerUrgeBanner() {
   const banner = $('engineerUrgeBanner');
-  if (banner) banner.style.display = 'none';
+  if (banner) {
+    banner.style.opacity = '0';
+    banner.style.transform = 'translate(-50%, -20px)';
+    setTimeout(() => {
+      if (banner.style.opacity === '0') banner.style.display = 'none';
+    }, 200);
+  }
 }
 
 async function checkEngineerNotifications() {
@@ -9047,7 +9048,6 @@ async function checkEngineerNotifications() {
       dismissEngineerUrgeBanner();
     }
     updateReminderBadge();
-    if ($('reminderModal')?.classList.contains('active')) renderReminderList();
   } catch (e) {
     // 忽略静默网络异常
   }
