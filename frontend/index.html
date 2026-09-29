@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260929_worklog_v20" defer></script>
+    <script src="./app.js?v=20260929_desktop_reminder_v23" defer></script>
     <style>
         * {
             margin: 0;
@@ -3920,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_worklog_v20" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_functions_unified_v25" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4749,8 +4749,9 @@
                     
                     <div class="form-group">
                         <label>
-                            <input type="checkbox" id="enableDesktopNotification"> 启用桌面通知（需要浏览器授权）
+                            <input type="checkbox" id="enableDesktopNotification"> 启用桌面通知（支持时使用系统通知）
                         </label>
+                        <div id="desktopNotificationStatus" style="margin-top:6px;font-size:0.82rem;line-height:1.45;color:#64748b;"></div>
                     </div>
                     
                     <div class="form-group">
@@ -4767,9 +4768,9 @@
                     <div class="export-info" style="margin-top: 20px;">
                         <h4><i class="fas fa-info-circle"></i> 提醒说明</h4>
                         <ul style="margin-top: 8px; padding-left: 18px; line-height: 1.5;">
-                            <li>系统会定期检查到期备忘录并显示提醒</li>
-                            <li>提醒弹窗会在页面右上角显示</li>
-                            <li>已完成的备忘录不会触发提醒</li>
+                            <li>系统按设置频率检查截止时间，到达提前提醒时间后只提醒一次</li>
+                            <li>系统通知不可用时会自动使用页面提醒 + 声音；支持时会同步弹出桌面通知</li>
+                            <li>已完成的备忘录不会触发提醒，点击系统通知可定位关联事项</li>
                         </ul>
                     </div>
                 </div>

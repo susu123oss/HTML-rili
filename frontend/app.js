@@ -12,6 +12,8 @@ const jobTitles = [
   '储备干部'
 ];
 const savedLoginKey = 'calendarSavedLogin';
+const reminderSettingsKey = 'calendarReminderSettingsV1';
+const reminderFiredKeyPrefix = 'calendarReminderFiredV1';
 
 const state = {
   token: localStorage.getItem('calendarToken') || '',
@@ -50,6 +52,8 @@ const state = {
   opsStatus: null,
   realtimeRefreshTimer: null,
   realtimeRefreshBusy: false,
+  dueReminderTimer: null,
+  dueReminderCheckBusy: false,
   detailDraftFromQuickAdd: false,
   memoSaveBusy: false,
   taskPublishBusy: false,
@@ -4683,6 +4687,7 @@ function beginSession(user) {
   state.sessionVersion += 1;
   state.initialLoadSessionVersion = null;
   stopRealtimeRefresh();
+  stopDueReminderTimer();
   resetMemoSnapshot();
   state.user = user;
   state.users = [];
@@ -4891,6 +4896,8 @@ async function startApp(sessionVersion = state.sessionVersion) {
   }
   updateSessionProgress(90, '正在校验待办与提醒…');
   await loadReminders(sessionVersion);
+  startDueReminderTimer();
+  dispatchPendingDueReminders();
   updateSessionProgress(94, '正在准备界面样式…');
   await waitForWorkspaceStyles();
   if (!isCurrentSession(sessionVersion)) return false;
@@ -4907,6 +4914,7 @@ async function startApp(sessionVersion = state.sessionVersion) {
 function logout() {
   state.sessionVersion += 1;
   stopRealtimeRefresh();
+  stopDueReminderTimer();
   resetMemoSnapshot();
   state.token = '';
   state.user = null;
@@ -8462,6 +8470,7 @@ function openFunctionsModal(tab = 'taskPublish') {
   const body = document.querySelector('#functionsModal .modal-body');
   if (body) body.scrollTop = 0;
   revealActiveFunctionsTab();
+  if (tab === 'reminderSettings') syncReminderSettingsForm();
 }
 
 function closeFunctionsModal() {
@@ -10012,13 +10021,279 @@ function initEventListeners() {
   });
 }
 
+function readReminderSettings() {
+  const defaults = { checkInterval: 5, advanceMinutes: 60, sound: true, desktop: false };
+  try {
+    const saved = JSON.parse(localStorage.getItem(reminderSettingsKey) || '{}');
+    return {
+      checkInterval: Math.max(1, Number(saved.checkInterval || defaults.checkInterval)),
+      advanceMinutes: Math.max(0, Number(saved.advanceMinutes ?? defaults.advanceMinutes)),
+      sound: saved.sound !== false,
+      desktop: Boolean(saved.desktop)
+    };
+  } catch (_) {
+    return defaults;
+  }
+}
+
+function saveReminderSettingsLocal(settings) {
+  localStorage.setItem(reminderSettingsKey, JSON.stringify(settings));
+}
+
+function reminderFiredStorageKey() {
+  return reminderFiredKeyPrefix + ':' + (state.user?.id || 'anonymous');
+}
+
+function readReminderFiredState() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(reminderFiredStorageKey()) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function writeReminderFiredState(fired) {
+  const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const compact = {};
+  Object.entries(fired || {}).forEach(([key, timestamp]) => {
+    if (Number(timestamp) >= cutoff) compact[key] = Number(timestamp);
+  });
+  localStorage.setItem(reminderFiredStorageKey(), JSON.stringify(compact));
+}
+
+function desktopNotificationAvailable() {
+  return Boolean(window.isSecureContext && 'Notification' in window);
+}
+
+function updateDesktopNotificationStatus() {
+  const status = $('desktopNotificationStatus');
+  if (!status) return;
+  if (!window.isSecureContext) {
+    status.textContent = '当前为 HTTP 地址：浏览器会限制系统级通知，已自动使用页面提醒 + 声音；以后切到 HTTPS 可直接启用系统通知。';
+    status.style.color = '#b45309';
+    return;
+  }
+  if (!('Notification' in window)) {
+    status.textContent = '当前浏览器不支持系统桌面通知，将使用页面提醒 + 声音。';
+    status.style.color = '#b45309';
+    return;
+  }
+  const permission = Notification.permission;
+  status.textContent = permission === 'granted'
+    ? '系统桌面通知已授权。'
+    : permission === 'denied'
+      ? '系统桌面通知已被浏览器禁止，请在站点权限中重新开启。'
+      : '保存设置时会请求浏览器通知权限。';
+  status.style.color = permission === 'granted' ? '#15803d' : '#64748b';
+}
+
+function syncReminderSettingsForm() {
+  const settings = readReminderSettings();
+  if ($('reminderCheckInterval')) $('reminderCheckInterval').value = String(settings.checkInterval);
+  if ($('reminderAdvanceTime')) $('reminderAdvanceTime').value = String(settings.advanceMinutes);
+  if ($('enableSoundReminder')) $('enableSoundReminder').checked = settings.sound;
+  if ($('enableDesktopNotification')) $('enableDesktopNotification').checked = settings.desktop;
+  updateDesktopNotificationStatus();
+}
+
+async function ensureDesktopNotificationPermission() {
+  if (!desktopNotificationAvailable()) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  try {
+    return (await Notification.requestPermission()) === 'granted';
+  } catch (_) {
+    return false;
+  }
+}
+
+function playReminderSound() {
+  try {
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return;
+    const context = new AudioContextCtor();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, context.currentTime);
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.32);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.34);
+    oscillator.addEventListener('ended', () => context.close().catch(() => {}), { once: true });
+  } catch (_) {}
+}
+
+function reminderDueText(memo, now = Date.now()) {
+  const due = new Date(memo.dueTime);
+  const dueMs = due.getTime();
+  if (Number.isNaN(dueMs)) return '';
+  const delta = dueMs - now;
+  const absMinutes = Math.max(1, Math.round(Math.abs(delta) / 60000));
+  let distance;
+  if (absMinutes >= 1440) distance = Math.floor(absMinutes / 1440) + ' 天';
+  else if (absMinutes >= 60) distance = Math.floor(absMinutes / 60) + ' 小时 ' + (absMinutes % 60) + ' 分';
+  else distance = absMinutes + ' 分钟';
+  return delta < 0 ? '已逾期 ' + distance : '还有 ' + distance + ' 到期';
+}
+
+function showSystemReminderNotification(title, body, onClick) {
+  if (!desktopNotificationAvailable() || Notification.permission !== 'granted') return false;
+  try {
+    const notification = new Notification(title, {
+      body,
+      tag: 'work-calendar-' + Date.now(),
+      renotify: true
+    });
+    notification.onclick = () => {
+      try { window.focus(); } catch (_) {}
+      if (typeof onClick === 'function') onClick();
+      notification.close();
+    };
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function reminderFireSignature(memo, settings) {
+  return String(memo.id) + ':' + (memo.dueTime || '') + ':' + settings.advanceMinutes;
+}
+
+function dispatchPendingDueReminders() {
+  if (!state.token || !Array.isArray(state.reminders) || !state.reminders.length) return;
+  const settings = readReminderSettings();
+  const now = Date.now();
+  const advanceMs = settings.advanceMinutes * 60 * 1000;
+  const fired = readReminderFiredState();
+  const pending = [];
+
+  for (const memo of state.reminders) {
+    if (!memo?.id || memo.completed || !memo.dueTime) continue;
+    const dueMs = new Date(memo.dueTime).getTime();
+    if (Number.isNaN(dueMs) || now < dueMs - advanceMs) continue;
+    const signature = reminderFireSignature(memo, settings);
+    if (fired[signature]) continue;
+    pending.push({ memo, signature });
+  }
+
+  if (!pending.length) return;
+
+  pending.forEach(({ signature }) => { fired[signature] = now; });
+  writeReminderFiredState(fired);
+  if (settings.sound) playReminderSound();
+
+  if (pending.length > 3) {
+    const first = pending[0].memo;
+    const body = first.title + (pending.length > 1 ? ' 等 ' + pending.length + ' 项' : '') + '已到提醒时间，请及时处理。';
+    showGlobalToast('🔔 ' + pending.length + ' 项工作事项已到提醒时间', 'info');
+    if (settings.desktop) {
+      showSystemReminderNotification('工作事项提醒 · ' + pending.length + ' 项', body, () => showReminderModal());
+    }
+    return;
+  }
+
+  pending.forEach(({ memo }) => {
+    const dueText = reminderDueText(memo, now);
+    const ownerText = memo.ownerName && canManageWorkspace() ? ' · ' + memo.ownerName : '';
+    showGlobalToast('🔔 ' + memo.title + ownerText + '：' + dueText, 'info');
+    if (settings.desktop) {
+      const due = new Date(memo.dueTime);
+      const dueLabel = Number.isNaN(due.getTime())
+        ? ''
+        : due.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+      showSystemReminderNotification(
+        '工作事项提醒',
+        memo.title + ownerText + '\\n' + dueText + (dueLabel ? ' · 截止 ' + dueLabel : ''),
+        () => navigateToAndHighlightMemos([memo.id])
+      );
+    }
+  });
+}
+
+async function checkDueRemindersNow() {
+  if (!state.token || state.dueReminderCheckBusy) return;
+  state.dueReminderCheckBusy = true;
+  try {
+    await loadReminders();
+    dispatchPendingDueReminders();
+  } catch (error) {
+    console.warn('事项到期提醒检查失败', error);
+  } finally {
+    state.dueReminderCheckBusy = false;
+  }
+}
+
+function stopDueReminderTimer() {
+  if (state.dueReminderTimer) window.clearInterval(state.dueReminderTimer);
+  state.dueReminderTimer = null;
+  state.dueReminderCheckBusy = false;
+}
+
+function startDueReminderTimer() {
+  stopDueReminderTimer();
+  const intervalMinutes = Math.max(1, readReminderSettings().checkInterval);
+  state.dueReminderTimer = window.setInterval(checkDueRemindersNow, intervalMinutes * 60 * 1000);
+}
+
+async function saveReminderSettingsFromPanel() {
+  const settings = {
+    checkInterval: Math.max(1, Number($('reminderCheckInterval')?.value || 5)),
+    advanceMinutes: Math.max(0, Number($('reminderAdvanceTime')?.value || 0)),
+    sound: Boolean($('enableSoundReminder')?.checked),
+    desktop: Boolean($('enableDesktopNotification')?.checked)
+  };
+  saveReminderSettingsLocal(settings);
+
+  let systemEnabled = false;
+  if (settings.desktop) systemEnabled = await ensureDesktopNotificationPermission();
+  updateDesktopNotificationStatus();
+  startDueReminderTimer();
+  dispatchPendingDueReminders();
+
+  if (settings.desktop && !systemEnabled) {
+    showGlobalToast('提醒设置已保存；当前环境将使用页面提醒 + 声音。', 'info');
+  } else {
+    showGlobalToast('提醒设置已保存', 'success');
+  }
+}
+
+async function testReminderFromPanel() {
+  const settings = {
+    ...readReminderSettings(),
+    sound: Boolean($('enableSoundReminder')?.checked),
+    desktop: Boolean($('enableDesktopNotification')?.checked)
+  };
+  if (settings.sound) playReminderSound();
+  showGlobalToast('🔔 测试提醒：事项提醒功能正常', 'info');
+
+  if (settings.desktop) {
+    const granted = await ensureDesktopNotificationPermission();
+    updateDesktopNotificationStatus();
+    if (granted) {
+      showSystemReminderNotification('工作事项测试提醒', '桌面通知已正常启用。', () => {
+        window.focus();
+      });
+    } else {
+      showGlobalToast('当前 HTTP/浏览器环境无法显示系统级通知，页面提醒仍正常。', 'info');
+    }
+  }
+}
+
+function initReminderSettings() {
+  syncReminderSettingsForm();
+  $('saveReminderSettings')?.addEventListener('click', saveReminderSettingsFromPanel);
+  $('testReminder')?.addEventListener('click', testReminderFromPanel);
+}
+
 function patchStaticText() {
   const dataText = document.querySelector('#dataManagementTab p');
   if (dataText) dataText.textContent = '服务器版数据保存在 PostgreSQL 中，管理员可导出 Excel；JSON 导出仅用于备份当前可见记录。';
-  ['saveReminderSettings', 'testReminder'].forEach((id) => {
-    const el = $(id);
-    if (el) el.addEventListener('click', () => alert('服务器版该设置后续接入，现在核心记录已由服务器保存。'));
-  });
+  initReminderSettings();
 }
 
 function addTablerIcon(element, name) {
