@@ -73,6 +73,7 @@ const monthKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 const roleName = (role) => ({ admin: '管理员', staff: '普通员工' }[role] || '普通员工');
 const editableRoles = ['staff'];
 const displayUserRole = (user) => user?.jobTitle || roleName(user?.role);
+const displayUserRoleDept = (user) => [displayUserRole(user), user?.departmentName].filter(Boolean).join(' · ');
 const canManageWorkspace = () => state.user?.role === 'admin';
 const setElementVisible = (id, visible) => {
   const element = $(id);
@@ -4864,7 +4865,7 @@ async function startApp(sessionVersion = state.sessionVersion) {
   injectUserBar();
   resetSessionViewState();
   $('serverUserName').textContent = state.user.displayName;
-  $('serverUserRole').textContent = `· ${displayUserRole(state.user)} · ${state.user.departmentName}`;
+  $('serverUserRole').textContent = displayUserRoleDept(state.user);
   const avatarEl = $('sidebarUserAvatar');
   if (avatarEl && state.user?.displayName) {
     avatarEl.textContent = state.user.displayName.trim().charAt(0) || '用';
@@ -7920,7 +7921,7 @@ async function saveUserById(userId) {
   if (updatedCurrentUser) {
     state.user = updatedCurrentUser;
     $('serverUserName').textContent = state.user.displayName;
-    $('serverUserRole').textContent = `· ${displayUserRole(state.user)} · ${state.user.departmentName}`;
+    $('serverUserRole').textContent = displayUserRoleDept(state.user);
     const avatarEl = $('sidebarUserAvatar');
     if (avatarEl && state.user?.displayName) {
       avatarEl.textContent = state.user.displayName.trim().charAt(0) || '用';
