@@ -4520,6 +4520,15 @@ function applyMainView() {
 
   if (dashboardVisible) renderDashboard();
   if (weeklyPlanVisible) renderWeeklyPlanPage();
+
+  // 跨视图平滑淡入转场 (Cross-fade Transition)
+  const currentActiveEl = dashboardVisible ? $('dashboardPage') : (weeklyPlanVisible ? $('weeklyPlanPage') : calendarContainer);
+  if (currentActiveEl && state.lastActiveView !== state.activeView) {
+    currentActiveEl.classList.remove('view-enter-active');
+    void currentActiveEl.offsetWidth; // 触发回流重绘
+    currentActiveEl.classList.add('view-enter-active');
+    state.lastActiveView = state.activeView;
+  }
 }
 
 function openWeeklyPlanPage(refDate) {
@@ -5691,18 +5700,21 @@ function renderTeamLeaderboard() {
   }
 
   if (!body) return;
-  const displayRows = rows;
+  const isExpanded = state.leaderboardExpanded === true;
+  const shouldFold = rows.length > 4;
+  const displayRows = (shouldFold && !isExpanded) ? rows.slice(0, 4) : rows;
   const columnCount = Math.min(4, Math.max(1, displayRows.length));
   body.className = `leaderboard-body columns-${columnCount}`;
-  body.innerHTML = displayRows.map((row, index) => {
+  const cardsHtml = displayRows.map((row, index) => {
     const rank = index + 1;
     const isComplete = row.rate === 100;
+    const medalIcon = rank === 1 ? '<span class="rank-crown-mini" title="第1名 冠军">👑</span>' : (rank === 2 ? '<span class="rank-crown-mini" title="第2名 亚军">🥈</span>' : (rank === 3 ? '<span class="rank-crown-mini" title="第3名 季军">🥉</span>' : ''));
     return `
       <div class="leaderboard-card rank-${rank} ${isComplete ? 'is-complete' : ''} ${String(row.user.id) === String(state.selectedUserId) ? 'active' : ''}" data-user-id="${row.user.id}" title="点击查看${escapeHtml(row.user.displayName)}的日历" style="--leaderboard-rate:${row.rate}%">
         <div class="leaderboard-card-head">
           <span class="leaderboard-rank">${rank}</span>
           <div class="leaderboard-person">
-            <div class="leaderboard-name">${escapeHtml(row.user.displayName)} ${rank === 1 ? '<span class="rank-crown-mini" title="当前第1名">👑</span>' : ''}</div>
+            <div class="leaderboard-name">${escapeHtml(row.user.displayName)} ${medalIcon}</div>
             <div class="leaderboard-role">${escapeHtml(displayUserRole(row.user))} · ${escapeHtml(row.user.departmentName || '')}</div>
           </div>
           <div class="leaderboard-rate">${row.rate}%</div>
@@ -5715,6 +5727,27 @@ function renderTeamLeaderboard() {
       </div>
     `;
   }).join('');
+
+  body.innerHTML = cardsHtml;
+
+  const existingToggle = section.querySelector('.leaderboard-toggle-wrap');
+  if (existingToggle) existingToggle.remove();
+
+  if (shouldFold) {
+    const toggleWrap = document.createElement('div');
+    toggleWrap.className = 'leaderboard-toggle-wrap';
+    toggleWrap.innerHTML = `
+      <button type="button" class="leaderboard-toggle-btn" id="btnToggleLeaderboard">
+        ${isExpanded ? '收起更多成员 <i class="fas fa-chevron-up"></i>' : `展开全部成员 (${rows.length}人) <i class="fas fa-chevron-down"></i>`}
+      </button>
+    `;
+    section.appendChild(toggleWrap);
+    toggleWrap.querySelector('#btnToggleLeaderboard')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.leaderboardExpanded = !state.leaderboardExpanded;
+      renderTeamLeaderboard();
+    });
+  }
 }
 
 async function openDashboardMemo(memoId) {
@@ -8787,6 +8820,7 @@ function initEventListeners() {
   });
   $('toolbarPublish').addEventListener('click', () => openFunctionsModal('taskPublish'));
   $('toolbarNewMemo')?.addEventListener('click', () => openMemoModal(null, new Date()));
+  $('mobileFabAdd')?.addEventListener('click', () => openMemoModal(null, new Date()));
   $('btnSelectAllAssignees')?.addEventListener('click', selectAllTaskAssignees);
   $('btnClearAssignees')?.addEventListener('click', clearTaskAssignees);
   $('toolbarDashboard')?.addEventListener('click', openDashboardPage);

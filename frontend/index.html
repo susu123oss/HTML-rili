@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260929_v5" defer></script>
+    <script src="./app.js?v=20260929_v6" defer></script>
     <style>
         * {
             margin: 0;
@@ -3911,7 +3911,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_v5" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_v6" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4793,6 +4793,11 @@
             </div>
         </div>
     </div>
+
+    <!-- 移动端浮动操作按钮 (Floating Action Button) -->
+    <button type="button" class="mobile-fab" id="mobileFabAdd" title="快速新建备忘录" aria-label="新建备忘录">
+        <i class="fas fa-plus"></i>
+    </button>
 
 </body>
 </html>
