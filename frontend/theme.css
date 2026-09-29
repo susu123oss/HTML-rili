@@ -8250,3 +8250,376 @@ html[data-theme='dark'] .notif-item-desc {
   }
 }
 
+/* ================= 2026-09 四合一高阶 UI 质感与交互升级 ================= */
+
+/* 1. 日历任务条 (.day-memo-item) 进行中 vs 已完成 视觉层次强化 */
+.calendar-day .day-memo-item.pending {
+  border-left: 3px solid var(--memo-color, #3b82f6) !important;
+  background: rgba(248, 250, 252, 0.92) !important;
+  font-weight: 500 !important;
+}
+
+html[data-theme='dark'] .calendar-day .day-memo-item.pending {
+  border-left: 3px solid var(--memo-color, #60a5fa) !important;
+  background: rgba(30, 41, 59, 0.88) !important;
+}
+
+.calendar-day .day-memo-item.is-overdue {
+  border-left: 3px solid #ef4444 !important;
+  background: rgba(254, 242, 242, 0.85) !important;
+}
+
+html[data-theme='dark'] .calendar-day .day-memo-item.is-overdue {
+  border-left: 3px solid #f87171 !important;
+  background: rgba(127, 29, 29, 0.28) !important;
+}
+
+.calendar-day .day-memo-item.completed {
+  border-left: 3px solid rgba(16, 185, 129, 0.65) !important;
+  background: rgba(240, 253, 244, 0.55) !important;
+  opacity: 0.86 !important;
+}
+
+.calendar-day .day-memo-item.completed .memo-title-text {
+  text-decoration: line-through;
+  text-decoration-color: rgba(100, 116, 139, 0.6);
+  color: #64748b !important;
+}
+
+html[data-theme='dark'] .calendar-day .day-memo-item.completed {
+  border-left: 3px solid rgba(52, 211, 153, 0.55) !important;
+  background: rgba(6, 78, 59, 0.22) !important;
+  opacity: 0.85 !important;
+}
+
+html[data-theme='dark'] .calendar-day .day-memo-item.completed .memo-title-text {
+  color: #94a3b8 !important;
+  text-decoration-color: rgba(148, 163, 184, 0.55);
+}
+
+/* 2. 毛玻璃悬浮详情预览卡 (#memoHoverTooltip) 升级 */
+.memo-hover-tooltip {
+  width: 312px !important;
+  padding: 12px 14px !important;
+  border-radius: 14px !important;
+  border-top: 3px solid var(--mht-accent, #3b82f6) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  box-shadow: 0 18px 42px -8px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+}
+
+html[data-theme='dark'] .memo-hover-tooltip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-top: 3px solid var(--mht-accent, #60a5fa) !important;
+  box-shadow: 0 20px 46px -8px rgba(0, 0, 0, 0.68), 0 0 0 1px rgba(51, 65, 85, 0.8) !important;
+}
+
+.mht-top-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.mht-kind-tag,
+.mht-owner-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.mht-kind-tag.is-plan {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+}
+
+.mht-kind-tag.is-memo {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+}
+
+.mht-owner-tag {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+}
+
+html[data-theme='dark'] .mht-kind-tag.is-plan {
+  background: rgba(129, 140, 248, 0.2);
+  color: #a5b4fc;
+}
+
+html[data-theme='dark'] .mht-kind-tag.is-memo {
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+}
+
+html[data-theme='dark'] .mht-owner-tag {
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+}
+
+.mht-title.is-completed {
+  text-decoration: line-through;
+  opacity: 0.78;
+}
+
+.mht-content {
+  -webkit-line-clamp: 4 !important;
+  background: rgba(248, 250, 252, 0.8);
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(226, 232, 240, 0.7);
+  margin-top: 6px !important;
+}
+
+html[data-theme='dark'] .mht-content {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(51, 65, 85, 0.7);
+}
+
+.mht-edit-hint {
+  font-size: 0.7rem;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+html[data-theme='dark'] .mht-edit-hint {
+  color: #60a5fa;
+}
+
+.mht-actions-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mht-btn-complete {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mht-btn-complete:hover {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.mht-btn-complete.is-done {
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.12);
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+.mht-btn-complete.is-done:hover {
+  background: #475569;
+  color: #ffffff;
+  border-color: #475569;
+}
+
+html[data-theme='dark'] .mht-btn-complete {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+html[data-theme='dark'] .mht-btn-complete:hover {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+/* 3. 侧栏收起态即时悬浮气泡 (#sidebarHoverTooltip) */
+.sidebar-hover-tooltip {
+  position: fixed;
+  z-index: 100000;
+  pointer-events: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.94);
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transform: translateY(-50%) translateX(-6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1), transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-hover-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: rgba(15, 23, 42, 0.94);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-hover-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* 4. 双月视图 (.grid-2) 顶部空间进一步紧凑化 */
+@media (min-width: 1024px) {
+  .calendar-container:has(#multiMonthCalendar.grid-2) {
+    gap: 4px !important;
+  }
+
+  .calendar-container:has(#multiMonthCalendar.grid-2) > .calendar-nav-wrap {
+    margin: 0 auto 2px !important;
+    min-height: 28px !important;
+  }
+
+  .calendar-container:has(#multiMonthCalendar.grid-2) #calendarNavigation {
+    padding: 2px 12px !important;
+    min-height: 28px !important;
+    border-radius: 999px !important;
+  }
+
+  .calendar-container:has(#multiMonthCalendar.grid-2) #multiMonthCalendar.grid-2 > .month-calendar {
+    padding: 8px 12px 10px !important;
+  }
+
+  .calendar-container:has(#multiMonthCalendar.grid-2) #multiMonthCalendar.grid-2 > .month-calendar > .month-header {
+    padding: 0 0 5px !important;
+    margin-bottom: 5px !important;
+    min-height: 30px !important;
+  }
+}
+
+/* 5. 周计划每日完成进度条与拖拽改期交互 + 研发大屏环形图与脉冲高亮 */
+.wp-day-count-badge.all-done {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #059669 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme='dark'] .wp-day-count-badge.all-done {
+  background: rgba(52, 211, 153, 0.2) !important;
+  color: #34d399 !important;
+}
+
+.wp-day-progress-track {
+  height: 3px;
+  width: 100%;
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: -2px 0 8px;
+}
+
+.wp-day-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  border-radius: 999px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wp-day-progress-fill.is-complete {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.wp-day-task-card[draggable="true"] {
+  cursor: grab;
+}
+
+.wp-day-task-card.is-dragging {
+  opacity: 0.45 !important;
+  transform: scale(0.97) !important;
+  cursor: grabbing !important;
+}
+
+.wp-day-column.is-drag-over {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+  background: rgba(59, 130, 246, 0.04) !important;
+}
+
+html[data-theme='dark'] .wp-day-column.is-drag-over {
+  border-color: #60a5fa !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.wp-drop-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  opacity: 0.65;
+}
+
+.dashboard-metric-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dashboard-metric-ring {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-metric-ring .dm-ring-bg {
+  stroke: rgba(148, 163, 184, 0.2);
+}
+
+.dashboard-metric-ring .dm-ring-fg {
+  transition: stroke-dashoffset 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-metric-ring .dm-ring-text {
+  position: absolute;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.risk-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  margin-right: 4px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: risk-dot-pulse 1.6s infinite;
+}
+
+@keyframes risk-dot-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.65); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+

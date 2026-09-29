@@ -5480,16 +5480,33 @@ function dashboardSummary() {
   };
 }
 
+function renderDashboardDonutSvg(percent, strokeColor) {
+  const p = Math.max(0, Math.min(100, Number(percent) || 0));
+  const r = 16;
+  const c = 2 * Math.PI * r;
+  const offset = c - (p / 100) * c;
+  return `
+    <div class="dashboard-metric-ring" title="完成率 ${p}%">
+      <svg width="40" height="40" viewBox="0 0 40 40">
+        <circle class="dm-ring-bg" cx="20" cy="20" r="${r}" fill="none" stroke-width="3.8"></circle>
+        <circle class="dm-ring-fg" cx="20" cy="20" r="${r}" fill="none" stroke="${strokeColor}" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" transform="rotate(-90 20 20)"></circle>
+      </svg>
+      <span class="dm-ring-text">${p}%</span>
+    </div>
+  `;
+}
+
 function renderDashboardMetrics(summary) {
   const metrics = $('dashboardMetrics');
   if (!metrics) return;
+  const todayRate = summary.todayTotal > 0 ? Math.round((summary.todayCompleted / summary.todayTotal) * 100) : 100;
   const cards = [
     { label: '总任务', value: summary.total, sub: `${summary.activeUsers} 人有分配任务`, icon: 'fas fa-layer-group', tone: 'total' },
-    { label: '已完成', value: summary.completed, sub: `完成率 ${summary.rate}%`, icon: 'fas fa-check-circle', tone: 'success' },
+    { label: '已完成', value: summary.completed, sub: `整体完成率 ${summary.rate}%`, icon: 'fas fa-check-circle', tone: 'success', ring: renderDashboardDonutSvg(summary.rate, '#10b981') },
     { label: '未完成', value: summary.pending, sub: '仍需推进完成', icon: 'fas fa-hourglass-half', tone: 'pending' },
     { label: '逾期任务', value: summary.overdue, sub: summary.overdue ? '严重阻塞，需优先处理' : '无逾期风险', icon: 'fas fa-exclamation-triangle', tone: summary.overdue ? 'danger' : 'safe' },
     { label: '临近截止', value: summary.dueSoon, sub: summary.dueSoon ? '3天内即将到期' : '近期无临期', icon: 'far fa-clock', tone: summary.dueSoon ? 'warning' : 'safe' },
-    { label: '今日进度', value: `${summary.todayCompleted} / ${summary.todayTotal}`, sub: '今日任务完成数', icon: 'fas fa-calendar-check', tone: 'today' }
+    { label: '今日进度', value: `${summary.todayCompleted} / ${summary.todayTotal}`, sub: '今日任务完成数', icon: 'fas fa-calendar-check', tone: 'today', ring: summary.todayTotal > 0 ? renderDashboardDonutSvg(todayRate, '#6366f1') : '' }
   ];
   metrics.innerHTML = cards.map((card) => `
     <div class="dashboard-metric metric-${card.tone}">
@@ -5497,7 +5514,10 @@ function renderDashboardMetrics(summary) {
         <span class="dashboard-metric-icon"><i class="${card.icon}"></i></span>
         <span class="dashboard-metric-label">${escapeHtml(card.label)}</span>
       </div>
-      <div class="dashboard-metric-value">${escapeHtml(card.value)}</div>
+      <div class="dashboard-metric-value-row">
+        <div class="dashboard-metric-value">${escapeHtml(card.value)}</div>
+        ${card.ring || ''}
+      </div>
       <div class="dashboard-metric-sub">
         <span class="dashboard-metric-dot"></span>
         <span>${escapeHtml(card.sub)}</span>
@@ -5515,7 +5535,7 @@ function renderDashboardUserLoad(rows) {
       const hasOverdue = row.overdue > 0;
       const initial = (row.user.displayName || '用').trim().charAt(0);
       return `
-      <div class="dashboard-user-row ${isComplete ? 'is-complete' : ''} ${hasOverdue ? 'has-overdue' : ''}" data-dashboard-user-id="${row.user.id}" title="点击查看 ${escapeHtml(row.user.displayName)} 的工作日历" style="--dashboard-rate:${row.rate}%">
+      <div class="dashboard-user-row ${isComplete ? 'is-complete' : ''} ${hasOverdue ? 'has-overdue' : ''}" data-dashboard-user-id="${row.user.id}" title="点击穿透查看 ${escapeHtml(row.user.displayName)} 的工作日历" style="--dashboard-rate:${row.rate}%">
         <div class="user-row-profile">
           <div class="user-row-avatar ${isComplete ? 'avatar-complete' : (hasOverdue ? 'avatar-overdue' : 'avatar-normal')}">
             ${escapeHtml(initial)}
@@ -5578,7 +5598,7 @@ function renderDashboardRisks() {
       return `
       <div class="dashboard-risk-item risk-${level}" data-memo-id="${memo.id}" title="点击查看备忘录详情并处理">
         <div class="dashboard-risk-header">
-          <span class="risk-badge badge-${level}"><i class="${icon}"></i> ${escapeHtml(label)}</span>
+          <span class="risk-badge badge-${level}">${level === 'danger' ? '<span class="risk-pulse-dot"></span>' : ''}<i class="${icon}"></i> ${escapeHtml(label)}</span>
           <span class="dashboard-risk-title">${escapeHtml(memo.title || '无标题任务')}</span>
         </div>
         <div class="dashboard-risk-meta">
@@ -5868,13 +5888,14 @@ function createMonthCalendar(monthDate, index) {
           ${dayMemos.map((memo, memoIndex) => {
             const memoColor = memo.color || colors[memoIndex % colors.length] || colors[0];
             const hasOwner = Boolean(state.selectedUserId === 'all' && memo.ownerName);
-            const dotColor = memo.completed ? '#94a3b8' : memoColor;
+            const dotColor = memo.completed ? '#10b981' : memoColor;
+            const isOverdue = !memo.completed && isOverdueMemo(memo);
             const isReviewed = Boolean(memo.isReviewed || getMemoReactions(memo.id).isRead);
             const isLiked = Boolean(memo.isLiked || getMemoReactions(memo.id).isLiked);
             const stampIcons = (isReviewed ? '<i class="fas fa-check-double memo-cell-stamp read" title="管理员已阅" style="color:#10b981;font-size:10px;margin-left:3px;"></i>' : '') +
                                (isLiked ? '<i class="fas fa-thumbs-up memo-cell-stamp like" title="管理员点赞" style="color:#f59e0b;font-size:10px;margin-left:3px;"></i>' : '');
             return `
-            <button class="day-memo-item ${memo.completed ? 'completed' : ''}" data-memo-id="${memo.id}" title="${escapeHtml(memoFullTitle(memo))}" aria-label="${escapeHtml(memoFullTitle(memo))}" type="button" style="--memo-color:${escapeHtml(dotColor)}">
+            <button class="day-memo-item ${memo.completed ? 'completed' : 'pending'} ${isOverdue ? 'is-overdue' : ''}" data-memo-id="${memo.id}" aria-label="${escapeHtml(memoFullTitle(memo))}" type="button" style="--memo-color:${escapeHtml(memoColor)}">
               <span class="memo-color-dot" style="background-color:${escapeHtml(dotColor)}"></span>
               <span class="memo-title-text">${escapeHtml(memo.title || '无标题')}</span>
               ${stampIcons}
@@ -6581,7 +6602,8 @@ function initMemoHoverTooltip() {
     tooltip.dataset.memoId = String(memo.id);
 
     const isCompleted = Boolean(memo.completed || memo.status === 'completed');
-    const dotColor = isCompleted ? '#94a3b8' : (memo.color || '#3b82f6');
+    const accentColor = memo.color || '#3b82f6';
+    const dotColor = isCompleted ? '#10b981' : accentColor;
     const deadline = memoDeadlineDate(memo);
     const timeText = deadline
       ? `${deadline.getFullYear()}/${deadline.getMonth() + 1}/${deadline.getDate()} ${pad(deadline.getHours())}:${pad(deadline.getMinutes())}`
@@ -6591,6 +6613,11 @@ function initMemoHoverTooltip() {
     const isLiked = Boolean(memo.isLiked || getMemoReactions(memo.id).isLiked);
     const stampsHtml = (isReviewed ? '<span class="mht-stamp read" title="管理员已审阅"><i class="fas fa-check-double"></i> 已阅</span>' : '') +
                        (isLiked ? '<span class="mht-stamp like" title="管理员点赞"><i class="fas fa-thumbs-up"></i> +1</span>' : '');
+
+    const ownerHtml = memo.ownerName
+      ? `<span class="mht-owner-tag"><i class="fas fa-user"></i> ${escapeHtml(memo.ownerName)}</span>`
+      : '';
+    const kindHtml = `<span class="mht-kind-tag ${memo.planKind === 'plan' ? 'is-plan' : 'is-memo'}">${memo.planKind === 'plan' ? '周计划' : '日历备忘'}</span>`;
 
     const isAdmin = canManageWorkspace();
     const adminReactHtml = isAdmin ? `
@@ -6604,29 +6631,44 @@ function initMemoHoverTooltip() {
       </div>
     ` : '';
 
+    const toggleCompleteHtml = `
+      <button class="mht-btn-complete ${isCompleted ? 'is-done' : ''}" data-memo-id="${memo.id}" data-completed="${isCompleted ? 'true' : 'false'}" type="button" title="${isCompleted ? '点击重新设为待办状态' : '点击直接标记为已完成'}">
+        <i class="fas ${isCompleted ? 'fa-undo' : 'fa-check'}"></i> ${isCompleted ? '设为待办' : '标记完成'}
+      </button>
+    `;
+
     const carryOverHtml = !isCompleted ? `
       <button class="mht-btn-carryover" data-memo-id="${memo.id}" type="button" title="将未完成事项结转到下一天日历">
-        <i class="fas fa-arrow-right"></i> 转到下一天
+        <i class="fas fa-arrow-right"></i> 转下一天
       </button>
     ` : '';
 
-    const actionsBarHtml = (carryOverHtml || adminReactHtml) ? `
+    const actionsBarHtml = `
       <div class="mht-actions-bar">
-        ${carryOverHtml}
+        <div class="mht-actions-left">
+          ${toggleCompleteHtml}
+          ${carryOverHtml}
+        </div>
         ${adminReactHtml}
       </div>
-    ` : '';
+    `;
 
+    tooltip.style.setProperty('--mht-accent', accentColor);
     tooltip.innerHTML = `
-      <div class="mht-header" style="cursor:pointer;" title="点击查看编辑详情">
-        <span class="mht-dot" style="background:${escapeHtml(dotColor)}"></span>
-        <div class="mht-title">${escapeHtml(memoFullTitle(memo))}</div>
-      </div>
-      ${memo.contentPreview ? `<div class="mht-content" style="cursor:pointer;" title="点击查看编辑详情">${escapeHtml(memo.contentPreview)}</div>` : ''}
-      <div class="mht-meta" style="cursor:pointer;" title="点击查看编辑详情">
-        <span><i class="far fa-clock"></i> ${escapeHtml(timeText)}</span>
-        <span class="mht-badge ${isCompleted ? 'completed' : 'pending'}">${isCompleted ? '已完成' : '进行中'}</span>
+      <div class="mht-top-tags">
+        ${kindHtml}
+        ${ownerHtml}
+        <span class="mht-badge ${isCompleted ? 'completed' : 'pending'}">${isCompleted ? '✓ 已完成' : '● 进行中'}</span>
         ${stampsHtml}
+      </div>
+      <div class="mht-header" style="cursor:pointer;" title="点击查看/编辑完整详情">
+        <span class="mht-dot" style="background:${escapeHtml(dotColor)}"></span>
+        <div class="mht-title ${isCompleted ? 'is-completed' : ''}">${escapeHtml(memoFullTitle(memo))}</div>
+      </div>
+      ${memo.contentPreview ? `<div class="mht-content" style="cursor:pointer;" title="点击查看/编辑完整详情">${escapeHtml(memo.contentPreview)}</div>` : ''}
+      <div class="mht-meta" style="cursor:pointer;" title="点击查看/编辑完整详情">
+        <span><i class="far fa-clock"></i> 截止：${escapeHtml(timeText)}</span>
+        <span class="mht-edit-hint">点击编辑 <i class="fas fa-chevron-right"></i></span>
       </div>
       ${actionsBarHtml}
     `;
@@ -6641,12 +6683,12 @@ function initMemoHoverTooltip() {
     if (!el || !el.isConnected) return;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return;
-    const ttWidth = 290;
+    const ttWidth = 310;
     const spaceRight = window.innerWidth - rect.right;
-    let left = spaceRight >= ttWidth + 12 ? rect.right + 8 : rect.left - ttWidth - 8;
+    let left = spaceRight >= ttWidth + 14 ? rect.right + 8 : rect.left - ttWidth - 8;
     if (left < 10) left = 10;
-    let top = rect.top - 8;
-    if (top + 180 > window.innerHeight) top = window.innerHeight - 190;
+    let top = rect.top - 10;
+    if (top + 210 > window.innerHeight) top = window.innerHeight - 220;
     if (top < 10) top = 10;
 
     tooltip.style.left = `${left}px`;
@@ -6679,6 +6721,34 @@ function initMemoHoverTooltip() {
   });
 
   tooltip.addEventListener('click', async (e) => {
+    const completeBtn = e.target.closest('.mht-btn-complete');
+    if (completeBtn) {
+      e.stopPropagation();
+      const memoId = completeBtn.dataset.memoId;
+      const wasCompleted = completeBtn.dataset.completed === 'true';
+      const nextCompleted = !wasCompleted;
+      completeBtn.disabled = true;
+      try {
+        const res = await request(`/memos/${memoId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ completed: nextCompleted })
+        });
+        if (res && res.memo) {
+          syncMemosLocally(res.memo);
+        } else {
+          const targetMemo = state.memos?.find((m) => String(m.id) === String(memoId));
+          if (targetMemo) targetMemo.completed = nextCompleted;
+          renderCalendar();
+        }
+        hideMemoHoverTooltip();
+        showGlobalToast(nextCompleted ? '✔ 已标记为完成' : '↺ 已重新设为待办', 'success');
+      } catch (err) {
+        completeBtn.disabled = false;
+        showGlobalToast(err.message || '状态更新失败', 'error');
+      }
+      return;
+    }
+
     const carryBtn = e.target.closest('.mht-btn-carryover');
     if (carryBtn) {
       e.stopPropagation();
@@ -6715,22 +6785,22 @@ function initMemoHoverTooltip() {
             likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i> ${res.isLiked ? '已赞' : '点赞'}`;
           }
 
-          const meta = tooltip.querySelector('.mht-meta');
-          if (meta) {
-            meta.querySelectorAll('.mht-stamp').forEach((s) => s.remove());
+          const topTags = tooltip.querySelector('.mht-top-tags');
+          if (topTags) {
+            topTags.querySelectorAll('.mht-stamp').forEach((s) => s.remove());
             if (res.isReviewed) {
               const sRead = document.createElement('span');
               sRead.className = 'mht-stamp read';
               sRead.title = '管理员已审阅';
               sRead.innerHTML = '<i class="fas fa-check-double"></i> 已阅';
-              meta.appendChild(sRead);
+              topTags.appendChild(sRead);
             }
             if (res.isLiked) {
               const sLike = document.createElement('span');
               sLike.className = 'mht-stamp like';
               sLike.title = '管理员点赞';
               sLike.innerHTML = '<i class="fas fa-thumbs-up"></i> +1';
-              meta.appendChild(sLike);
+              topTags.appendChild(sLike);
             }
           }
 
@@ -6762,6 +6832,67 @@ function initMemoHoverTooltip() {
       hideMemoHoverTooltip();
     }
   }, { passive: true });
+}
+
+function initCollapsedSidebarTooltips() {
+  const sidebar = $('appSidebar');
+  if (!sidebar || sidebar.dataset.collapsedTooltipBound === 'true') return;
+  sidebar.dataset.collapsedTooltipBound = 'true';
+
+  let tip = $('sidebarHoverTooltip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'sidebarHoverTooltip';
+    tip.className = 'sidebar-hover-tooltip';
+    document.body.appendChild(tip);
+  }
+
+  function hideTip() {
+    tip.classList.remove('visible');
+  }
+
+  sidebar.addEventListener('mouseover', (e) => {
+    if (!sidebar.classList.contains('collapsed') || window.innerWidth <= 768) {
+      hideTip();
+      return;
+    }
+    const target = e.target.closest('.nav-item, #sidebarUserCard, #sidebarLogoLink');
+    if (!target || target.hidden || target.style.display === 'none') {
+      hideTip();
+      return;
+    }
+    if (target.getAttribute('title')) {
+      target.dataset.savedTitle = target.getAttribute('title');
+      target.removeAttribute('title');
+    }
+    let label = target.querySelector('.nav-label')?.textContent?.trim()
+      || target.dataset.savedTitle
+      || '';
+    if (target.id === 'sidebarUserCard') {
+      const uName = $('serverUserName')?.textContent?.trim() || '当前用户';
+      const uRole = $('serverUserRole')?.textContent?.trim() || '';
+      label = uRole ? `${uName} · ${uRole}` : uName;
+    } else if (target.id === 'sidebarLogoLink') {
+      label = '工作日历 PRO';
+    }
+    if (!label) return;
+
+    tip.textContent = label;
+    const rect = target.getBoundingClientRect();
+    tip.style.left = `${rect.right + 12}px`;
+    tip.style.top = `${rect.top + rect.height / 2}px`;
+    tip.classList.add('visible');
+  });
+
+  sidebar.addEventListener('mouseout', (e) => {
+    const target = e.target.closest('.nav-item, #sidebarUserCard, #sidebarLogoLink');
+    if (!target) return;
+    if (!target.contains(e.relatedTarget)) {
+      hideTip();
+    }
+  });
+
+  sidebar.addEventListener('click', () => hideTip());
 }
 
 function toLocalDateTimeInput(value) {
@@ -7636,15 +7767,23 @@ function renderWeeklyPlanPage() {
         ${weekDays.map((day, index) => `<button type="button" class="${index === mobileDayIndex ? 'active' : ''}" onclick="selectWeeklyMobileDay(${index})" aria-pressed="${index === mobileDayIndex}">${day.dayName.slice(1)}<small>${day.dateLabel}</small></button>`).join('')}
       </div>
       <div class="wp-columns-grid">
-        ${weekDays.map((day, index) => `
-          <div class="wp-day-column ${day.isToday ? 'is-today' : ''} ${index === mobileDayIndex ? 'is-mobile-selected' : ''}">
+        ${weekDays.map((day, index) => {
+          const dayTotal = day.memos.length;
+          const dayDone = day.memos.filter(m => m.completed).length;
+          const dayRate = dayTotal > 0 ? Math.round((dayDone / dayTotal) * 100) : 0;
+          const isAllDone = dayTotal > 0 && dayDone === dayTotal;
+          return `
+          <div class="wp-day-column ${day.isToday ? 'is-today' : ''} ${index === mobileDayIndex ? 'is-mobile-selected' : ''}" data-date-key="${day.dateKey}" ondragover="onWeeklyColDragOver(event)" ondragleave="onWeeklyColDragLeave(event)" ondrop="onWeeklyColDrop(event, '${day.dateKey}')">
             <div class="wp-day-col-header">
               <div class="wp-day-date-box">
                 <span class="wp-day-name">${day.dayName}</span>
                 <span class="wp-day-date">${day.dateLabel}</span>
               </div>
               ${day.isToday ? '<span class="wp-today-badge">今日</span>' : ''}
-              <span class="wp-day-count-badge">${day.memos.length}项</span>
+              <span class="wp-day-count-badge ${isAllDone ? 'all-done' : ''}" title="${dayTotal > 0 ? `已完成 ${dayDone}/${dayTotal} 项 (${dayRate}%)` : '当日暂无事项'}">${dayTotal > 0 ? `${dayDone}/${dayTotal}` : '0项'}</span>
+            </div>
+            <div class="wp-day-progress-track" title="当日完成度 ${dayRate}%">
+              <div class="wp-day-progress-fill ${isAllDone ? 'is-complete' : ''}" style="width: ${dayRate}%;"></div>
             </div>
 
             <div class="wp-day-quick-add${hasGoals ? '' : ' is-locked'}">
@@ -7657,9 +7796,9 @@ function renderWeeklyPlanPage() {
             </div>
 
             <div class="wp-day-task-list" id="wpDayList-${day.dateKey}">
-              ${day.memos.length === 0 ? '<div class="wp-day-empty"><i class="far fa-calendar-plus"></i> 暂无事项</div>' : ''}
+              ${day.memos.length === 0 ? '<div class="wp-day-empty"><i class="far fa-calendar-plus"></i> 暂无事项<small class="wp-drop-sub">支持拖拽其他日卡片至此改期</small></div>' : ''}
               ${day.memos.map(m => `
-                <div class="wp-day-task-card ${m.completed ? 'completed' : ''} ${m.rolloverToId ? 'rolled-over' : ''}" style="border-left-color: ${m.color || '#4361ee'};">
+                <div class="wp-day-task-card ${m.completed ? 'completed' : ''} ${m.rolloverToId ? 'rolled-over' : ''}" style="border-left-color: ${m.color || '#4361ee'};" draggable="${m.rolloverToId ? 'false' : 'true'}" ondragstart="onWeeklyCardDragStart(event, '${m.id}', '${day.dateKey}')" ondragend="onWeeklyCardDragEnd(event)" title="可拖拽至其他日期列改期">
                   <div class="wp-day-card-top">
                     <input type="checkbox" class="wp-day-checkbox" ${m.completed ? 'checked' : ''} ${m.rolloverToId ? 'disabled' : ''} onchange="toggleMemoCompleteFromBoard('${m.id}', this.checked)" title="标记完成状态">
                     <span class="wp-day-card-title ${m.completed ? 'completed' : ''}" onclick="openMemoModal('${m.id}')" title="点击查看编辑">${escapeHtml(m.title)}</span>
@@ -7681,10 +7820,77 @@ function renderWeeklyPlanPage() {
               `).join('')}
             </div>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
       </div>
     </div>
   `;
+}
+
+let weeklyDraggedMemoId = null;
+let weeklyDraggedSourceDate = null;
+
+function onWeeklyCardDragStart(event, memoId, sourceDate) {
+  weeklyDraggedMemoId = String(memoId);
+  weeklyDraggedSourceDate = String(sourceDate);
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', weeklyDraggedMemoId);
+  }
+  event.currentTarget?.classList.add('is-dragging');
+}
+
+function onWeeklyCardDragEnd(event) {
+  event.currentTarget?.classList.remove('is-dragging');
+  document.querySelectorAll('.wp-day-column.is-drag-over').forEach((col) => col.classList.remove('is-drag-over'));
+}
+
+function onWeeklyColDragOver(event) {
+  if (!weeklyDraggedMemoId) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  const col = event.currentTarget;
+  if (col && col.dataset.dateKey !== weeklyDraggedSourceDate) {
+    col.classList.add('is-drag-over');
+  }
+}
+
+function onWeeklyColDragLeave(event) {
+  const col = event.currentTarget;
+  if (col && !col.contains(event.relatedTarget)) {
+    col.classList.remove('is-drag-over');
+  }
+}
+
+async function onWeeklyColDrop(event, targetDateKey) {
+  event.preventDefault();
+  const col = event.currentTarget;
+  col?.classList.remove('is-drag-over');
+  const memoId = weeklyDraggedMemoId || event.dataTransfer?.getData('text/plain');
+  const sourceDate = weeklyDraggedSourceDate;
+  weeklyDraggedMemoId = null;
+  weeklyDraggedSourceDate = null;
+  if (!memoId || !targetDateKey || targetDateKey === sourceDate) return;
+
+  const memo = (state.weeklyMemos || []).find((m) => String(m.id) === String(memoId))
+    || (state.memos || []).find((m) => String(m.id) === String(memoId));
+  if (!memo) return;
+
+  try {
+    const newDueTime = rolloverDueTime(memo, targetDateKey);
+    const res = await request(`/memos/${memoId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ date: targetDateKey, dueTime: newDueTime })
+    });
+    if (res && res.memo) {
+      syncMemosLocally(res.memo);
+    }
+    showWeeklyFeedback(`已将「${memo.title}」拖拽改期至 ${targetDateKey}`);
+    showGlobalToast(`✔ 已将「${memo.title}」改期至 ${targetDateKey}`, 'success');
+  } catch (err) {
+    renderWeeklyPlanPage();
+    showGlobalToast(err.message || '拖拽改期失败', 'error');
+  }
 }
 
 async function addPlanForSpecificDate(dateStr, inputElem) {
@@ -10169,6 +10375,7 @@ initCustomDropdowns();
 initMemoDatePicker();
 initMemoDuePicker();
 initMemoHoverTooltip();
+initCollapsedSidebarTooltips();
 patchStaticText();
 // 手机端刷新时由工作台初始化决定起点，避免浏览器恢复到上次浏览的中段。
 if (window.innerWidth <= 768 && 'scrollRestoration' in history) {
