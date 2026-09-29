@@ -8299,7 +8299,7 @@ html[data-theme='dark'] .calendar-day .day-memo-item.completed .memo-title-text 
 
 /* 2. 毛玻璃悬浮详情预览卡 (#memoHoverTooltip) 升级 */
 .memo-hover-tooltip {
-  width: 312px !important;
+  width: 336px !important;
   padding: 12px 14px !important;
   border-radius: 14px !important;
   border-top: 3px solid var(--mht-accent, #3b82f6) !important;
@@ -8324,14 +8324,19 @@ html[data-theme='dark'] .memo-hover-tooltip {
 }
 
 .mht-kind-tag,
-.mht-owner-tag {
+.mht-owner-tag,
+.mht-badge,
+.mht-stamp {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 1px 7px;
+  padding: 2px 7px;
   border-radius: 5px;
   font-size: 0.7rem;
   font-weight: 600;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  line-height: 1.2;
 }
 
 .mht-kind-tag.is-plan {
@@ -8387,31 +8392,52 @@ html[data-theme='dark'] .mht-content {
   font-size: 0.7rem;
   color: #3b82f6;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 html[data-theme='dark'] .mht-edit-hint {
   color: #60a5fa;
 }
 
-.mht-actions-left {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.mht-actions-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+}
+
+.mht-actions-left,
+.mht-react-bar {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: 5px !important;
+  flex-shrink: 0 !important;
+}
+
+.mht-btn-complete,
+.mht-btn-carryover,
+.mht-btn-react {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  padding: 5px 8px !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .mht-btn-complete {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 9px;
-  font-size: 0.73rem;
-  font-weight: 600;
   color: #2563eb;
   background: rgba(37, 99, 235, 0.1);
   border: 1px solid rgba(37, 99, 235, 0.3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .mht-btn-complete:hover {

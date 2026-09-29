@@ -6683,7 +6683,7 @@ function initMemoHoverTooltip() {
     if (!el || !el.isConnected) return;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return;
-    const ttWidth = 310;
+    const ttWidth = 336;
     const spaceRight = window.innerWidth - rect.right;
     let left = spaceRight >= ttWidth + 14 ? rect.right + 8 : rect.left - ttWidth - 8;
     if (left < 10) left = 10;
