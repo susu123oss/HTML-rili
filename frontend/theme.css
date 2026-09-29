@@ -3125,8 +3125,34 @@ html[data-theme='light'] .memo-calendar-popup {
   .mobile-agenda-item-text strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mobile-agenda-item-text small, .mobile-agenda-status { color: var(--ui-text-muted); font-size: 0.75rem; }
   .mobile-agenda-status { flex: 0 0 auto; white-space: nowrap; }
-  .mobile-agenda-item.completed strong { text-decoration: line-through; }
-  .mobile-agenda-empty { padding: 12px; color: var(--ui-text-muted); }
+  .mobile-agenda-empty {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 30px 16px !important;
+    text-align: center !important;
+    border-radius: 14px !important;
+    background: var(--ui-surface-soft, #f8fafc) !important;
+    border: 1px dashed var(--ui-border, #e2e8f0) !important;
+    margin: 8px 0 12px !important;
+  }
+  .mobile-agenda-empty .empty-icon {
+    font-size: 2.2rem !important;
+    color: var(--ui-accent, #2563eb) !important;
+    margin-bottom: 8px !important;
+    opacity: 0.75 !important;
+  }
+  .mobile-agenda-empty .empty-title {
+    font-size: 0.94rem !important;
+    font-weight: 650 !important;
+    color: var(--ui-text, #1e293b) !important;
+    margin-bottom: 4px !important;
+  }
+  .mobile-agenda-empty .empty-sub {
+    font-size: 0.8rem !important;
+    color: var(--ui-text-muted, #64748b) !important;
+  }
   #multiMonthCalendar .calendar-day.agenda-selected { outline: 2px solid var(--ui-accent) !important; outline-offset: -2px; }
 }
 
@@ -5987,6 +6013,172 @@ html[data-theme='dark'] .header-month-select {
     overflow: clip !important;
   }
 }
+
+/* ========================================================
+   全端高精度 UI/UX 打磨优化（桌面端与移动端）
+   ======================================================== */
+
+/* 1. 吸顶导航场景滚动防护：防止切换视图或锚点定位时顶部内容被吸顶栏遮挡 */
+.dashboard-page,
+.weekly-plan-page,
+.multi-month-calendar,
+.calendar-container,
+#dashboardPage,
+#weeklyPlanPage,
+#multiMonthCalendar {
+  scroll-margin-top: 76px !important;
+}
+
+/* 2. 备忘录编辑弹窗底栏：破坏性删除按钮居左，安全取消与保存居右 */
+.memo-modal-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  gap: 12px !important;
+}
+.memo-modal-footer .modal-footer-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-left: auto !important;
+}
+.memo-modal-footer #deleteMemo {
+  margin-right: auto !important;
+  background: transparent !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  transition: all 0.18s ease !important;
+}
+.memo-modal-footer #deleteMemo:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+/* 3. 备忘录颜色色盘：工整对称 5×2 网格布局，消除单项尴尬换行 */
+.color-options {
+  display: grid !important;
+  grid-template-columns: repeat(5, 30px) !important;
+  gap: 10px 12px !important;
+  align-items: center !important;
+  min-height: 44px !important;
+  padding: 4px 0 !important;
+}
+.color-option {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  border: 2px solid transparent !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12) !important;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease !important;
+}
+.color-option:hover {
+  transform: scale(1.18) !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+}
+.color-option.selected,
+.color-option.active {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2.5px var(--ui-accent, #2563eb), 0 3px 8px rgba(0, 0, 0, 0.25) !important;
+  transform: scale(1.12) !important;
+}
+
+/* 4. 月历卡片：一键完成按钮空态与已全满状态 */
+.complete-all-btn.all-completed {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  cursor: default !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.9 !important;
+}
+.complete-all-btn.empty-disabled {
+  background: var(--ui-surface-soft, rgba(0, 0, 0, 0.04)) !important;
+  color: var(--ui-text-muted, #94a3b8) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  cursor: default !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.65 !important;
+}
+html[data-theme='dark'] .complete-all-btn.all-completed {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+html[data-theme='dark'] .complete-all-btn.empty-disabled {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #64748b !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 5. 移动端专属微调：提醒中心分类标签与弹窗底栏 */
+@media (max-width: 600px) {
+  .reminder-filter-tabs {
+    gap: 5px !important;
+    padding-bottom: 4px !important;
+    justify-content: space-between !important;
+  }
+  .reminder-tab {
+    padding: 5px 8px !important;
+    font-size: 0.78rem !important;
+    flex: 1 1 auto !important;
+    text-align: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+  }
+  .reminder-tab .tab-count {
+    padding: 1px 5px !important;
+    font-size: 0.7rem !important;
+  }
+  .color-options {
+    grid-template-columns: repeat(5, 32px) !important;
+    gap: 8px 14px !important;
+    justify-content: flex-start !important;
+  }
+  #memoModal .memo-modal-footer {
+    gap: 8px !important;
+  }
+  #memoModal .memo-modal-footer #deleteMemo {
+    flex: 0 0 auto !important;
+    min-width: 70px !important;
+    padding: 6px 10px !important;
+  }
+  #memoModal .memo-modal-footer .modal-footer-actions {
+    flex: 1 1 auto !important;
+    justify-content: flex-end !important;
+  }
+}
+
+/* 6. 桌面端日期单元格悬停微交互 */
+@media (min-width: 769px) {
+  .calendar-day:not(.other-month):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    border-color: var(--ui-accent, #3b82f6) !important;
+    z-index: 2;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+}
+
+/* 7. 模态弹窗毛玻璃质感背景 */
+.modal,
+.reminder-modal {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+dialog::backdrop {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.45);
+}
+
 
 
 

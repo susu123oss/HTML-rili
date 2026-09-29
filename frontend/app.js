@@ -4315,6 +4315,12 @@ function applyMainView() {
   setElementVisible('memberSelectWrap', canManageWorkspace() && calendarVisible);
   setElementVisible('monthCountSelectorWrap', calendarVisible);
 
+  // 顶部搜索框场景自适应：仅在日历视图显示，大屏与周计划保持顶部通栏清爽
+  const searchWrap = document.querySelector('.header-search');
+  if (searchWrap) {
+    searchWrap.style.display = calendarVisible ? '' : 'none';
+  }
+
   if (dashboardVisible) renderDashboard();
   if (weeklyPlanVisible) renderWeeklyPlanPage();
 }
@@ -4329,7 +4335,9 @@ function openWeeklyPlanPage(refDate) {
   try {
     window.location.hash = 'weekly-plan';
   } catch (e) {}
-  window.requestAnimationFrame(() => $('weeklyPlanPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
 function closeWeeklyPlanPage() {
@@ -4341,7 +4349,9 @@ function closeWeeklyPlanPage() {
   }
   renderTeamLeaderboard();
   applyMainView();
-  window.requestAnimationFrame(() => $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
 function openDashboardPage() {
@@ -4349,14 +4359,18 @@ function openDashboardPage() {
   state.activeView = 'dashboard';
   closeFunctionsModal();
   applyMainView();
-  window.requestAnimationFrame(() => $('dashboardPage')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
 function closeDashboardPage() {
   state.activeView = 'calendar';
   renderTeamLeaderboard();
   applyMainView();
-  window.requestAnimationFrame(() => $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
 function resolveEffectiveTheme(preference = state.themePreference) {
@@ -5098,8 +5112,12 @@ function renderMobileAgenda() {
         <button class="mobile-agenda-item ${memo.completed ? 'completed' : ''}" data-memo-id="${memo.id}" type="button">
           <span class="mobile-agenda-dot" style="background:${escapeHtml(memo.color || colors[0])}"></span>
           <span class="mobile-agenda-item-text"><strong>${escapeHtml(memo.title || '无标题')}</strong>${memo.ownerName && canManageWorkspace() ? `<small>${escapeHtml(memo.ownerName)}</small>` : ''}</span>
-          <span class="mobile-agenda-status">${memo.completed ? '已完成' : '待完成'}</span>
-        </button>`).join('') : '<div class="mobile-agenda-empty">当天没有事项，点击“新建备忘录”添加。</div>'}
+        </button>`).join('') : `
+        <div class="mobile-agenda-empty">
+          <div class="empty-icon"><i class="far fa-calendar-check"></i></div>
+          <div class="empty-title">当天暂无待办事项</div>
+          <div class="empty-sub">点击右上角“新建备忘录”添加日程</div>
+        </div>`}
     </div>`;
   document.querySelectorAll('.calendar-day[data-date]').forEach((cell) => {
     cell.classList.toggle('agenda-selected', cell.dataset.date === selected);
@@ -5641,7 +5659,12 @@ function createMonthCalendar(monthDate, index) {
             <button class="stat-item pending ${state.calendarStatusFilter === 'pending' ? 'active' : ''}" data-status-filter="pending" title="只显示未完成任务" aria-label="只显示未完成${monthMemos.length - completed}条任务" type="button"><i class="fas fa-clock"></i><span class="stat-count-pending">${monthMemos.length - completed}</span></button>
           </div>
           ${createProgressCircle(progressPercent, index)}
-          <button class="complete-all-btn" data-month="${monthKey(monthDate)}" type="button"><i class="fas fa-check-double"></i> 一键完成</button>
+          ${monthMemos.length === 0
+            ? `<button class="complete-all-btn empty-disabled" data-month="${monthKey(monthDate)}" type="button" disabled title="本月暂无任务"><i class="fas fa-inbox"></i> 暂无事项</button>`
+            : (monthMemos.length - completed === 0
+              ? `<button class="complete-all-btn all-completed" data-month="${monthKey(monthDate)}" type="button" disabled title="本月任务已全部完成"><i class="fas fa-check-circle"></i> 全部已完成</button>`
+              : `<button class="complete-all-btn active" data-month="${monthKey(monthDate)}" type="button" title="点击将本月所有未完成事项一键标记为完成"><i class="fas fa-check-double"></i> 一键完成</button>`
+            )}
         </div>
       </div>
       <div class="weekdays"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
@@ -7941,6 +7964,11 @@ function updateReminderSelectionUI() {
       ? `<i class="fas fa-check-double"></i> 一键完成 (${selectedCount})`
       : '<i class="fas fa-check-double"></i> 一键完成';
   }
+
+  const actionsEl = document.querySelector('.reminder-actions');
+  if (actionsEl) {
+    actionsEl.style.display = totalCount > 0 ? '' : 'none';
+  }
 }
 
 function renderReminderList() {
@@ -8735,7 +8763,9 @@ function initEventListeners() {
       return;
     }
     const complete = event.target.closest('.complete-all-btn');
-    if (complete) { await completeAllMemosForMonth(complete.dataset.month); }
+    if (complete && !complete.disabled && !complete.classList.contains('all-completed') && !complete.classList.contains('empty-disabled')) {
+      await completeAllMemosForMonth(complete.dataset.month);
+    }
   });
 }
 
@@ -9021,7 +9051,7 @@ function initSidebarLayout() {
     } else {
       state.activeView = 'calendar';
       applyMainView();
-      $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     if (window.innerWidth <= 768) closeMobileSidebar();
   });
@@ -9039,7 +9069,7 @@ function initSidebarLayout() {
     } else {
       state.activeView = 'calendar';
       applyMainView();
-      $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     if (window.innerWidth <= 768) closeMobileSidebar();
   });
@@ -9057,6 +9087,15 @@ function initSidebarLayout() {
   $('toolbarStaffExport')?.addEventListener('click', () => {
     exportStaffCalendarExcel();
     if (window.innerWidth <= 768) closeMobileSidebar();
+  });
+
+  // 移动端点击侧边栏任意功能或操作项自动收起抽屉（深浅色主题切换保留便于对比）
+  sidebar.querySelectorAll('.sidebar-nav .nav-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.id !== 'themeToggleBtn' && window.innerWidth <= 768) {
+        closeMobileSidebar();
+      }
+    });
   });
 }
 
