@@ -6506,6 +6506,28 @@ async function carryOverSingleMemoToNextDay(memoId, triggerBtn = null) {
   }
 }
 
+function updateMemoCellStamps(memoId, isReviewed, isLiked) {
+  const cellBtns = document.querySelectorAll(`.day-memo-item[data-memo-id="${memoId}"]`);
+  cellBtns.forEach((cellBtn) => {
+    cellBtn.querySelectorAll('.memo-cell-stamp').forEach((s) => s.remove());
+    const ownerPill = cellBtn.querySelector('.memo-owner-pill');
+    const stampHtml =
+      (isReviewed ? '<i class="fas fa-check-double memo-cell-stamp read" title="管理员已阅" style="color:#10b981;font-size:10px;margin-left:3px;"></i>' : '') +
+      (isLiked ? '<i class="fas fa-thumbs-up memo-cell-stamp like" title="管理员点赞" style="color:#f59e0b;font-size:10px;margin-left:3px;"></i>' : '');
+    if (stampHtml) {
+      const wrapper = document.createElement('span');
+      wrapper.innerHTML = stampHtml;
+      while (wrapper.firstChild) {
+        if (ownerPill) {
+          cellBtn.insertBefore(wrapper.firstChild, ownerPill);
+        } else {
+          cellBtn.appendChild(wrapper.firstChild);
+        }
+      }
+    }
+  });
+}
+
 function initMemoHoverTooltip() {
   let tooltip = $('memoHoverTooltip');
   if (!tooltip) {
@@ -6600,7 +6622,9 @@ function initMemoHoverTooltip() {
   }
 
   function positionTooltip(el) {
+    if (!el || !el.isConnected) return;
     const rect = el.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return;
     const ttWidth = 290;
     const spaceRight = window.innerWidth - rect.right;
     let left = spaceRight >= ttWidth + 12 ? rect.right + 8 : rect.left - ttWidth - 8;
@@ -6651,7 +6675,6 @@ function initMemoHoverTooltip() {
       if (!canManageWorkspace()) return;
       const memoId = reactBtn.dataset.id;
       const action = reactBtn.dataset.action;
-      reactBtn.disabled = true;
       try {
         const res = await request(`/memos/${memoId}/react`, {
           method: 'POST',
@@ -6664,13 +6687,49 @@ function initMemoHoverTooltip() {
             targetMemo.isLiked = res.isLiked;
           }
           setMemoReactions(memoId, { isRead: res.isReviewed, isLiked: res.isLiked });
-          renderMultiMonthCalendar();
-          if (currentTarget) showTooltip(currentTarget);
+
+          // 1. 本地平滑更新悬停卡片内的审阅/点赞按钮状态（不重绘、不移动）
+          const readBtn = tooltip.querySelector('.mht-btn-react[data-action="toggle-read"]');
+          const likeBtn = tooltip.querySelector('.mht-btn-react[data-action="toggle-like"]');
+          if (readBtn) {
+            readBtn.classList.toggle('active', Boolean(res.isReviewed));
+            readBtn.innerHTML = `<i class="fas fa-check-double"></i> ${res.isReviewed ? '已阅' : '审阅'}`;
+          }
+          if (likeBtn) {
+            likeBtn.classList.toggle('active', Boolean(res.isLiked));
+            likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i> ${res.isLiked ? '已赞' : '点赞'}`;
+          }
+
+          // 2. 本地平滑更新卡片元信息栏的已阅/点赞印章标签
+          const meta = tooltip.querySelector('.mht-meta');
+          if (meta) {
+            meta.querySelectorAll('.mht-stamp').forEach((s) => s.remove());
+            if (res.isReviewed) {
+              const sRead = document.createElement('span');
+              sRead.className = 'mht-stamp read';
+              sRead.title = '管理员已审阅';
+              sRead.innerHTML = '<i class="fas fa-check-double"></i> 已阅';
+              meta.appendChild(sRead);
+            }
+            if (res.isLiked) {
+              const sLike = document.createElement('span');
+              sLike.className = 'mht-stamp like';
+              sLike.title = '管理员点赞';
+              sLike.innerHTML = '<i class="fas fa-thumbs-up"></i> +1';
+              meta.appendChild(sLike);
+            }
+          }
+
+          // 3. 原地更新日历格子上对应的任务项图标（不刷新整月日历，消除卡顿）
+          updateMemoCellStamps(memoId, res.isReviewed, res.isLiked);
+
+          // 4. 若每日详情弹窗正打开，原地同步其列表
+          if (state.dailyDetailDate && $('dailyDetailModal')?.classList.contains('active')) {
+            loadDailyDetailMemos(state.dailyDetailDate);
+          }
         }
       } catch (err) {
-        alert(err.message || '操作失败');
-      } finally {
-        reactBtn.disabled = false;
+        showGlobalToast(err.message || '操作失败', 'error');
       }
       return;
     }
@@ -9470,10 +9529,10 @@ function initEventListeners() {
           if (state.dailyDetailDate) {
             loadDailyDetailMemos(state.dailyDetailDate);
           }
-          renderMultiMonthCalendar();
+          updateMemoCellStamps(memoId, res.isReviewed, res.isLiked);
         }
       } catch (err) {
-        alert(err.message || '操作失败');
+        showGlobalToast(err.message || '操作失败', 'error');
       } finally {
         reactBtn.disabled = false;
       }
