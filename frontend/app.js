@@ -103,6 +103,23 @@ function showDialog(id, focusId) {
   }
 }
 
+function waitForWorkspaceStyles() {
+  return Promise.all(['tablerStylesheet', 'themeStylesheet'].map((id) => new Promise((resolve) => {
+    const link = $(id);
+    if (!link || link.dataset.ready || link.sheet) return resolve();
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(done, 2500);
+    link.addEventListener('load', done, { once: true });
+    link.addEventListener('error', done, { once: true });
+  })));
+}
+
 function hideDialog(id) {
   const dialog = $(id);
   if (!dialog?.classList.contains('active')) return;
@@ -475,6 +492,11 @@ function showLoginOverlay(message = '') {
     $('serverLoginError').style.display = message ? 'block' : 'none';
   }
   overlay.style.display = 'flex';
+  const sessionOverlay = $('serverSessionOverlay');
+  if (sessionOverlay) {
+    sessionOverlay.style.display = 'none';
+    sessionOverlay.removeAttribute('data-early');
+  }
 }
 
 function hideLoginOverlay() {
@@ -487,15 +509,14 @@ let sessionProgressTimer = null;
 
 function ensureSessionOverlay() {
   let overlay = $('serverSessionOverlay');
-  if (overlay) return overlay;
-
-  overlay = document.createElement('div');
-  overlay.id = 'serverSessionOverlay';
-  overlay.innerHTML = `
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'serverSessionOverlay';
+    overlay.innerHTML = `
     <div class="server-session-card" role="status" aria-live="polite">
       <div class="server-session-spinner-wrap" id="serverSessionSpinnerWrap">
         <div class="server-session-spinner" id="serverSessionSpinner" aria-hidden="true"></div>
-        <div class="server-session-percent" id="serverSessionPercent">0%</div>
+        <div class="server-session-percent" id="serverSessionPercent">···</div>
       </div>
       <h2 id="serverSessionTitle">正在加载日历</h2>
       <div class="server-session-progress" id="serverSessionProgress" aria-hidden="true">
@@ -507,10 +528,14 @@ function ensureSessionOverlay() {
         <button id="serverSessionLogout" type="button" hidden>退出登录</button>
       </div>
     </div>
-  `;
-  document.body.appendChild(overlay);
-  $('serverSessionRetry').addEventListener('click', retryAppStart);
-  $('serverSessionLogout').addEventListener('click', logout);
+    `;
+    document.body.appendChild(overlay);
+  }
+  if (!overlay.dataset.bound) {
+    $('serverSessionRetry')?.addEventListener('click', retryAppStart);
+    $('serverSessionLogout')?.addEventListener('click', logout);
+    overlay.dataset.bound = 'true';
+  }
   return overlay;
 }
 
@@ -520,6 +545,7 @@ function resetSessionProgress() {
     sessionProgressTimer = null;
   }
   sessionProgressValue = 0;
+  $('serverSessionOverlay')?.setAttribute('data-loading', '');
   const percentEl = $('serverSessionPercent');
   const fillEl = $('serverSessionProgressFill');
   const msgEl = $('serverSessionMessage');
@@ -530,8 +556,8 @@ function resetSessionProgress() {
     void fillEl.offsetWidth; // 触发 reflow
     fillEl.style.transition = '';
   }
-  if (percentEl) percentEl.textContent = '0%';
-  if (msgEl) msgEl.textContent = '正在读取日历数据，请稍候…';
+  if (percentEl) percentEl.textContent = '···';
+  if (msgEl) msgEl.textContent = '正在准备工作台…';
 }
 
 function updateSessionProgress(targetPercent = 0, message = '') {
@@ -548,6 +574,8 @@ function updateSessionProgress(targetPercent = 0, message = '') {
   if (message && msgEl) {
     msgEl.textContent = message;
   }
+
+  if (clamped > 0) $('serverSessionOverlay')?.removeAttribute('data-loading');
 
   // 单调递增保护：加载流程中进度条只能向前走，绝不允许倒退！
   if (clamped < sessionProgressValue && targetPercent !== 0) {
@@ -615,11 +643,17 @@ function showSessionOverlay(message = '正在读取日历数据，请稍候…',
   }
 
   overlay.style.display = 'flex';
+  if (!['tablerStylesheet', 'themeStylesheet'].every((id) => $(id)?.dataset.ready)) {
+    overlay.setAttribute('data-early', '');
+  }
 }
 
 function hideSessionOverlay() {
   const overlay = $('serverSessionOverlay');
-  if (overlay) overlay.style.display = 'none';
+  if (overlay) {
+    overlay.style.display = 'none';
+    overlay.removeAttribute('data-early');
+  }
   resetSessionProgress();
 }
 
@@ -4216,7 +4250,6 @@ function injectUserBar() {
 function applyRoleScopedUi() {
   const visible = canManageWorkspace();
   ['toolbarPublish', 'toolbarDashboard', 'toolbarImport', 'navDataManagement', 'navSettings', 'floatingFunctions', 'viewRecentTasks'].forEach((id) => setElementVisible(id, visible));
-  setElementVisible('memberSelectWrap', visible);
   document.querySelectorAll('.admin-only-tab').forEach((tab) => {
     tab.hidden = state.user?.role !== 'admin';
     tab.style.display = state.user?.role === 'admin' ? '' : 'none';
@@ -4278,11 +4311,9 @@ function applyMainView() {
     }
   }
 
-  // 周计划/大屏时隐藏月份选择器，保持顶部清爽
-  const monthSelector = $('monthCountSelectorWrap');
-  if (monthSelector) {
-    monthSelector.style.display = calendarVisible ? '' : 'none';
-  }
+  // 成员与月数都是月历筛选项；其他页面使用各自的视图切换。
+  setElementVisible('memberSelectWrap', canManageWorkspace() && calendarVisible);
+  setElementVisible('monthCountSelectorWrap', calendarVisible);
 
   if (dashboardVisible) renderDashboard();
   if (weeklyPlanVisible) renderWeeklyPlanPage();
@@ -4598,6 +4629,13 @@ async function restoreSession() {
   }
 }
 
+function showWorkspaceFromTop() {
+  if (window.innerWidth > 768) return;
+  const toTop = () => window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+  toTop();
+  window.requestAnimationFrame(toTop);
+}
+
 function resetSessionViewState() {
   state.currentDate = new Date();
   state.selectedUserId = canManageWorkspace() ? 'all' : String(state.user?.id || '');
@@ -4633,12 +4671,16 @@ async function startApp(sessionVersion = state.sessionVersion) {
   }
   updateSessionProgress(90, '正在校验待办与提醒…');
   await loadReminders(sessionVersion);
+  updateSessionProgress(94, '正在准备界面样式…');
+  await waitForWorkspaceStyles();
+  if (!isCurrentSession(sessionVersion)) return false;
   state.initialLoadSessionVersion = sessionVersion;
   startRealtimeRefresh();
   updateSessionProgress(100, '加载完成，正在呈现工作台…');
   await new Promise(r => setTimeout(r, 260));
   hideLoginOverlay();
   hideSessionOverlay();
+  showWorkspaceFromTop();
   return true;
 }
 
@@ -9027,4 +9069,8 @@ initMemoDatePicker();
 initMemoDuePicker();
 initMemoHoverTooltip();
 patchStaticText();
+// 手机端刷新时由工作台初始化决定起点，避免浏览器恢复到上次浏览的中段。
+if (window.innerWidth <= 768 && 'scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
 restoreSession();

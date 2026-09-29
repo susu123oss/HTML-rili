@@ -896,7 +896,7 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
     font-size: 0.76rem !important;
     padding: 2px 7px !important;
     max-width: 110px !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
   }
@@ -1144,7 +1144,10 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
   #memoModal .form-control {
     min-height: 36px !important;
     padding: 6px 10px !important;
-    font-size: 0.88rem !important;
+    font-size: 16px !important;
+  }
+  #memoModal .mcp-time-input {
+    font-size: 16px !important;
   }
   .memo-title-row {
     grid-template-columns: minmax(0, 1fr) auto !important;
@@ -1174,7 +1177,7 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
   #memoModal .memo-text-editor #memoContent {
     min-height: 72px !important;
     height: 75px !important;
-    font-size: 0.88rem !important;
+    font-size: 16px !important;
     padding: 8px 10px !important;
   }
   #memoModal .memo-text-toolbar {
@@ -3101,9 +3104,10 @@ html[data-theme='light'] .memo-calendar-popup {
   .mobile-agenda-kicker, .mobile-agenda-count { color: var(--ui-text-muted); font-size: 0.78rem; }
   .mobile-agenda-header strong { color: var(--ui-text); }
   .mobile-agenda-header .btn { min-height: 36px; }
-  .mobile-agenda-list { display: grid; gap: 6px; }
+  .mobile-agenda-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
   .mobile-agenda-item {
     width: 100%;
+    min-width: 0;
     min-height: 44px;
     display: flex;
     align-items: center;
@@ -3120,6 +3124,7 @@ html[data-theme='light'] .memo-calendar-popup {
   .mobile-agenda-item-text { flex: 1; min-width: 0; }
   .mobile-agenda-item-text strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mobile-agenda-item-text small, .mobile-agenda-status { color: var(--ui-text-muted); font-size: 0.75rem; }
+  .mobile-agenda-status { flex: 0 0 auto; white-space: nowrap; }
   .mobile-agenda-item.completed strong { text-decoration: line-through; }
   .mobile-agenda-empty { padding: 12px; color: var(--ui-text-muted); }
   #multiMonthCalendar .calendar-day.agenda-selected { outline: 2px solid var(--ui-accent) !important; outline-offset: -2px; }
@@ -4227,44 +4232,112 @@ html[data-theme='dark'] .wp-chip-name {
 }
 @media (max-width: 768px) {
   .weekly-plan-page {
-    padding: 10px 8px;
+    padding: 8px 4px;
     gap: 10px;
   }
   .wp-hero-card {
-    padding: 10px;
+    padding: 12px;
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 12px;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   }
   .wp-hero-left {
     width: 100%;
     justify-content: space-between;
+    gap: 8px;
+  }
+  .wp-hero-title-box {
+    order: 1;
+    min-width: 0;
+  }
+  .wp-back-btn {
+    order: 2;
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 0 10px;
   }
   .wp-hero-title {
     font-size: 1.05rem;
+    white-space: nowrap;
   }
   .wp-hero-center {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 10px;
   }
   .wp-week-nav-bar {
     width: 100%;
-    justify-content: space-between;
-    padding: 4px 6px;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 32px auto;
+    align-items: center;
+    gap: 6px;
+    padding: 5px;
+  }
+  .wp-nav-arrow-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .wp-today-chip {
+    min-height: 32px;
+    padding: 0 8px;
   }
   .wp-hero-stats {
     width: 100%;
     justify-content: flex-start;
+    gap: 5px 10px;
+    padding: 7px 10px;
+    border: 1px solid var(--ui-border, #e2e8f0);
+    border-radius: 9px;
+    background: var(--ui-surface-soft, #f8fafc);
+  }
+  .wp-hero-stats .wp-stat-chip {
+    padding: 2px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    white-space: nowrap;
+    font-size: 0.72rem;
   }
   .wp-current-week-label {
     font-size: 0.78rem;
-    padding: 0 4px;
+    line-height: 1.3;
+    padding: 0;
+    text-align: center;
+    white-space: normal;
   }
   .wp-hero-right {
     width: 100%;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .wp-view-toggle-wrap {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+  .wp-view-toggle-wrap .btn {
+    flex: 1 1 0;
+    justify-content: center;
+    min-height: 34px;
+  }
+  #wpPageGoalsBtn,
+  #wpPageCopyReportBtn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 38px;
+    justify-content: center;
+    padding: 6px 8px;
+    white-space: nowrap;
+    font-size: 0.78rem;
+  }
+  #wpPageRefreshBtn {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
   }
   .calendar-weekly-plan-btn {
     min-width: 0;
@@ -5732,15 +5805,15 @@ html[data-theme='dark'] .header-month-select {
     pointer-events: auto !important;
   }
 
-  /* 顶部通栏导航：单行紧凑美观、永不重叠 */
+  /* 手机端标题与筛选分两行，避免选择器挤占页面名称 */
   .app-header {
-    height: 50px !important;
+    height: auto !important;
     min-height: 50px !important;
-    padding: 0 12px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    flex-wrap: nowrap !important;
+    padding: 0 12px 8px !important;
+    margin-bottom: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
     position: sticky !important;
     top: 0 !important;
     z-index: 120 !important;
@@ -5755,7 +5828,7 @@ html[data-theme='dark'] .header-month-select {
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
-    flex-shrink: 0 !important;
+    min-height: 50px !important;
     min-width: 0 !important;
   }
 
@@ -5774,7 +5847,7 @@ html[data-theme='dark'] .header-month-select {
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: 95px !important;
+    max-width: calc(100vw - 80px) !important;
     letter-spacing: -0.2px;
   }
 
@@ -5785,8 +5858,11 @@ html[data-theme='dark'] .header-month-select {
   .header-right {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    flex-shrink: 0 !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-top: 8px !important;
+    border-top: 1px solid var(--border-color) !important;
     flex-wrap: nowrap !important;
   }
 
@@ -5798,47 +5874,87 @@ html[data-theme='dark'] .header-month-select {
     display: none !important;
   }
 
-  /* 移动端成员选择器：胶囊形态、省略前缀文字 */
+  /* 两个筛选器共用一套轻量控件，去掉旧月份选择器的双重外框 */
   .topbar-member-selector {
     display: flex !important;
     align-items: center !important;
-    gap: 4px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
   }
   .topbar-member-selector label {
     display: none !important;
   }
   .topbar-member-selector .member-select {
-    height: 30px !important;
-    font-size: 0.82rem !important;
-    padding: 0 6px !important;
-    max-width: 125px !important;
-    min-width: 82px !important;
-    border-radius: 6px !important;
-    background: var(--sidebar-bg) !important;
-    color: var(--text-main) !important;
-    border: 1px solid var(--border-color) !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
   }
 
-  /* 移动端月数选择器：紧凑实用 */
   .month-count-selector {
     display: flex !important;
     align-items: center !important;
-    gap: 4px !important;
+    flex: 0 0 106px !important;
+    width: 106px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
   }
   .month-count-selector label {
     display: none !important;
   }
+  .topbar-member-selector .member-select,
   .month-count-selector .header-month-select {
-    height: 30px !important;
-    font-size: 0.82rem !important;
-    padding: 0 4px !important;
-    width: auto !important;
-    border-radius: 6px !important;
-    background: var(--sidebar-bg) !important;
+    height: 36px !important;
+    width: 100% !important;
+    padding: 0 10px !important;
+    border-radius: 9px !important;
+    background: var(--ui-surface-soft) !important;
     color: var(--text-main) !important;
     border: 1px solid var(--border-color) !important;
+    box-shadow: none !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .topbar-member-selector .member-select:focus-visible,
+  .month-count-selector .header-month-select:focus-visible {
+    border-color: var(--ui-accent) !important;
+    box-shadow: 0 0 0 3px var(--ui-focus-ring) !important;
+  }
+  .app-header .topbar-member-selector[hidden],
+  .app-header .month-count-selector[hidden] {
+    display: none !important;
+  }
+  .app-header:has(.topbar-member-selector[hidden] + .month-count-selector[hidden]) {
+    padding-bottom: 0 !important;
+  }
+  .app-header:has(.topbar-member-selector[hidden] + .month-count-selector[hidden]) .header-right {
+    display: none !important;
+  }
+
+  /* 仅显示月份选择器时（普通员工视图），左右两端对齐展示“显示月数”标签与下拉框，视觉更饱满对称 */
+  .app-header:has(.topbar-member-selector[hidden]) .month-count-selector:not([hidden]) {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  .app-header:has(.topbar-member-selector[hidden]) .month-count-selector:not([hidden]) label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+  }
+  .app-header:has(.topbar-member-selector[hidden]) .month-count-selector:not([hidden]) .header-month-select {
+    flex: 0 0 116px !important;
+    width: 116px !important;
   }
 
   /* 主体工作区适配 */
@@ -5848,6 +5964,27 @@ html[data-theme='dark'] .header-month-select {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
+  }
+
+  /* 周计划首卡片与其他页面保持一致的顶部间距。 */
+  .app-main:has(.weekly-plan-page:not([hidden])) > .app-body {
+    padding-top: 8px !important;
+  }
+  .app-main .weekly-plan-page:not([hidden]) {
+    padding-top: 4px;
+  }
+
+  /* 日历及当天事项共用整页纵向滚动，避免内部空滚动层吞掉手势。 */
+  html, body, .app-layout, .calendar-container,
+  .multi-month-calendar, .month-calendar {
+    overflow-x: clip !important;
+  }
+  .app-layout, .calendar-container,
+  .multi-month-calendar, .month-calendar {
+    overflow-y: visible !important;
+  }
+  .calendar-day, .calendar-day .day-memos {
+    overflow: clip !important;
   }
 }
 

@@ -5,17 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#ffffff">
+    <style>
+      #serverSessionOverlay { display: none; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 23, 42, .7); box-sizing: border-box; }
+      #serverSessionOverlay[data-early] { display: flex; background: #0f172a; }
+      #serverSessionOverlay .server-session-card { width: min(380px, calc(100vw - 32px)); padding: 32px 28px; border-radius: 20px; background: #fff; color: #1c2024; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.22); box-sizing: border-box; }
+      #serverSessionOverlay .server-session-spinner-wrap { width: 66px; height: 66px; margin: 0 auto; display: grid; place-items: center; position: relative; }
+      #serverSessionOverlay .server-session-spinner { position: absolute; inset: 0; border: 4px solid rgba(67,97,238,.16); border-top-color: #4361ee; border-radius: 50%; animation: early-session-spin .9s linear infinite; }
+      #serverSessionOverlay .server-session-percent { position: relative; color: #4361ee; font-weight: 800; }
+      #serverSessionOverlay h2 { margin: 14px 0 6px; font-size: 1.25rem; }
+      #serverSessionOverlay p { margin: 0; color: #64748b; font-size: .88rem; }
+      #serverSessionOverlay .server-session-progress { height: 6px; margin: 14px 0 10px; border-radius: 999px; background: rgba(67,97,238,.12); overflow: hidden; }
+      #serverSessionOverlay .server-session-progress-fill { height: 100%; background: #4361ee; }
+      #serverSessionOverlay[data-loading] .server-session-progress-fill { width: 35% !important; animation: early-session-progress 1.4s ease-in-out infinite; }
+      @keyframes early-session-spin { to { transform: rotate(360deg); } }
+      @keyframes early-session-progress { from { transform: translateX(-110%); } to { transform: translateX(290%); } }
+    </style>
     <script src="./theme-init.js?v=20260928_v2"></script>
     <title>工作日历备忘录</title>
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"> -->
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script> -->
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script> -->
-	<link rel="stylesheet" href="css/all.min.css">
-    <link rel="stylesheet" href="libs/highlight.js/11.9.0/styles/github.min.css">
-    <script src="marked/marked.min.js"></script>
-    <script src="libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="./vendor/tabler-core/tabler.min.css">
+	<link rel="stylesheet" href="css/all.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="libs/highlight.js/11.9.0/styles/github.min.css" media="print" onload="this.media='all'">
+    <script src="marked/marked.min.js" defer></script>
+    <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+    <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <script src="./app.js?v=20260929_v1" defer></script>
     <style>
         * {
             margin: 0;
@@ -3895,9 +3911,39 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="./theme.css?v=20260928_unified_v2">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_v1" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
+    <div id="serverSessionOverlay" data-loading>
+        <div class="server-session-card" role="status" aria-live="polite">
+            <div class="server-session-spinner-wrap" id="serverSessionSpinnerWrap">
+                <div class="server-session-spinner" id="serverSessionSpinner" aria-hidden="true"></div>
+                <div class="server-session-percent" id="serverSessionPercent">···</div>
+            </div>
+            <h2 id="serverSessionTitle">正在恢复登录状态</h2>
+            <div class="server-session-progress" id="serverSessionProgress" aria-hidden="true">
+                <div class="server-session-progress-fill" id="serverSessionProgressFill" style="width:0%"></div>
+            </div>
+            <p id="serverSessionMessage">正在准备工作台…</p>
+            <div class="server-session-actions">
+                <button id="serverSessionRetry" type="button" hidden>重新加载日历</button>
+                <button id="serverSessionLogout" type="button" hidden>退出登录</button>
+            </div>
+        </div>
+    </div>
+    <script>
+      (() => {
+        const earlyOverlay = document.getElementById('serverSessionOverlay');
+        try {
+          if (!localStorage.getItem('calendarToken')) {
+            document.getElementById('serverSessionTitle').textContent = '正在打开登录页面';
+          }
+        } catch (_) {
+          document.getElementById('serverSessionTitle').textContent = '正在打开登录页面';
+        }
+        earlyOverlay.setAttribute('data-early', '');
+      })();
+    </script>
     <div class="app-layout">
         <!-- 移动端侧栏半透明遮罩 (抽屉打开时) -->
         <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
@@ -4719,6 +4765,5 @@
         </div>
     </div>
 
-    <script src="./app.js?v=20260928_unified_v2"></script>
 </body>
 </html>
