@@ -8648,4 +8648,127 @@ html[data-theme='dark'] .wp-day-column.is-drag-over {
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
+/* ===== 2026-09 大屏减噪：简洁指标卡 + 收敛色彩 ===== */
+
+/* 指标卡 — 去掉顶部渐变条，改为左侧细线 */
+.dashboard-metric {
+  position: relative;
+  padding: 16px 20px 14px 20px !important;
+  border-left: 3px solid var(--theme-color, #4f8ef7) !important;
+  border-top: none !important;
+  background: var(--card-bg) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+  border-radius: 10px !important;
+  transition: box-shadow 0.2s, transform 0.15s;
+  overflow: hidden;
+}
+.dashboard-metric::before { display: none !important; }
+.dashboard-metric:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+  transform: translateY(-1px);
+}
+
+/* 指标卡上方 */
+.dashboard-metric-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.dashboard-metric-icon {
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  font-size: 0.75rem !important;
+  background: rgba(79,142,247,0.1) !important;
+  color: var(--theme-color, #4f8ef7) !important;
+  box-shadow: none !important;
+}
+.dashboard-metric-label {
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  color: var(--text-secondary) !important;
+  letter-spacing: 0.02em;
+}
+
+/* 大数字 */
+.dashboard-metric-value {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.03em;
+  color: var(--text-main) !important;
+  margin-bottom: 6px;
+  display: block !important;
+}
+
+/* 副文字 */
+.dashboard-metric-sub {
+  font-size: 0.7rem !important;
+  color: var(--text-muted, #94a3b8) !important;
+  font-weight: 400 !important;
+  display: block !important;
+}
+.dashboard-metric-dot { display: none !important; }
+.dashboard-metric-value-row { display: contents !important; }
+.dashboard-metric-ring { display: none !important; }
+
+/* 各 tone 左线颜色 */
+.metric-total   { border-left-color: #64748b !important; }
+.metric-success { border-left-color: #10b981 !important; }
+.metric-pending { border-left-color: #f59e0b !important; }
+.metric-danger  { border-left-color: #ef4444 !important; }
+.metric-warning { border-left-color: #f97316 !important; }
+.metric-today   { border-left-color: #6366f1 !important; }
+.metric-safe    { border-left-color: #94a3b8 !important; }
+
+/* 各 tone 图标色 */
+.metric-success .dashboard-metric-icon { background: rgba(16,185,129,0.1) !important; color: #10b981 !important; }
+.metric-pending .dashboard-metric-icon { background: rgba(245,158,11,0.1) !important; color: #f59e0b !important; }
+.metric-danger  .dashboard-metric-icon { background: rgba(239,68,68,0.1) !important;  color: #ef4444 !important; }
+.metric-danger  .dashboard-metric-value { color: #ef4444 !important; }
+.metric-warning .dashboard-metric-icon { background: rgba(249,115,22,0.1) !important; color: #f97316 !important; }
+.metric-today   .dashboard-metric-icon { background: rgba(99,102,241,0.1) !important; color: #6366f1 !important; }
+
+/* 人员负载 — 简洁文字统计 */
+.stat-txt {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.stat-txt b { font-weight: 700; color: var(--text-main); }
+.stat-txt.stat-done { color: #10b981; font-weight: 600; }
+.stat-txt.stat-pend { color: var(--text-secondary); }
+.stat-txt.stat-over { color: #ef4444; font-weight: 700; }
+.stat-txt.stat-soon { color: #f97316; font-weight: 600; }
+
+.dashboard-user-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-top: 4px;
+}
+
+/* 进度条更细更克制 */
+.dashboard-progress {
+  height: 4px !important;
+  border-radius: 4px;
+  background: var(--border-color, #e2e8f0);
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.dashboard-progress-fill {
+  height: 100%;
+  width: var(--dashboard-rate, 0%);
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.fill-normal   { background: var(--theme-color, #4f8ef7); }
+.fill-complete { background: #10b981; }
+.fill-overdue  { background: #ef4444; }
 

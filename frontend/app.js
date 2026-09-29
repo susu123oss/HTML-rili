@@ -5480,33 +5480,17 @@ function dashboardSummary() {
   };
 }
 
-function renderDashboardDonutSvg(percent, strokeColor) {
-  const p = Math.max(0, Math.min(100, Number(percent) || 0));
-  const r = 16;
-  const c = 2 * Math.PI * r;
-  const offset = c - (p / 100) * c;
-  return `
-    <div class="dashboard-metric-ring" title="完成率 ${p}%">
-      <svg width="40" height="40" viewBox="0 0 40 40">
-        <circle class="dm-ring-bg" cx="20" cy="20" r="${r}" fill="none" stroke-width="3.8"></circle>
-        <circle class="dm-ring-fg" cx="20" cy="20" r="${r}" fill="none" stroke="${strokeColor}" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" transform="rotate(-90 20 20)"></circle>
-      </svg>
-      <span class="dm-ring-text">${p}%</span>
-    </div>
-  `;
-}
-
 function renderDashboardMetrics(summary) {
   const metrics = $('dashboardMetrics');
   if (!metrics) return;
   const todayRate = summary.todayTotal > 0 ? Math.round((summary.todayCompleted / summary.todayTotal) * 100) : 100;
   const cards = [
-    { label: '总任务', value: summary.total, sub: `${summary.activeUsers} 人有分配任务`, icon: 'fas fa-layer-group', tone: 'total' },
-    { label: '已完成', value: summary.completed, sub: `整体完成率 ${summary.rate}%`, icon: 'fas fa-check-circle', tone: 'success', ring: renderDashboardDonutSvg(summary.rate, '#10b981') },
-    { label: '未完成', value: summary.pending, sub: '仍需推进完成', icon: 'fas fa-hourglass-half', tone: 'pending' },
-    { label: '逾期任务', value: summary.overdue, sub: summary.overdue ? '严重阻塞，需优先处理' : '无逾期风险', icon: 'fas fa-exclamation-triangle', tone: summary.overdue ? 'danger' : 'safe' },
-    { label: '临近截止', value: summary.dueSoon, sub: summary.dueSoon ? '3天内即将到期' : '近期无临期', icon: 'far fa-clock', tone: summary.dueSoon ? 'warning' : 'safe' },
-    { label: '今日进度', value: `${summary.todayCompleted} / ${summary.todayTotal}`, sub: '今日任务完成数', icon: 'fas fa-calendar-check', tone: 'today', ring: summary.todayTotal > 0 ? renderDashboardDonutSvg(todayRate, '#6366f1') : '' }
+    { label: '总任务', value: summary.total,   sub: `${summary.activeUsers} 人有分配任务`,       icon: 'fas fa-layer-group',        tone: 'total' },
+    { label: '已完成', value: summary.completed, sub: `完成率 ${summary.rate}%`,                 icon: 'fas fa-check-circle',       tone: 'success' },
+    { label: '未完成', value: summary.pending,   sub: '仍需推进完成',                             icon: 'fas fa-hourglass-half',     tone: 'pending' },
+    { label: '逾期任务', value: summary.overdue, sub: summary.overdue ? '需优先处理' : '暂无逾期', icon: 'fas fa-exclamation-circle', tone: summary.overdue ? 'danger' : 'safe' },
+    { label: '临近截止', value: summary.dueSoon, sub: summary.dueSoon ? '3天内即将到期' : '暂无临期', icon: 'far fa-clock',           tone: summary.dueSoon ? 'warning' : 'safe' },
+    { label: '今日进度', value: `${summary.todayCompleted}/${summary.todayTotal}`, sub: `今日完成率 ${todayRate}%`, icon: 'fas fa-calendar-check', tone: 'today' }
   ];
   metrics.innerHTML = cards.map((card) => `
     <div class="dashboard-metric metric-${card.tone}">
@@ -5514,14 +5498,8 @@ function renderDashboardMetrics(summary) {
         <span class="dashboard-metric-icon"><i class="${card.icon}"></i></span>
         <span class="dashboard-metric-label">${escapeHtml(card.label)}</span>
       </div>
-      <div class="dashboard-metric-value-row">
-        <div class="dashboard-metric-value">${escapeHtml(card.value)}</div>
-        ${card.ring || ''}
-      </div>
-      <div class="dashboard-metric-sub">
-        <span class="dashboard-metric-dot"></span>
-        <span>${escapeHtml(card.sub)}</span>
-      </div>
+      <div class="dashboard-metric-value">${escapeHtml(String(card.value))}</div>
+      <div class="dashboard-metric-sub">${escapeHtml(card.sub)}</div>
     </div>
   `).join('');
 }
@@ -5533,9 +5511,11 @@ function renderDashboardUserLoad(rows) {
     ? rows.map((row) => {
       const isComplete = row.total > 0 && row.completed === row.total;
       const hasOverdue = row.overdue > 0;
+      const hasDueSoon = row.dueSoon > 0;
       const initial = (row.user.displayName || '用').trim().charAt(0);
+      const statusClass = isComplete ? 'is-complete' : (hasOverdue ? 'has-overdue' : '');
       return `
-      <div class="dashboard-user-row ${isComplete ? 'is-complete' : ''} ${hasOverdue ? 'has-overdue' : ''}" data-dashboard-user-id="${row.user.id}" title="点击穿透查看 ${escapeHtml(row.user.displayName)} 的工作日历" style="--dashboard-rate:${row.rate}%">
+      <div class="dashboard-user-row ${statusClass}" data-dashboard-user-id="${row.user.id}" title="点击穿透查看 ${escapeHtml(row.user.displayName)} 的工作日历" style="--dashboard-rate:${row.rate}%">
         <div class="user-row-profile">
           <div class="user-row-avatar ${isComplete ? 'avatar-complete' : (hasOverdue ? 'avatar-overdue' : 'avatar-normal')}">
             ${escapeHtml(initial)}
@@ -5553,11 +5533,11 @@ function renderDashboardUserLoad(rows) {
             <div class="dashboard-progress-fill ${isComplete ? 'fill-complete' : (hasOverdue ? 'fill-overdue' : 'fill-normal')}"></div>
           </div>
           <div class="dashboard-user-stats">
-            <span class="stat-pill pill-total">总 ${row.total}</span>
-            <span class="stat-pill pill-completed"><i class="fas fa-check"></i> ${row.completed}</span>
-            <span class="stat-pill pill-pending">未完 ${row.pending}</span>
-            <span class="stat-pill pill-overdue ${row.overdue > 0 ? 'is-alert' : ''}"><i class="fas fa-exclamation-circle"></i> 逾期 ${row.overdue}</span>
-            <span class="stat-pill pill-duesoon ${row.dueSoon > 0 ? 'is-alert' : ''}"><i class="far fa-clock"></i> 临近 ${row.dueSoon}</span>
+            <span class="stat-txt">总 <b>${row.total}</b></span>
+            <span class="stat-txt stat-done">✓ ${row.completed}</span>
+            ${row.pending > 0 ? `<span class="stat-txt stat-pend">待 ${row.pending}</span>` : ''}
+            ${hasOverdue ? `<span class="stat-txt stat-over">逾期 ${row.overdue}</span>` : ''}
+            ${hasDueSoon ? `<span class="stat-txt stat-soon">临近 ${row.dueSoon}</span>` : ''}
           </div>
         </div>
         <div class="user-row-rate">
@@ -5569,6 +5549,7 @@ function renderDashboardUserLoad(rows) {
     }).join('')
     : '<div class="dashboard-empty"><i class="fas fa-users" style="font-size:2rem;margin-bottom:8px;opacity:0.4;display:block;"></i>当前月份范围内暂无人员任务数据</div>';
 }
+
 
 function dashboardRiskEntries() {
   const now = new Date();
