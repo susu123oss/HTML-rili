@@ -8011,23 +8011,23 @@ html[data-theme='dark'] .notif-item-desc {
    - 员工端 1个月 / 2个月 视图自动贴合 100vh 一屏展示全部日期行，免上下滚动
    ======================================================== */
 @media (min-width: 769px) {
-  .calendar-day,
-  .multi-month-calendar.grid-1 .calendar-day,
-  .month-calendar.small .calendar-day {
+  .app-main:has(#teamLeaderboard[hidden]) .calendar-day,
+  .app-main:has(#teamLeaderboard[hidden]) .multi-month-calendar.grid-1 .calendar-day,
+  .app-main:has(#teamLeaderboard[hidden]) .month-calendar.small .calendar-day {
     aspect-ratio: auto !important;
     min-height: 100px !important;
     padding: 6px 8px !important;
   }
 
-  .calendar-day .day-memos {
+  .app-main:has(#teamLeaderboard[hidden]) .calendar-day .day-memos {
     min-height: 0 !important;
     max-height: none !important;
     flex: 1 1 0 !important;
   }
 
-  .multi-month-calendar,
-  .month-calendar,
-  .month-calendar.small {
+  .app-main:has(#teamLeaderboard[hidden]) .multi-month-calendar,
+  .app-main:has(#teamLeaderboard[hidden]) .month-calendar,
+  .app-main:has(#teamLeaderboard[hidden]) .month-calendar.small {
     min-height: 0 !important;
   }
 }
