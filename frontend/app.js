@@ -8968,18 +8968,18 @@ function showEngineerUrgeBanner(notifications) {
   if (notifications.length === 1) {
     const single = notifications[0];
     if (single.type === 'like') {
-      contentHtml = `<i class="fas fa-thumbs-up" style="color:#fef08a;"></i> <span><strong>${escapeHtml(single.senderName || '管理员')}</strong> 为您的事项点赞：${escapeHtml(single.content || single.title)}</span>`;
+      contentHtml = `<i class="fas fa-thumbs-up" style="color:#fef08a;"></i> <span><strong>${escapeHtml(single.senderName || '管理员')}</strong> 为您的事项点赞：${escapeHtml(single.content || single.title)} <span style="font-size:0.8rem;opacity:0.88;margin-left:4px;">(点击日历定位)</span></span>`;
     } else if (single.type === 'review') {
-      contentHtml = `<i class="fas fa-check-circle" style="color:#a7f3d0;"></i> <span><strong>${escapeHtml(single.senderName || '管理员')}</strong> 已审阅：${escapeHtml(single.content || single.title)}</span>`;
+      contentHtml = `<i class="fas fa-check-circle" style="color:#a7f3d0;"></i> <span><strong>${escapeHtml(single.senderName || '管理员')}</strong> 已审阅：${escapeHtml(single.content || single.title)} <span style="font-size:0.8rem;opacity:0.88;margin-left:4px;">(点击日历定位)</span></span>`;
     } else {
-      contentHtml = `<i class="fas fa-bullhorn" style="color:#fecaca;"></i> <span><strong>催办提醒：</strong>${escapeHtml(single.content || single.title)}</span>`;
+      contentHtml = `<i class="fas fa-bullhorn" style="color:#fecaca;"></i> <span><strong>催办提醒：</strong>${escapeHtml(single.content || single.title)} <span style="font-size:0.8rem;opacity:0.88;margin-left:4px;">(点击日历定位)</span></span>`;
     }
   } else {
     const parts = [];
     if (urgeList.length) parts.push(`<i class="fas fa-bullhorn"></i> <strong>${urgeList.length}</strong> 个任务被催办`);
     if (reviewList.length) parts.push(`<i class="fas fa-check-double"></i> <strong>${reviewList.length}</strong> 条事项已审阅`);
     if (likeList.length) parts.push(`<i class="fas fa-thumbs-up"></i> <strong>${likeList.length}</strong> 个事项获点赞`);
-    contentHtml = `<span>${parts.join('，')} <span style="font-size:0.8rem;opacity:0.85;margin-left:4px;">(点击查看详情)</span></span>`;
+    contentHtml = `<span>${parts.join('，')} <span style="font-size:0.8rem;opacity:0.88;margin-left:4px;">(点击日历定位)</span></span>`;
   }
 
   banner.innerHTML = `
@@ -9000,16 +9000,96 @@ function showEngineerUrgeBanner(notifications) {
       return;
     }
 
-    const notifWithMemo = notifications.find(n => n.memoId);
+    const memoIds = [...new Set(notifications.map(n => n.memoId).filter(Boolean))];
     await markNotificationsRead(notifications);
     dismissEngineerUrgeBanner();
 
-    if (notifWithMemo && notifWithMemo.memoId) {
-      await openMemoModal(notifWithMemo.memoId);
+    if (memoIds.length) {
+      await navigateToAndHighlightMemos(memoIds);
     } else if (hasUrge) {
       showReminderModal();
     }
   };
+}
+
+async function navigateToAndHighlightMemos(memoIds) {
+  if (!Array.isArray(memoIds) || !memoIds.length) return;
+
+  // 1. 关闭可能遮挡日历的浮层与弹窗
+  hideMemoHoverTooltip();
+  hideDialog('memoModal');
+  hideDialog('reminderModal');
+  hideDialog('dailyDetailModal');
+  hideDialog('functionsModal');
+
+  // 2. 若在周计划界面或其他视图，切回日历视图
+  if (state.activeView !== 'calendar') {
+    closeWeeklyPlanPage();
+  }
+
+  // 3. 查找目标事项日期（优先内存查找，若未载入则通过接口获取）
+  let targetMemos = (state.memos || []).filter(m => memoIds.some(id => String(id) === String(m.id)));
+  let targetDate = null;
+  if (targetMemos.length) {
+    targetDate = targetMemos[0].date;
+  } else {
+    try {
+      const res = await request(`/memos/${memoIds[0]}`);
+      if (res && res.memo) {
+        targetDate = res.memo.date;
+      }
+    } catch (_) {}
+  }
+
+  // 4. 确保当前日历展示了包含该日期的月份
+  if (targetDate) {
+    const targetMonthKey = targetDate.slice(0, 7);
+    const isVisible = visibleMonths().some(d => monthKey(d) === targetMonthKey);
+    if (!isVisible) {
+      const [y, m] = targetDate.split('-').map(Number);
+      state.currentDate = new Date(y, m - 1, 1);
+      await loadMemos();
+    }
+  }
+
+  // 5. 等待日历渲染后，高亮闪烁目标事项并平滑滚动定位
+  setTimeout(() => {
+    let firstFoundEl = null;
+
+    memoIds.forEach((id) => {
+      const cellBtns = document.querySelectorAll(`.day-memo-item[data-memo-id="${id}"]`);
+      cellBtns.forEach((btn) => {
+        if (!firstFoundEl) firstFoundEl = btn;
+
+        btn.classList.remove('memo-praise-highlight');
+        void btn.offsetWidth; // 触发 reflow 重置动画
+        btn.classList.add('memo-praise-highlight');
+
+        const dayCell = btn.closest('.calendar-day');
+        if (dayCell) {
+          dayCell.classList.remove('calendar-day-praise-flash');
+          void dayCell.offsetWidth;
+          dayCell.classList.add('calendar-day-praise-flash');
+          setTimeout(() => dayCell.classList.remove('calendar-day-praise-flash'), 3500);
+        }
+
+        setTimeout(() => {
+          btn.classList.remove('memo-praise-highlight');
+        }, 3600);
+      });
+    });
+
+    if (firstFoundEl) {
+      firstFoundEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    } else if (targetDate) {
+      const dayCell = document.querySelector(`.calendar-day[data-date="${targetDate}"]`);
+      if (dayCell) {
+        dayCell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        dayCell.classList.add('calendar-day-praise-flash');
+        setTimeout(() => dayCell.classList.remove('calendar-day-praise-flash'), 3500);
+      }
+    }
+  }, 120);
 }
 
 async function markNotificationsRead(notifications) {

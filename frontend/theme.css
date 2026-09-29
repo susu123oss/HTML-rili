@@ -3662,6 +3662,146 @@ html[data-theme='light'] .memo-calendar-popup {
   transform: scale(1.1);
 }
 
+/* ── 审阅与点赞：日历事项高亮闪烁效果 ───────────── */
+.memo-praise-highlight {
+  position: relative !important;
+  z-index: 50 !important;
+  animation: memoPraiseFlash 3.2s ease-in-out !important;
+  border-radius: 6px !important;
+}
+
+@keyframes memoPraiseFlash {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+  15% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.8), 0 4px 18px rgba(16, 185, 129, 0.55);
+    background-color: #ecfdf5 !important;
+    border-color: #10b981 !important;
+  }
+  30% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.7), 0 2px 10px rgba(245, 158, 11, 0.4);
+    background-color: #fffbeb !important;
+    border-color: #f59e0b !important;
+  }
+  45% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.85), 0 4px 20px rgba(16, 185, 129, 0.6);
+    background-color: #ecfdf5 !important;
+    border-color: #10b981 !important;
+  }
+  60% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.7), 0 2px 10px rgba(245, 158, 11, 0.4);
+    background-color: #fffbeb !important;
+    border-color: #f59e0b !important;
+  }
+  75% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.75), 0 3px 15px rgba(16, 185, 129, 0.5);
+    background-color: #ecfdf5 !important;
+    border-color: #10b981 !important;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+html[data-theme='dark'] .memo-praise-highlight {
+  animation: memoPraiseFlashDark 3.2s ease-in-out !important;
+}
+
+@keyframes memoPraiseFlashDark {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+  15% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.8), 0 4px 18px rgba(52, 211, 153, 0.55);
+    background-color: #064e3b !important;
+    border-color: #34d399 !important;
+  }
+  30% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.7), 0 2px 10px rgba(251, 191, 36, 0.4);
+    background-color: #451a03 !important;
+    border-color: #fbbf24 !important;
+  }
+  45% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.85), 0 4px 20px rgba(52, 211, 153, 0.6);
+    background-color: #064e3b !important;
+    border-color: #34d399 !important;
+  }
+  60% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.7), 0 2px 10px rgba(251, 191, 36, 0.4);
+    background-color: #451a03 !important;
+    border-color: #fbbf24 !important;
+  }
+  75% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.75), 0 3px 15px rgba(52, 211, 153, 0.5);
+    background-color: #064e3b !important;
+    border-color: #34d399 !important;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+}
+
+/* 日历格子闪烁背景波纹 */
+.calendar-day-praise-flash {
+  animation: dayPraiseGlow 3s ease-in-out !important;
+  position: relative;
+}
+
+@keyframes dayPraiseGlow {
+  0% {
+    background-color: inherit;
+  }
+  20% {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+  }
+  50% {
+    background-color: rgba(245, 158, 11, 0.12) !important;
+  }
+  80% {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+  }
+  100% {
+    background-color: inherit;
+  }
+}
+
+html[data-theme='dark'] .calendar-day-praise-flash {
+  animation: dayPraiseGlowDark 3s ease-in-out !important;
+}
+
+@keyframes dayPraiseGlowDark {
+  0% {
+    background-color: inherit;
+  }
+  20% {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+  }
+  50% {
+    background-color: rgba(245, 158, 11, 0.18) !important;
+  }
+  80% {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+  }
+  100% {
+    background-color: inherit;
+  }
+}
+
 /* ── 桌面端任务悬浮卡片 (Memo Hover Tooltip) ───────────── */
 .memo-hover-tooltip {
   position: fixed;
