@@ -5887,7 +5887,8 @@ function createMonthCalendar(monthDate, index) {
     `);
   }
 
-  while (cells.length < 42) {
+  const targetCellCount = cells.length <= 35 ? 35 : 42;
+  while (cells.length < targetCellCount) {
     const next = cells.length - (firstDay.getDay() + lastDay.getDate()) + 1;
     cells.push(`<div class="calendar-day other-month">${next}</div>`);
   }
@@ -9069,8 +9070,8 @@ function executeMemosHighlight(memoIdStrs) {
 
   if (!allEls.length) return;
 
-  // 高亮单个元素并滚动到视口中央
-  function highlightEl(el) {
+  // 高亮单个元素并可选滚动到视口中央
+  function highlightEl(el, shouldScroll = true) {
     const dayCell = el.closest('.calendar-day');
 
     // 重置并触发 memo 高亮
@@ -9087,41 +9088,63 @@ function executeMemosHighlight(memoIdStrs) {
       setTimeout(() => dayCell.classList.remove('calendar-day-praise-flash'), 3700);
     }
 
-    // 精准滚动到视口中央
-    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    if (shouldScroll) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
   }
 
+  // 一屏日历下同时高亮所有命中的事项，首条确保滚入视口
+  allEls.forEach((el, idx) => highlightEl(el, idx === 0));
+
   if (allEls.length === 1) {
-    // 单条事项：直接高亮，无需分页
-    highlightEl(allEls[0]);
     return;
   }
 
-  // 多条事项：弹出分页导航浮层
+  // 多条事项：弹出分页导航浮层，方便逐条聚焦
   let current = 0;
-  highlightEl(allEls[0]);
+  let autoDismiss = null;
 
-  // 移除旧分页器
   const oldPager = document.getElementById('praisePager');
   if (oldPager) oldPager.remove();
 
   const pager = document.createElement('div');
   pager.id = 'praisePager';
 
+  function resetAutoDismiss() {
+    if (autoDismiss) clearTimeout(autoDismiss);
+    autoDismiss = setTimeout(() => {
+      if (document.getElementById('praisePager') === pager) {
+        pager.classList.add('pager-out');
+        setTimeout(() => pager.remove(), 280);
+      }
+    }, 4500);
+  }
+
   function renderPager() {
     pager.innerHTML = `
       <button id="praisePrev" ${current === 0 ? 'disabled' : ''} title="上一条">&#8592;</button>
-      <span class="pager-label">\u2728 ${current + 1} / ${allEls.length}</span>
+      <span class="pager-label">&#10024; ${current + 1} / ${allEls.length}</span>
       <button id="praiseNext" ${current === allEls.length - 1 ? 'disabled' : ''} title="下一条">&#8594;</button>
-      <button class="pager-close" id="praisePagerClose" title="关闭">\u2715</button>
+      <button class="pager-close" id="praisePagerClose" title="关闭">&#10005;</button>
     `;
     document.getElementById('praisePrev').onclick = () => {
-      if (current > 0) { current--; highlightEl(allEls[current]); renderPager(); }
+      if (current > 0) {
+        current--;
+        highlightEl(allEls[current], true);
+        renderPager();
+        resetAutoDismiss();
+      }
     };
     document.getElementById('praiseNext').onclick = () => {
-      if (current < allEls.length - 1) { current++; highlightEl(allEls[current]); renderPager(); }
+      if (current < allEls.length - 1) {
+        current++;
+        highlightEl(allEls[current], true);
+        renderPager();
+        resetAutoDismiss();
+      }
     };
     document.getElementById('praisePagerClose').onclick = () => {
+      if (autoDismiss) clearTimeout(autoDismiss);
       pager.classList.add('pager-out');
       setTimeout(() => pager.remove(), 280);
     };
@@ -9129,15 +9152,7 @@ function executeMemosHighlight(memoIdStrs) {
 
   renderPager();
   document.body.appendChild(pager);
-
-  // 4 秒后（末条动画结束后）自动消失
-  const autoDismiss = setTimeout(() => {
-    if (document.getElementById('praisePager') === pager) {
-      pager.classList.add('pager-out');
-      setTimeout(() => pager.remove(), 280);
-    }
-  }, 4000);
-  pager.querySelector('#praisePagerClose').addEventListener('click', () => clearTimeout(autoDismiss), { once: true });
+  resetAutoDismiss();
 }
 
 async function markNotificationsRead(notifications) {
