@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260929_v1" defer></script>
+    <script src="./app.js?v=20260929_v2" defer></script>
     <style>
         * {
             margin: 0;
@@ -3911,7 +3911,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_v1" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_v2" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4060,13 +4060,23 @@
                     <!-- 成员筛选下拉框 -->
                     <div class="topbar-member-selector" id="memberSelectWrap">
                         <label for="serverMemberSelect"><i class="fas fa-user-friends"></i> 成员：</label>
-                        <select id="serverMemberSelect" class="member-select"></select>
+                        <select id="serverMemberSelect" class="member-select" style="display:none;"></select>
+                        <div class="custom-dropdown" id="customMemberSelect">
+                            <button type="button" class="custom-dropdown-btn" id="customMemberBtn" aria-haspopup="listbox" aria-expanded="false" title="切换查看人员">
+                                <span class="custom-dropdown-icon"><i class="fas fa-user-friends"></i></span>
+                                <span class="custom-dropdown-text" id="customMemberText">全部成员</span>
+                                <i class="fas fa-chevron-down custom-dropdown-caret"></i>
+                            </button>
+                            <div class="custom-dropdown-menu" id="customMemberMenu" hidden>
+                                <div class="custom-dropdown-list" id="customMemberList"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 月份数量选择器 -->
                     <div class="month-count-selector" id="monthCountSelectorWrap">
                         <label for="monthCountSelect"><i class="far fa-calendar-alt"></i> 月数：</label>
-                        <select id="monthCountSelect" class="header-month-select">
+                        <select id="monthCountSelect" class="header-month-select" style="display:none;">
                             <option value="1">1个月</option>
                             <option value="2" selected>2个月</option>
                             <option value="3">3个月</option>
@@ -4080,6 +4090,16 @@
                             <option value="11">11个月</option>
                             <option value="12">12个月</option>
                         </select>
+                        <div class="custom-dropdown" id="customMonthSelect">
+                            <button type="button" class="custom-dropdown-btn" id="customMonthBtn" aria-haspopup="listbox" aria-expanded="false" title="切换展示月数">
+                                <span class="custom-dropdown-icon"><i class="far fa-calendar-alt"></i></span>
+                                <span class="custom-dropdown-text" id="customMonthText">2个月</span>
+                                <i class="fas fa-chevron-down custom-dropdown-caret"></i>
+                            </button>
+                            <div class="custom-dropdown-menu" id="customMonthMenu" hidden>
+                                <div class="custom-dropdown-list" id="customMonthList"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -4453,12 +4473,10 @@
 
                 </form>
             </div>
-            <div class="modal-footer memo-modal-footer">
-                <button class="btn btn-danger" id="deleteMemo" type="button"><i class="fas fa-trash-alt"></i> 删除</button>
-                <div class="modal-footer-actions">
-                    <button class="btn btn-secondary" id="cancelMemo" type="button">取消</button>
-                    <button class="btn btn-primary" id="saveMemo" type="button">保存备忘录</button>
-                </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelMemo" type="button">取消</button>
+                <button class="btn btn-danger" id="deleteMemo" type="button">删除</button>
+                <button class="btn btn-primary" id="saveMemo" type="button">保存备忘录</button>
             </div>
         </div>
     </div>

@@ -657,6 +657,201 @@ function hideSessionOverlay() {
   resetSessionProgress();
 }
 
+/* ========================================================
+   现代定制化下拉选择器逻辑 (Custom Modern SaaS Dropdowns)
+   ======================================================== */
+function closeAllCustomDropdowns() {
+  document.querySelectorAll('.custom-dropdown').forEach((dropdown) => {
+    const btn = dropdown.querySelector('.custom-dropdown-btn');
+    const menu = dropdown.querySelector('.custom-dropdown-menu');
+    if (menu) menu.hidden = true;
+    if (btn) {
+      btn.classList.remove('active');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+function renderCustomMemberOptions() {
+  const memberList = $('customMemberList');
+  const memberText = $('customMemberText');
+  const memberBtn = $('customMemberBtn');
+  if (!memberList || !memberText) return;
+
+  const currentVal = String(state.selectedUserId || 'all');
+  let selectedName = '全部成员';
+
+  const items = [];
+  if (canManageWorkspace()) {
+    const isSelected = currentVal === 'all';
+    if (isSelected) selectedName = '全部成员';
+    items.push(`
+      <div class="custom-dropdown-item ${isSelected ? 'selected' : ''}" data-value="all" role="option" aria-selected="${isSelected}">
+        <div class="item-main">
+          <span class="item-avatar all"><i class="fas fa-users"></i></span>
+          <span class="item-name">全部成员</span>
+        </div>
+        <span class="item-badge">全员</span>
+        ${isSelected ? '<i class="fas fa-check item-check"></i>' : ''}
+      </div>
+    `);
+  }
+
+  (state.users || []).forEach((user) => {
+    const userId = String(user.id);
+    const isSelected = currentVal === userId;
+    const displayName = user.displayName || user.username || `用户${user.id}`;
+    const roleText = displayUserRole(user);
+    const initial = (displayName.charAt(0) || 'U').toUpperCase();
+
+    if (isSelected) {
+      selectedName = displayName;
+    }
+
+    items.push(`
+      <div class="custom-dropdown-item ${isSelected ? 'selected' : ''}" data-value="${escapeHtml(userId)}" role="option" aria-selected="${isSelected}">
+        <div class="item-main">
+          <span class="item-avatar">${escapeHtml(initial)}</span>
+          <span class="item-name">${escapeHtml(displayName)}</span>
+        </div>
+        <span class="item-badge">${escapeHtml(roleText)}</span>
+        ${isSelected ? '<i class="fas fa-check item-check"></i>' : ''}
+      </div>
+    `);
+  });
+
+  memberText.textContent = selectedName;
+  if (memberBtn) {
+    memberBtn.title = `切换查看人员 (当前: ${selectedName})`;
+  }
+  memberList.innerHTML = items.join('');
+
+  memberList.querySelectorAll('.custom-dropdown-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const val = item.dataset.value;
+      const nativeSelect = $('serverMemberSelect');
+      if (nativeSelect) {
+        nativeSelect.value = val;
+        nativeSelect.dispatchEvent(new Event('change'));
+      } else {
+        state.selectedUserId = val;
+        refreshMemoViews();
+        renderCustomMemberOptions();
+      }
+      closeAllCustomDropdowns();
+    });
+  });
+}
+
+function renderCustomMonthOptions() {
+  const monthList = $('customMonthList');
+  const monthText = $('customMonthText');
+  const monthBtn = $('customMonthBtn');
+  if (!monthList || !monthText) return;
+
+  const currentVal = Number(state.monthsToShow || 2);
+  monthText.textContent = `${currentVal}个月`;
+  if (monthBtn) {
+    monthBtn.title = `切换展示月数 (当前: ${currentVal}个月)`;
+  }
+
+  const items = [];
+  for (let m = 1; m <= 12; m++) {
+    const isSelected = currentVal === m;
+    let tag = '';
+    if (m === 2) tag = '<span class="item-tag default">默认</span>';
+    else if (m === 6) tag = '<span class="item-tag">半年</span>';
+    else if (m === 12) tag = '<span class="item-tag">全年</span>';
+
+    items.push(`
+      <div class="custom-dropdown-item ${isSelected ? 'selected' : ''}" data-value="${m}" role="option" aria-selected="${isSelected}">
+        <div class="item-main">
+          <i class="far fa-calendar-alt item-icon"></i>
+          <span class="item-name">${m}个月</span>
+        </div>
+        ${tag}
+        ${isSelected ? '<i class="fas fa-check item-check"></i>' : ''}
+      </div>
+    `);
+  }
+
+  monthList.innerHTML = items.join('');
+
+  monthList.querySelectorAll('.custom-dropdown-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const val = item.dataset.value;
+      const nativeSelect = $('monthCountSelect');
+      if (nativeSelect) {
+        nativeSelect.value = String(val);
+        nativeSelect.dispatchEvent(new Event('change'));
+      }
+      closeAllCustomDropdowns();
+    });
+  });
+}
+
+function initCustomDropdowns() {
+  const dropdownConfigs = [
+    { dropdownId: 'customMemberSelect', btnId: 'customMemberBtn', menuId: 'customMemberMenu' },
+    { dropdownId: 'customMonthSelect', btnId: 'customMonthBtn', menuId: 'customMonthMenu' },
+  ];
+
+  dropdownConfigs.forEach(({ dropdownId, btnId, menuId }) => {
+    const dropdown = $(dropdownId);
+    const btn = $(btnId);
+    const menu = $(menuId);
+    if (!dropdown || !btn || !menu || btn.dataset.bound) return;
+
+    btn.dataset.bound = 'true';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+      closeAllCustomDropdowns();
+      if (!isExpanded) {
+        menu.hidden = false;
+        btn.classList.add('active');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    menu.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  });
+
+  // 点击外层标签也可呼起对应定制下拉
+  $('memberSelectWrap')?.querySelector('label')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    $('customMemberBtn')?.click();
+  });
+  $('monthCountSelectorWrap')?.querySelector('label')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    $('customMonthBtn')?.click();
+  });
+
+  if (!document.body.dataset.dropdownOutsideBound) {
+    document.body.dataset.dropdownOutsideBound = 'true';
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.custom-dropdown')) {
+        closeAllCustomDropdowns();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAllCustomDropdowns();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      closeAllCustomDropdowns();
+    }, { passive: true });
+  }
+
+  renderCustomMemberOptions();
+  renderCustomMonthOptions();
+}
+
 function injectServerCss() {
   const style = document.createElement('style');
   style.textContent = `
@@ -4237,6 +4432,7 @@ function injectUserBar() {
     memberSelect.dataset.bound = 'true';
     memberSelect.addEventListener('change', (event) => {
       state.selectedUserId = event.target.value;
+      renderCustomMemberOptions();
       refreshMemoViews();
     });
   }
@@ -4739,6 +4935,7 @@ function renderMemberSelect() {
   options.push(...state.users.map((user) => `<option value="${user.id}">${escapeHtml(user.displayName)}（${escapeHtml(displayUserRole(user))}）</option>`));
   select.innerHTML = options.join('');
   select.value = state.selectedUserId;
+  renderCustomMemberOptions();
 }
 
 function taskAssigneeCandidates() {
@@ -5526,6 +5723,7 @@ async function openDashboardMemo(memoId) {
   state.selectedUserId = String(memo.ownerId);
   const memberSelect = $('serverMemberSelect');
   if (memberSelect) memberSelect.value = state.selectedUserId;
+  renderCustomMemberOptions();
   refreshMemoViews();
   await openMemoModal(memoId);
 }
@@ -5539,6 +5737,7 @@ function jumpToUserCalendar(userId) {
   state.selectedUserId = String(user.id);
   const memberSelect = $('serverMemberSelect');
   if (memberSelect) memberSelect.value = state.selectedUserId;
+  renderCustomMemberOptions();
 
   const searchInput = $('searchInput');
   if (searchInput?.value) {
@@ -8628,8 +8827,17 @@ function initEventListeners() {
   $('reminderUrgeBtn')?.addEventListener('click', batchUrgeReminders);
   $('searchInput').addEventListener('input', () => { $('clearSearch').style.display = $('searchInput').value.trim() ? 'block' : 'none'; renderMultiMonthCalendar(); renderMobileAgenda(); });
   $('clearSearch').addEventListener('click', () => { $('searchInput').value = ''; $('clearSearch').style.display = 'none'; renderMultiMonthCalendar(); renderMobileAgenda(); });
-  $('monthCountSelect').value = String(state.monthsToShow);
-  $('monthCountSelect').addEventListener('change', async (event) => { state.monthsToShow = Number(event.target.value); localStorage.setItem('calendarMonthCount', String(state.monthsToShow)); await loadMemos(); });
+  const monthSelect = $('monthCountSelect');
+  if (monthSelect) {
+    monthSelect.value = String(state.monthsToShow);
+    renderCustomMonthOptions();
+    monthSelect.addEventListener('change', async (event) => {
+      state.monthsToShow = Number(event.target.value);
+      localStorage.setItem('calendarMonthCount', String(state.monthsToShow));
+      renderCustomMonthOptions();
+      await loadMemos();
+    });
+  }
   ['prevMonth', 'calendarPrevMonth'].forEach((id) => $(id)?.addEventListener('click', () => shiftVisibleMonth(-1)));
   ['nextMonth', 'calendarNextMonth'].forEach((id) => $(id)?.addEventListener('click', () => shiftVisibleMonth(1)));
   $('goTodayBtn')?.addEventListener('click', async () => {
@@ -9104,6 +9312,7 @@ decorateTablerUI();
 initSystemThemeListener();
 initSidebarLayout();
 initEventListeners();
+initCustomDropdowns();
 initMemoDatePicker();
 initMemoDuePicker();
 initMemoHoverTooltip();

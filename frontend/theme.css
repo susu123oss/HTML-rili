@@ -5847,7 +5847,7 @@ html[data-theme='dark'] .header-month-select {
     border-bottom: 1px solid var(--border-color) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .header-left {
@@ -5978,7 +5978,9 @@ html[data-theme='dark'] .header-month-select {
     font-weight: 600 !important;
     color: var(--text-muted) !important;
   }
-  .app-header:has(.topbar-member-selector[hidden]) .month-count-selector:not([hidden]) .header-month-select {
+  .app-header:has(.topbar-member-selector[hidden]) .month-count-selector:not([hidden]) .header-month-select,
+  .app-header:has(.topbar-member-selector[hidden]) .month-count-selector:not([hidden]) .custom-dropdown,
+  .app-header:has(.topbar-member-selector[hidden]) .month-count-selector:not([hidden]) .custom-dropdown-btn {
     flex: 0 0 116px !important;
     width: 116px !important;
   }
@@ -6029,34 +6031,7 @@ html[data-theme='dark'] .header-month-select {
   scroll-margin-top: 76px !important;
 }
 
-/* 2. 备忘录编辑弹窗底栏：破坏性删除按钮居左，安全取消与保存居右 */
-.memo-modal-footer {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  gap: 12px !important;
-}
-.memo-modal-footer .modal-footer-actions {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  margin-left: auto !important;
-}
-.memo-modal-footer #deleteMemo {
-  margin-right: auto !important;
-  background: transparent !important;
-  color: #ef4444 !important;
-  border: 1px solid rgba(239, 68, 68, 0.4) !important;
-  transition: all 0.18s ease !important;
-}
-.memo-modal-footer #deleteMemo:hover {
-  background: rgba(239, 68, 68, 0.1) !important;
-  border-color: #ef4444 !important;
-  color: #dc2626 !important;
-}
-
-/* 3. 备忘录颜色色盘：工整对称 5×2 网格布局，消除单项尴尬换行 */
+/* 2. 备忘录颜色色盘：工整对称 5×2 网格布局，消除单项尴尬换行 */
 .color-options {
   display: grid !important;
   grid-template-columns: repeat(5, 30px) !important;
@@ -6142,18 +6117,6 @@ html[data-theme='dark'] .complete-all-btn.empty-disabled {
     gap: 8px 14px !important;
     justify-content: flex-start !important;
   }
-  #memoModal .memo-modal-footer {
-    gap: 8px !important;
-  }
-  #memoModal .memo-modal-footer #deleteMemo {
-    flex: 0 0 auto !important;
-    min-width: 70px !important;
-    padding: 6px 10px !important;
-  }
-  #memoModal .memo-modal-footer .modal-footer-actions {
-    flex: 1 1 auto !important;
-    justify-content: flex-end !important;
-  }
 }
 
 /* 6. 桌面端日期单元格悬停微交互 */
@@ -6177,6 +6140,277 @@ dialog::backdrop {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   background: rgba(0, 0, 0, 0.45);
+}
+
+/* ========================================================
+   现代定制化下拉选择器 (Custom Modern SaaS Dropdown)
+   ======================================================== */
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+
+.custom-dropdown-btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 9px;
+  background: var(--ui-surface-soft, #f1f5f9);
+  color: var(--ui-text, #1e293b);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.custom-dropdown-btn:hover {
+  background: var(--ui-surface-hover, #e2e8f0);
+  border-color: var(--ui-accent, #3b82f6);
+}
+
+.custom-dropdown-btn.active {
+  border-color: var(--ui-accent, #3b82f6);
+  background: var(--ui-surface, #ffffff);
+  box-shadow: 0 0 0 3px var(--ui-focus-ring, rgba(59, 130, 246, 0.2));
+}
+
+.custom-dropdown-btn .custom-dropdown-icon {
+  color: var(--ui-accent, #3b82f6);
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.custom-dropdown-btn .custom-dropdown-text {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-dropdown-btn .custom-dropdown-caret {
+  font-size: 0.72rem;
+  color: var(--ui-text-muted, #94a3b8);
+  transition: transform 0.2s ease;
+  margin-left: 2px;
+}
+
+.custom-dropdown-btn.active .custom-dropdown-caret {
+  transform: rotate(180deg);
+  color: var(--ui-accent, #3b82f6);
+}
+
+/* 浮动下拉菜单面板 */
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 340px;
+  background: var(--ui-surface, #ffffff) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  z-index: 1050;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.custom-dropdown-menu[hidden] {
+  display: none !important;
+}
+
+.custom-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* 下拉菜单单项 */
+.custom-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  color: var(--ui-text, #1e293b);
+  transition: all 0.15s ease;
+}
+
+.custom-dropdown-item:hover {
+  background: var(--ui-surface-hover, #f1f5f9);
+  color: var(--ui-accent, #2563eb);
+}
+
+.custom-dropdown-item.selected {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: var(--ui-accent, #2563eb) !important;
+  font-weight: 600;
+}
+
+.custom-dropdown-item .item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.custom-dropdown-item .item-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--ui-accent, #2563eb);
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.custom-dropdown-item .item-avatar.all {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.custom-dropdown-item .item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-dropdown-item .item-badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--ui-text-muted, #64748b);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.custom-dropdown-item .item-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.custom-dropdown-item .item-tag.default {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.custom-dropdown-item .item-check {
+  font-size: 0.75rem;
+  color: var(--ui-accent, #2563eb);
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+
+.custom-dropdown-item .item-icon {
+  font-size: 0.85rem;
+  color: var(--ui-accent, #2563eb);
+}
+
+/* 暗色主题适配 */
+html[data-theme='dark'] .custom-dropdown-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+html[data-theme='dark'] .custom-dropdown-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: #38bdf8;
+}
+
+html[data-theme='dark'] .custom-dropdown-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+}
+
+html[data-theme='dark'] .custom-dropdown-menu {
+  background: #0f172a !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme='dark'] .custom-dropdown-item {
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] .custom-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #38bdf8;
+}
+
+html[data-theme='dark'] .custom-dropdown-item.selected {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
+}
+
+html[data-theme='dark'] .custom-dropdown-item .item-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+/* 移动端顶栏定制下拉按钮宽度 */
+@media (max-width: 768px) {
+  .topbar-member-selector .custom-dropdown,
+  .topbar-member-selector .custom-dropdown-btn {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .month-count-selector .custom-dropdown,
+  .month-count-selector .custom-dropdown-btn {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .custom-dropdown-btn .custom-dropdown-text {
+    max-width: none !important;
+    flex: 1 !important;
+    text-align: left !important;
+  }
+  #customMemberSelect .custom-dropdown-menu {
+    left: 0 !important;
+    right: auto !important;
+    min-width: 240px !important;
+    max-width: min(280px, calc(100vw - 24px)) !important;
+  }
+  #customMonthSelect .custom-dropdown-menu {
+    right: 0 !important;
+    left: auto !important;
+    min-width: 160px !important;
+    max-width: min(200px, calc(100vw - 24px)) !important;
+  }
 }
 
 
