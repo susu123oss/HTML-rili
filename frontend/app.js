@@ -33,7 +33,7 @@ const state = {
   initialLoadSessionVersion: null,
   memoRequestController: null,
   currentDate: new Date(),
-  monthsToShow: Number(localStorage.getItem('calendarMonthCount') || (typeof window !== 'undefined' && window.innerWidth <= 768 ? 1 : 2)),
+  monthsToShow: Number(localStorage.getItem('calendarMonthCount') || 1),
   selectedUserId: 'all',
   calendarStatusFilter: 'all',
   selectedMemoId: null,
@@ -750,7 +750,7 @@ function renderCustomMonthOptions() {
   const monthBtn = $('customMonthBtn');
   if (!monthList || !monthText) return;
 
-  const currentVal = Number(state.monthsToShow || 2);
+  const currentVal = Number(state.monthsToShow || 1);
   monthText.textContent = `${currentVal}个月`;
   if (monthBtn) {
     monthBtn.title = `切换展示月数 (当前: ${currentVal}个月)`;
@@ -760,7 +760,7 @@ function renderCustomMonthOptions() {
   for (let m = 1; m <= 12; m++) {
     const isSelected = currentVal === m;
     let tag = '';
-    if (m === 2) tag = '<span class="item-tag default">默认</span>';
+    if (m === 1) tag = '<span class="item-tag default">默认</span>';
     else if (m === 6) tag = '<span class="item-tag">半年</span>';
     else if (m === 12) tag = '<span class="item-tag">全年</span>';
 
