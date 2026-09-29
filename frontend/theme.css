@@ -1122,7 +1122,7 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
   }
 }
 
-/* 6. 全局模态窗口容器 (Universal Bottom Sheet) 移动端专属现代化重构 */
+/* 6. 全局模态窗口容器 (Universal Modal Shell) 移动端自适应居中弹窗 */
 @media (max-width: 768px) {
   .modal,
   .reminder-modal {
@@ -1131,68 +1131,61 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
     width: 100vw !important;
     height: 100% !important;
     height: 100dvh !important;
-    padding: 0 !important;
-    display: flex !important;
-    align-items: flex-end !important;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px !important;
+    display: none;
+    align-items: center !important;
     justify-content: center !important;
-    overflow: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
     background: rgba(15, 23, 42, 0.65) !important;
     backdrop-filter: blur(6px) !important;
     -webkit-backdrop-filter: blur(6px) !important;
     box-sizing: border-box !important;
     z-index: 2000 !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
   .modal.active,
   .reminder-modal.active {
-    opacity: 1 !important;
-    pointer-events: auto !important;
+    display: flex !important;
   }
 
   :is(.modal, .reminder-modal) :is(.modal-content, .reminder-content),
   html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.modal-content, .reminder-content) {
     width: 100% !important;
-    max-width: 100% !important;
-    max-height: 86vh !important;
-    max-height: 86dvh !important;
-    margin: 0 !important;
-    border-radius: 22px 22px 0 0 !important;
+    max-width: min(100%, 540px) !important;
+    max-height: calc(100vh - 32px) !important;
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px) !important;
+    margin: auto !important;
+    border-radius: 16px !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
     min-height: 0 !important;
     box-sizing: border-box !important;
-    transform: translateY(100%) !important;
-    transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35) !important;
-    border-bottom: none !important;
+    transform: none !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid var(--ui-border) !important;
     position: relative !important;
   }
 
   .modal.active :is(.modal-content, .reminder-content),
   .reminder-modal.active :is(.modal-content, .reminder-content),
   html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal).active :is(.modal-content, .reminder-content) {
-    transform: translateY(0) !important;
+    transform: none !important;
   }
 
-  /* 顶部下拉触手 (Drag Handle Bar) */
+  /* 移除底部抽屉下拉触手 */
   :is(.modal, .reminder-modal) :is(.modal-content, .reminder-content)::before {
-    content: '' !important;
-    display: block !important;
-    width: 38px !important;
-    height: 4px !important;
-    border-radius: 999px !important;
-    background: rgba(148, 163, 184, 0.45) !important;
-    margin: 8px auto 2px auto !important;
-    flex-shrink: 0 !important;
+    display: none !important;
+    content: none !important;
   }
 
   .modal-header,
   .reminder-header {
-    padding: 8px 16px 10px 16px !important;
-    min-height: 42px !important;
+    padding: 10px 14px !important;
+    min-height: 44px !important;
     flex: 0 0 auto !important;
     flex-shrink: 0 !important;
   }
@@ -1215,7 +1208,7 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
   }
   .modal-body,
   .reminder-body {
-    padding: 14px 16px !important;
+    padding: 12px 14px !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
     max-height: none !important;
@@ -1225,26 +1218,24 @@ html[data-theme] :is(.topbar-theme-toggle, #themeToggleBtn):active {
   }
   .modal-footer,
   .reminder-actions {
-    padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 12px)) 16px !important;
-    min-height: 52px !important;
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 48px !important;
     flex: 0 0 auto !important;
     flex-shrink: 0 !important;
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 10 !important;
     border-top: 1px solid var(--ui-border) !important;
+    position: static !important;
   }
   .modal-footer .btn,
   .reminder-actions .btn {
     flex: 1 1 auto !important;
-    min-height: 42px !important;
-    padding: 8px 14px !important;
-    font-size: 0.92rem !important;
+    min-height: 38px !important;
+    padding: 7px 12px !important;
+    font-size: 0.88rem !important;
     font-weight: 600 !important;
-    border-radius: 10px !important;
+    border-radius: 9px !important;
     justify-content: center !important;
   }
 }
@@ -1788,9 +1779,15 @@ html[data-theme='dark'] :is(.calendar-day .day-memo-item.completed, .day-memo-it
   background-color: #94a3b8 !important;
   opacity: 0.7 !important;
 }
-:is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-title {
+:is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-title,
+:is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-title-text {
   text-decoration: line-through !important;
   opacity: 0.75 !important;
+}
+:is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-status-pill {
+  text-decoration: none !important;
+  display: inline-flex !important;
+  opacity: 1 !important;
 }
 html[data-theme='dark'] :is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-color {
   background-color: #64748b !important;
@@ -3231,23 +3228,75 @@ html[data-theme='light'] .memo-calendar-popup {
   .mobile-agenda-item {
     width: 100%;
     min-width: 0;
-    min-height: 44px;
+    min-height: 48px;
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 8px 10px;
+    gap: 10px;
+    padding: 10px 12px;
     border: 1px solid var(--ui-border);
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--ui-surface-soft);
     color: var(--ui-text);
     text-align: left;
     cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .mobile-agenda-item:hover {
+    background: var(--ui-surface-hover);
+    border-color: var(--ui-border-strong);
+  }
+  .mobile-agenda-item.completed {
+    opacity: 0.78;
+    background: var(--ui-surface);
+  }
+  .mobile-agenda-item.completed strong,
+  .mobile-agenda-item strong.completed {
+    text-decoration: line-through !important;
+    text-decoration-color: var(--ui-text-muted, #94a3b8) !important;
+    color: var(--ui-text-muted, #94a3b8) !important;
   }
   .mobile-agenda-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
   .mobile-agenda-item-text { flex: 1; min-width: 0; }
-  .mobile-agenda-item-text strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mobile-agenda-item-text small, .mobile-agenda-status { color: var(--ui-text-muted); font-size: 0.75rem; }
-  .mobile-agenda-status { flex: 0 0 auto; white-space: nowrap; }
+  .mobile-agenda-item-text strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; }
+  .mobile-agenda-item-text small { color: var(--ui-text-muted); font-size: 0.75rem; }
+  .mobile-agenda-status {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    padding: 3px 9px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    line-height: 1.2 !important;
+    text-decoration: none !important;
+    user-select: none !important;
+    transition: all 0.15s ease !important;
+  }
+  .mobile-agenda-status:active {
+    transform: scale(0.92);
+  }
+  .mobile-agenda-status.completed {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #10b981 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  }
+  html[data-theme='dark'] .mobile-agenda-status.completed {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #34d399 !important;
+    border-color: rgba(52, 211, 153, 0.35) !important;
+  }
+  .mobile-agenda-status.pending {
+    background: rgba(59, 130, 246, 0.08) !important;
+    color: var(--ui-accent, #3b82f6) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  }
+  html[data-theme='dark'] .mobile-agenda-status.pending {
+    background: rgba(59, 130, 246, 0.15) !important;
+    color: #60a5fa !important;
+    border-color: rgba(96, 165, 250, 0.25) !important;
+  }
   .mobile-agenda-empty {
     display: flex !important;
     flex-direction: column !important;

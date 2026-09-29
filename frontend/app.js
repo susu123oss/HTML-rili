@@ -5317,8 +5317,14 @@ function renderMobileAgenda() {
     <div class="mobile-agenda-list">
       ${items.length ? items.map((memo) => `
         <button class="mobile-agenda-item ${memo.completed ? 'completed' : ''}" data-memo-id="${memo.id}" type="button">
-          <span class="mobile-agenda-dot" style="background:${escapeHtml(memo.color || colors[0])}"></span>
-          <span class="mobile-agenda-item-text"><strong>${escapeHtml(memo.title || '无标题')}</strong>${memo.ownerName && canManageWorkspace() ? `<small>${escapeHtml(memo.ownerName)}</small>` : ''}</span>
+          <span class="mobile-agenda-dot" style="background:${escapeHtml(memo.completed ? '#94a3b8' : (memo.color || colors[0]))}"></span>
+          <span class="mobile-agenda-item-text">
+            <strong class="${memo.completed ? 'completed' : ''}">${escapeHtml(memo.title || '无标题')}</strong>
+            ${memo.ownerName && canManageWorkspace() ? `<small>${escapeHtml(memo.ownerName)}</small>` : ''}
+          </span>
+          <span class="mobile-agenda-status ${memo.completed ? 'completed' : 'pending'}" data-id="${memo.id}" title="${memo.completed ? '点击标记为未完成' : '点击标记为已完成'}">
+            <i class="${memo.completed ? 'fas fa-check-circle' : 'far fa-circle'}"></i> ${memo.completed ? '已完成' : '未完成'}
+          </span>
         </button>`).join('') : `
         <div class="mobile-agenda-empty">
           <div class="empty-icon"><i class="far fa-calendar-check"></i></div>
@@ -7680,7 +7686,7 @@ function createTaskItem(memo) {
     <div class="task-item ${memo.completed ? 'completed' : ''}" style="border-left-color:${itemColor}">
       <div class="task-header">
         <div class="task-title ${memo.completed ? 'completed' : ''}">
-          ${escapeHtml(memoFullTitle(memo))}
+          <span class="task-title-text">${escapeHtml(memoFullTitle(memo))}</span>
           ${statusBadge}
         </div>
         <div class="task-color" style="background-color:${itemColor}"></div>
@@ -8932,6 +8938,12 @@ function initEventListeners() {
     }
     const leaderboardTarget = event.target.closest('.leaderboard-card[data-user-id], .leaderboard-champion[data-user-id]');
     if (leaderboardTarget) { event.stopPropagation(); jumpToUserCalendar(leaderboardTarget.dataset.userId); return; }
+    const agendaStatus = event.target.closest('.mobile-agenda-status[data-id]');
+    if (agendaStatus) {
+      event.stopPropagation();
+      await toggleMemoCompletion(agendaStatus.dataset.id);
+      return;
+    }
     const agendaItem = event.target.closest('.mobile-agenda-item[data-memo-id]');
     if (agendaItem) { event.stopPropagation(); await openMemoModal(agendaItem.dataset.memoId); return; }
     if (event.target.closest('#mobileAgendaAdd')) { event.stopPropagation(); await openMemoModal(null, state.selectedAgendaDate); return; }
