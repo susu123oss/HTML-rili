@@ -5266,7 +5266,9 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.36s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-x: hidden;
+  will-change: width;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -5555,6 +5557,35 @@ html[data-theme='dark'] .user-avatar {
 }
 
 /* ================= 折叠状态 (Collapsed State) ================= */
+/* 可折叠文本元素的平滑淡入淡出、位移与宽度收缩过渡 */
+.app-sidebar .logo-text,
+.app-sidebar .logo-badge,
+.app-sidebar .nav-label,
+.app-sidebar .nav-group-title,
+.app-sidebar .user-info,
+.app-sidebar .nav-pill,
+.app-sidebar .sidebar-logout-btn {
+  opacity: 1;
+  transform: translateX(0);
+  max-width: 180px;
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s,
+              transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s,
+              max-width 0.36s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.app-sidebar .sidebar-header,
+.app-sidebar .nav-item,
+.app-sidebar .user-card {
+  transition: padding 0.36s cubic-bezier(0.16, 1, 0.3, 1),
+              margin 0.36s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.2s ease,
+              color 0.18s ease;
+}
+
 .app-sidebar.collapsed {
   width: var(--sidebar-collapsed-width);
 }
@@ -5567,8 +5598,16 @@ html[data-theme='dark'] .user-avatar {
 .app-sidebar.collapsed .nav-pill,
 .app-sidebar.collapsed .sidebar-logout-btn {
   opacity: 0 !important;
+  transform: translateX(-10px) !important;
+  max-width: 0 !important;
   pointer-events: none !important;
-  display: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  transition: opacity 0.16s ease,
+              transform 0.18s ease,
+              max-width 0.36s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .app-sidebar.collapsed .sidebar-header {
@@ -5627,13 +5666,38 @@ html[data-theme='dark'] .user-avatar {
   justify-content: center;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.18s ease;
+  padding: 0;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sidebar-toggle-btn:hover {
   background: var(--ui-surface-hover, #f1f5f9);
-  color: var(--text-main);
-  border-color: #94a3b8;
+  color: var(--ui-accent, #3b82f6);
+  border-color: var(--ui-accent, #3b82f6);
+  transform: scale(1.05);
+}
+
+.sidebar-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.sidebar-toggle-svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn .icon-expand {
+  display: none;
+}
+
+.sidebar-toggle-btn.is-collapsed .icon-collapse {
+  display: none;
+}
+
+.sidebar-toggle-btn.is-collapsed .icon-expand {
+  display: block;
 }
 
 .header-breadcrumb {
@@ -5783,6 +5847,11 @@ html[data-theme='dark'] .sidebar-toggle-btn {
   border-color: #334155;
   color: #94a3b8;
 }
+html[data-theme='dark'] .sidebar-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
 html[data-theme='dark'] .header-search input {
   background: #0f172a;
   border-color: #334155;
@@ -5842,7 +5911,7 @@ html[data-theme='dark'] .header-month-select {
     z-index: 1000 !important;
     box-shadow: 8px 0 30px rgba(0, 0, 0, 0.35) !important;
     transform: translateX(-100%) !important;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1) !important;
     background: var(--sidebar-bg) !important;
     display: flex !important;
     flex-direction: column !important;
@@ -5876,9 +5945,14 @@ html[data-theme='dark'] .header-month-select {
     background: var(--ui-surface-hover, #f1f5f9) !important;
   }
 
-  /* 遮罩激活状态 */
-  .sidebar-backdrop.active {
+  /* 遮罩激活状态与平滑过渡 */
+  .sidebar-backdrop {
     display: block !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.36s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  .sidebar-backdrop.active {
     opacity: 1 !important;
     pointer-events: auto !important;
   }

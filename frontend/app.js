@@ -9215,9 +9215,16 @@ function initSidebarLayout() {
   const backdrop = $('sidebarBackdrop');
   if (!sidebar) return;
 
+  const updateToggleState = (isCollapsed) => {
+    toggleBtn?.classList.toggle('is-collapsed', isCollapsed);
+    toggleBtn?.setAttribute('title', isCollapsed ? '展开侧栏' : '收起侧栏');
+    toggleBtn?.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+  };
+
   const closeMobileSidebar = () => {
     sidebar.classList.remove('mobile-open');
     backdrop?.classList.remove('active');
+    updateToggleState(true);
   };
 
   // 恢复之前持久化的桌面端折叠状态
@@ -9225,7 +9232,12 @@ function initSidebarLayout() {
     const isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
+      updateToggleState(true);
+    } else {
+      updateToggleState(false);
     }
+  } else {
+    updateToggleState(true);
   }
 
   // 顶部折叠/展开按钮交互
@@ -9234,9 +9246,11 @@ function initSidebarLayout() {
     if (window.innerWidth <= 768) {
       const isOpen = sidebar.classList.toggle('mobile-open');
       backdrop?.classList.toggle('active', isOpen);
+      updateToggleState(!isOpen);
     } else {
-      sidebar.classList.toggle('collapsed');
-      localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+      const isCollapsed = sidebar.classList.toggle('collapsed');
+      localStorage.setItem('sidebar_collapsed', isCollapsed);
+      updateToggleState(isCollapsed);
     }
   });
 
@@ -9250,6 +9264,16 @@ function initSidebarLayout() {
       }
     }
   });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      updateToggleState(isCollapsed);
+    } else {
+      const isOpen = sidebar.classList.contains('mobile-open');
+      updateToggleState(!isOpen);
+    }
+  }, { passive: true });
 
   // 侧边栏专属导航交互绑定
   $('navCalendar')?.addEventListener('click', () => {
