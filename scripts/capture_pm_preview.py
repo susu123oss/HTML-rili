@@ -18,54 +18,38 @@ async def run():
         await page.goto(URL, wait_until='domcontentloaded')
         await asyncio.sleep(1.5)
 
-        # 1. Kanban View - Light Mode
-        print("Capturing 1: Kanban Light...")
-        await page.screenshot(path=os.path.join(OUTPUT_DIR, "01_kanban_light.png"), full_page=False)
+        # 1. Switch to Employee Role
+        print("Switching to Employee Role...")
+        await page.click('#btnRoleEmployee')
+        await asyncio.sleep(0.8)
 
-        # 2. Gantt & Timeline View - Light Mode
-        print("Capturing 2: Gantt & Timeline...")
-        await page.click('button[data-view="gantt"]')
-        await asyncio.sleep(0.5)
-        await page.screenshot(path=os.path.join(OUTPUT_DIR, "02_gantt_timeline_light.png"), full_page=False)
+        # Capture Employee Workspace (Light)
+        emp_light_path = os.path.join(OUTPUT_DIR, "08_employee_workspace_light.png")
+        await page.screenshot(path=emp_light_path, full_page=False)
+        print(f"Saved: {emp_light_path}")
 
-        # 3. Table View - Light Mode
-        print("Capturing 3: Table View...")
-        await page.click('button[data-view="table"]')
-        await asyncio.sleep(0.5)
-        await page.screenshot(path=os.path.join(OUTPUT_DIR, "03_table_list_light.png"), full_page=False)
-
-        # 4. Insights / Dashboard - Light Mode
-        print("Capturing 4: Insights & Dashboard...")
-        await page.click('button[data-view="insights"]')
-        await asyncio.sleep(0.5)
-        await page.screenshot(path=os.path.join(OUTPUT_DIR, "04_insights_dashboard_light.png"), full_page=False)
-
-        # 5. Task Detail Drawer (Slide-Over)
-        print("Capturing 5: Task Detail Slide-Over Drawer...")
-        await page.click('button[data-view="kanban"]')
-        await asyncio.sleep(0.5)
-        await page.click('div[data-id="PRJ-105"]')
+        # Trigger Blocker Modal
+        print("Triggering Blocker Modal...")
+        await page.click('.btn-call-blocker')
         await asyncio.sleep(0.6)
-        await page.screenshot(path=os.path.join(OUTPUT_DIR, "05_task_detail_drawer.png"), full_page=False)
+        blocker_modal_path = os.path.join(OUTPUT_DIR, "09_employee_blocker_modal.png")
+        await page.screenshot(path=blocker_modal_path, full_page=False)
+        print(f"Saved: {blocker_modal_path}")
 
-        # Close drawer
-        await page.click('#drawerBackdrop')
-        await asyncio.sleep(0.5)
+        # Close modal
+        await page.evaluate("() => closeBlockerModal()")
+        await asyncio.sleep(0.4)
 
-        # 6. Dark Mode Kanban
-        print("Capturing 6: Dark Mode...")
+        # Switch to Dark Mode in Employee View
+        print("Capturing Employee Dark Mode...")
         await page.click('#themeToggleBtn')
         await asyncio.sleep(0.6)
-        await page.screenshot(path=os.path.join(OUTPUT_DIR, "06_kanban_dark.png"), full_page=False)
-
-        # 7. Dark Mode Gantt
-        print("Capturing 7: Dark Mode Gantt...")
-        await page.click('button[data-view="gantt"]')
-        await asyncio.sleep(0.5)
-        await page.screenshot(path=os.path.join(OUTPUT_DIR, "07_gantt_dark.png"), full_page=False)
+        emp_dark_path = os.path.join(OUTPUT_DIR, "10_employee_workspace_dark.png")
+        await page.screenshot(path=emp_dark_path, full_page=False)
+        print(f"Saved: {emp_dark_path}")
 
         await b.close()
-        print("All PM preview screenshots captured successfully!")
+        print("Employee view screenshots captured successfully!")
 
 if __name__ == "__main__":
     asyncio.run(run())
