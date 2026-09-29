@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "archive_revision": "sha256:60d37eae1b19b3f81a02199000f3314b350e03792d15028caad300b1bb230865",
+  "archive_revision": "sha256:140ba5e147924434125e79a2d85f0522d17b5c56cb7028205e07f184c918a206",
   "entries": [
     {
       "number": 1,
@@ -46,10 +46,11 @@
       "path": "docs/history-session/2.md",
       "title": "开发会话",
       "created_at": "unix:1790561727",
-      "updated_at": "unix:1790610455",
-      "bytes": 37517,
-      "sha256": "5c9930558aa67caf67cdede163390cd2f257bdda4e7c4ee534e663c1e5753816",
+      "updated_at": "unix:1790679969",
+      "bytes": 47654,
+      "sha256": "6e95c364959477ac5657e707c7eb03d1df474b1e3268b722e9e299a840acc516",
       "keywords": [
+        "10061",
         "10808",
         "10808本机是这样阿门",
         "127",
@@ -68,6 +69,7 @@
         "cursor",
         "directory",
         "error",
+        "exe",
         "file",
         "gpt",
         "history",
@@ -79,9 +81,7 @@
         "input",
         "jpeg",
         "key",
-        "local",
-        "markdown",
-        "next"
+        "local"
       ]
     }
   ]

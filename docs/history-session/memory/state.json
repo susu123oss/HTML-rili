@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "state_revision": 28,
-  "archive_revision": "sha256:60d37eae1b19b3f81a02199000f3314b350e03792d15028caad300b1bb230865",
-  "generated_at": "unix:1790610455",
+  "state_revision": 33,
+  "archive_revision": "sha256:140ba5e147924434125e79a2d85f0522d17b5c56cb7028205e07f184c918a206",
+  "generated_at": "unix:1790679969",
   "current_session": {
     "number": 2,
     "path": "docs/history-session/2.md",
@@ -18,24 +18,24 @@
     "手机端启动时将 history.scrollRestoration 设为 manual；startApp 显示工作台后用 behavior:'instant' 重置滚动，并下一帧再次校正；桌面端不变；更新 app.js 缓存版本。",
     "frontend/theme.css",
     "在手机端 app-header 统一清除底部外边距，移除周计划单独的外边距覆盖；更新 CSS 缓存版本。",
+    "启动安装于 C:\\Program Files\\Codex Web GPT\\Codex Web GPT.exe 的图形启动器，恢复本地桥接及隧道；保持已有 10808 代理与 17841 路由，不重复创建开机启动项。",
     "保留当前已部署的早期加载动效和提前下载脚本方案。",
     "移动端当天事项列表定义 minmax(0,1fr) 网格列，事项项设置 min-width:0，状态不收缩并保持单行；标题在剩余宽度内用省略号；更新 CSS 缓存版本。",
-    "仅在手机端周计划显示时清除顶栏底部外边距，收紧内容顶部内边距，并更新 CSS 缓存版本。",
-    "frontend/nginx.conf"
+    "仅在手机端周计划显示时清除顶栏底部外边距，收紧内容顶部内边距，并更新 CSS 缓存版本。"
   ],
   "open_items": [
     "真实手机网络条件下的等待时间依赖主脚本和服务端响应；现阶段动效避免 0% 静止误导。",
     "如用户要求实施，先明确定义周计划项与普通备忘录的关系，以及顺延采用复制关联或记录历史，再改前后端与周报。",
     "尚未在真实 iPhone Safari 登录及刷新路径实测。",
+    "若手动完全退出启动器，本地 17841 桥接会再次停止；现有开机登录启动及关闭窗口后后台运行设置已启用。",
     "后续每轮任务完成前使用本次 bootstrap 返回的 session_key 与 current_path 调用 history_session_checkpoint。",
+    "未主动结束当前正在使用的启动器来做故障注入测试；自动恢复依据为任务调度和此前启动器正常拉起的组合验证。",
+    "第三方程序自身、系统断网和上游故障仍可能造成其他类型连接失败；守护任务覆盖本次观察到的本地桥接/启动器退出故障。",
     "真实 iPhone Safari 与用户所在网络条件可能有不同耗时，尚未在其设备实测。",
     "未在真实 iPhone Safari 上实测键盘弹起后的视觉视口；用户可刷新后现场确认。",
     "尚未在真实 iPhone Safari 上测试手势惯性。",
-    "未在真实 PostgreSQL/部署环境验证迁移；当前 backend/src/routes/memos.js 有同期未提交修改。",
-    "用户应保持 Web GPT 启动器运行；关闭前使用 Settings → Remove Codex integration 并重启 Codex 可恢复原生直连。",
-    "需在 Codex 选择 (Web) 模型发一条消息验证实际会话和 ChatGPT connector。",
-    "如果后续维护，优先统一权限规则与文档，移除硬编码密钥并轮换，改善前端凭据保存与 Markdown 渲染安全。",
-    "需要在真实手机浏览器中复核视觉效果，尤其 Safari 下拉控件原生外观。"
+    "无法通过当前远程命令工具直接观察用户显示器上的瞬时画面；用户现场可确认闪屏是否消失。",
+    "自动审批拒绝写入桌面根目录；用户需将工具包中的 .lnk 快捷方式手动复制到桌面根目录。"
   ],
   "references": [
     {
