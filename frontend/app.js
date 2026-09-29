@@ -5932,6 +5932,7 @@ function syncMemoCompletedState() {
 }
 
 async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
+  hideMemoHoverTooltip();
   setOperationFeedback('memoSaveFeedback', '');
   state.selectedMemoId = memoId;
   const requestVersion = ++state.memoDetailRequestVersion;
@@ -5952,6 +5953,8 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
         const idx = state.memos.findIndex((item) => String(item.id) === String(memoId));
         if (idx !== -1) {
           state.memos[idx] = { ...state.memos[idx], ...data.memo };
+        } else {
+          state.memos.push(data.memo);
         }
       }
     } catch (error) {
@@ -5961,7 +5964,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
       if (memo) {
         memo = { ...memo, content: memo.content || memo.contentPreview || '' };
       } else {
-        alert(`读取任务详情失败：${error.message}`);
+        showGlobalToast(`读取任务详情失败：${error.message}`, 'error');
         return;
       }
     }
@@ -6444,6 +6447,17 @@ function showGlobalToast(message, type = 'success') {
   }, 2500);
 }
 
+function hideMemoHoverTooltip() {
+  const tooltip = $('memoHoverTooltip');
+  if (tooltip) {
+    tooltip.classList.remove('visible');
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.left = '-9999px';
+    tooltip.style.top = '-9999px';
+  }
+}
+
 async function carryOverSingleMemoToNextDay(memoId, triggerBtn = null) {
   const memo = state.memos?.find((m) => String(m.id) === String(memoId));
   if (!memo) {
@@ -6478,7 +6492,7 @@ async function carryOverSingleMemoToNextDay(memoId, triggerBtn = null) {
       color: memo.color || '#4361ee',
       completed: false,
       planKind: memo.planKind || 'memo',
-      dueTime: `${nextKey} 18:00:00`
+      dueTime: `${nextKey}T18:00:00`
     };
     await request('/memos', { method: 'POST', body: JSON.stringify(payload) });
 
@@ -6487,10 +6501,7 @@ async function carryOverSingleMemoToNextDay(memoId, triggerBtn = null) {
       triggerBtn.innerHTML = '<i class="fas fa-check"></i> 已转到下一天';
     }
 
-    setTimeout(() => {
-      const tooltip = $('memoHoverTooltip');
-      if (tooltip) tooltip.classList.remove('visible');
-    }, 700);
+    hideMemoHoverTooltip();
 
     await loadMemos({ force: true });
     if (state.dailyDetailDate) {
@@ -6555,7 +6566,7 @@ function initMemoHoverTooltip() {
     cancelHide();
     hideTimer = setTimeout(() => {
       currentTarget = null;
-      tooltip.classList.remove('visible');
+      hideMemoHoverTooltip();
     }, 180);
   }
 
@@ -6565,6 +6576,8 @@ function initMemoHoverTooltip() {
     const memoId = memoItem.dataset.memoId;
     const memo = state.memos.find((m) => String(m.id) === String(memoId));
     if (!memo) return;
+
+    tooltip.dataset.memoId = String(memo.id);
 
     const isCompleted = Boolean(memo.completed || memo.status === 'completed');
     const dotColor = isCompleted ? '#94a3b8' : (memo.color || '#3b82f6');
@@ -6604,12 +6617,12 @@ function initMemoHoverTooltip() {
     ` : '';
 
     tooltip.innerHTML = `
-      <div class="mht-header" style="cursor:pointer;" title="点击查看详情">
+      <div class="mht-header" style="cursor:pointer;" title="点击查看编辑详情">
         <span class="mht-dot" style="background:${escapeHtml(dotColor)}"></span>
         <div class="mht-title">${escapeHtml(memoFullTitle(memo))}</div>
       </div>
-      ${memo.contentPreview ? `<div class="mht-content" style="cursor:pointer;" title="点击查看详情">${escapeHtml(memo.contentPreview)}</div>` : ''}
-      <div class="mht-meta">
+      ${memo.contentPreview ? `<div class="mht-content" style="cursor:pointer;" title="点击查看编辑详情">${escapeHtml(memo.contentPreview)}</div>` : ''}
+      <div class="mht-meta" style="cursor:pointer;" title="点击查看编辑详情">
         <span><i class="far fa-clock"></i> ${escapeHtml(timeText)}</span>
         <span class="mht-badge ${isCompleted ? 'completed' : 'pending'}">${isCompleted ? '已完成' : '进行中'}</span>
         ${stampsHtml}
@@ -6618,6 +6631,8 @@ function initMemoHoverTooltip() {
     `;
 
     positionTooltip(memoItem);
+    tooltip.style.pointerEvents = 'auto';
+    tooltip.style.visibility = 'visible';
     tooltip.classList.add('visible');
   }
 
@@ -6688,7 +6703,6 @@ function initMemoHoverTooltip() {
           }
           setMemoReactions(memoId, { isRead: res.isReviewed, isLiked: res.isLiked });
 
-          // 1. 本地平滑更新悬停卡片内的审阅/点赞按钮状态（不重绘、不移动）
           const readBtn = tooltip.querySelector('.mht-btn-react[data-action="toggle-read"]');
           const likeBtn = tooltip.querySelector('.mht-btn-react[data-action="toggle-like"]');
           if (readBtn) {
@@ -6700,7 +6714,6 @@ function initMemoHoverTooltip() {
             likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i> ${res.isLiked ? '已赞' : '点赞'}`;
           }
 
-          // 2. 本地平滑更新卡片元信息栏的已阅/点赞印章标签
           const meta = tooltip.querySelector('.mht-meta');
           if (meta) {
             meta.querySelectorAll('.mht-stamp').forEach((s) => s.remove());
@@ -6720,10 +6733,8 @@ function initMemoHoverTooltip() {
             }
           }
 
-          // 3. 原地更新日历格子上对应的任务项图标（不刷新整月日历，消除卡顿）
           updateMemoCellStamps(memoId, res.isReviewed, res.isLiked);
 
-          // 4. 若每日详情弹窗正打开，原地同步其列表
           if (state.dailyDetailDate && $('dailyDetailModal')?.classList.contains('active')) {
             loadDailyDetailMemos(state.dailyDetailDate);
           }
@@ -6733,11 +6744,13 @@ function initMemoHoverTooltip() {
       }
       return;
     }
-    const headerOrContent = e.target.closest('.mht-header, .mht-content');
-    if (headerOrContent && currentTarget) {
+
+    // 点击悬停卡片非按钮区域，立即打开编辑/查看详情弹窗
+    const memoId = tooltip.dataset.memoId || currentTarget?.dataset?.memoId;
+    if (memoId) {
       e.stopPropagation();
-      tooltip.classList.remove('visible');
-      await openMemoModal(currentTarget.dataset.memoId);
+      hideMemoHoverTooltip();
+      await openMemoModal(memoId);
       return;
     }
   });
@@ -6745,13 +6758,15 @@ function initMemoHoverTooltip() {
   window.addEventListener('scroll', () => {
     if (currentTarget) {
       currentTarget = null;
-      tooltip.classList.remove('visible');
+      hideMemoHoverTooltip();
     }
   }, { passive: true });
 }
 
 function toLocalDateTimeInput(value) {
+  if (!value) return '';
   const date = new Date(value);
+  if (isNaN(date.getTime())) return '';
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
@@ -8178,7 +8193,7 @@ function createTaskItem(memo) {
   return `
     <div class="task-item ${memo.completed ? 'completed' : ''}" style="border-left-color:${itemColor}">
       <div class="task-header">
-        <div class="task-title ${memo.completed ? 'completed' : ''}">
+        <div class="task-title ${memo.completed ? 'completed' : ''}" data-memo-id="${memo.id}" style="cursor:pointer;" title="点击编辑备忘录">
           <span class="task-title-text">${escapeHtml(memoFullTitle(memo))}</span>
           ${statusBadge}
           ${stampsHtml}
@@ -9504,7 +9519,12 @@ function initEventListeners() {
     if (agendaItem) { event.stopPropagation(); await openMemoModal(agendaItem.dataset.memoId); return; }
     if (event.target.closest('#mobileAgendaAdd')) { event.stopPropagation(); await openMemoModal(null, state.selectedAgendaDate); return; }
     const memoItem = event.target.closest('.day-memo-item');
-    if (memoItem) { event.stopPropagation(); await openMemoModal(memoItem.dataset.memoId); return; }
+    if (memoItem) {
+      event.stopPropagation();
+      hideMemoHoverTooltip();
+      await openMemoModal(memoItem.dataset.memoId);
+      return;
+    }
     const completeBtn = event.target.closest('.task-btn-complete');
     if (completeBtn) { event.stopPropagation(); await toggleMemoCompletion(completeBtn.dataset.id); return; }
     const reactBtn = event.target.closest('.task-btn-react');
@@ -9547,10 +9567,21 @@ function initEventListeners() {
     const editBtn = event.target.closest('.task-btn-edit');
     if (editBtn) {
       event.stopPropagation();
+      hideMemoHoverTooltip();
       closeFunctionsModal();
       closeDailyDetailModal();
       closeReminderModal();
       await openMemoModal(editBtn.dataset.id);
+      return;
+    }
+    const taskTitleTarget = event.target.closest('.task-title[data-memo-id]');
+    if (taskTitleTarget) {
+      event.stopPropagation();
+      hideMemoHoverTooltip();
+      closeFunctionsModal();
+      closeDailyDetailModal();
+      closeReminderModal();
+      await openMemoModal(taskTitleTarget.dataset.memoId);
       return;
     }
     const userSaveBtn = event.target.closest('.user-save-btn');
