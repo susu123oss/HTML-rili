@@ -5480,25 +5480,48 @@ function dashboardSummary() {
   };
 }
 
+function renderDashboardDonutSvg(percent, strokeColor) {
+  const p = Math.max(0, Math.min(100, Number(percent) || 0));
+  const r = 16;
+  const c = 2 * Math.PI * r;
+  const offset = c - (p / 100) * c;
+  return `
+    <div class="dashboard-metric-ring" title="完成率 ${p}%">
+      <svg width="40" height="40" viewBox="0 0 40 40">
+        <circle class="dm-ring-bg" cx="20" cy="20" r="${r}" fill="none" stroke-width="3.8"></circle>
+        <circle class="dm-ring-fg" cx="20" cy="20" r="${r}" fill="none" stroke="${strokeColor}" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" transform="rotate(-90 20 20)"></circle>
+      </svg>
+      <span class="dm-ring-text">${p}%</span>
+    </div>
+  `;
+}
+
 function renderDashboardMetrics(summary) {
   const metrics = $('dashboardMetrics');
   if (!metrics) return;
   const todayRate = summary.todayTotal > 0 ? Math.round((summary.todayCompleted / summary.todayTotal) * 100) : 100;
-  const overallFill = Math.min(100, Number(summary.rate) || 0);
   const cards = [
-    { label: '总任务',   value: summary.total,     sub: `${summary.activeUsers} 人参与`,   tone: 'total',   fill: 100 },
-    { label: '已完成',   value: summary.completed,  sub: `完成率 ${summary.rate}%`,          tone: 'success', fill: overallFill },
-    { label: '未完成',   value: summary.pending,    sub: summary.pending ? '推进中' : '全达成', tone: 'pending', fill: summary.total ? Math.round(summary.pending / summary.total * 100) : 0 },
-    { label: '逾期任务', value: summary.overdue,    sub: summary.overdue ? '需立即处理' : '无逾期', tone: summary.overdue ? 'danger' : 'ok', fill: 0 },
-    { label: '临近截止', value: summary.dueSoon,    sub: summary.dueSoon ? '3天内到期' : '暂无临期', tone: summary.dueSoon ? 'warning' : 'ok', fill: 0 },
-    { label: '今日进度', value: `${summary.todayCompleted}/${summary.todayTotal}`, sub: `今日 ${todayRate}%`, tone: 'today', fill: todayRate },
+    { label: '总任务', value: summary.total, sub: `${summary.activeUsers} 人有分配任务`, icon: 'fas fa-layer-group', tone: 'total' },
+    { label: '已完成', value: summary.completed, sub: `整体完成率 ${summary.rate}%`, icon: 'fas fa-check-circle', tone: 'success', ring: renderDashboardDonutSvg(summary.rate, '#10b981') },
+    { label: '未完成', value: summary.pending, sub: '仍需推进完成', icon: 'fas fa-hourglass-half', tone: 'pending' },
+    { label: '逾期任务', value: summary.overdue, sub: summary.overdue ? '严重阻塞，需优先处理' : '无逾期风险', icon: 'fas fa-exclamation-triangle', tone: summary.overdue ? 'danger' : 'safe' },
+    { label: '临近截止', value: summary.dueSoon, sub: summary.dueSoon ? '3天内即将到期' : '近期无临期', icon: 'far fa-clock', tone: summary.dueSoon ? 'warning' : 'safe' },
+    { label: '今日进度', value: `${summary.todayCompleted} / ${summary.todayTotal}`, sub: '今日任务完成数', icon: 'fas fa-calendar-check', tone: 'today', ring: summary.todayTotal > 0 ? renderDashboardDonutSvg(todayRate, '#6366f1') : '' }
   ];
-  metrics.innerHTML = cards.map((card, i) => `
-    <div class="dm2-card dm2-${card.tone}" data-idx="${i}">
-      <div class="dm2-label">${escapeHtml(card.label)}</div>
-      <div class="dm2-value">${escapeHtml(String(card.value))}</div>
-      <div class="dm2-sub">${escapeHtml(card.sub)}</div>
-      <div class="dm2-bar"><div class="dm2-bar-fill" style="width:${card.fill}%"></div></div>
+  metrics.innerHTML = cards.map((card) => `
+    <div class="dashboard-metric metric-${card.tone}">
+      <div class="dashboard-metric-top">
+        <span class="dashboard-metric-icon"><i class="${card.icon}"></i></span>
+        <span class="dashboard-metric-label">${escapeHtml(card.label)}</span>
+      </div>
+      <div class="dashboard-metric-value-row">
+        <div class="dashboard-metric-value">${escapeHtml(card.value)}</div>
+        ${card.ring || ''}
+      </div>
+      <div class="dashboard-metric-sub">
+        <span class="dashboard-metric-dot"></span>
+        <span>${escapeHtml(card.sub)}</span>
+      </div>
     </div>
   `).join('');
 }
@@ -5506,72 +5529,87 @@ function renderDashboardMetrics(summary) {
 function renderDashboardUserLoad(rows) {
   const box = $('dashboardUserLoad');
   if (!box) return;
-  if (!rows.length) {
-    box.innerHTML = '<div class="db2-empty">暂无人员任务数据</div>';
-    return;
-  }
-
-  // Avatar color palette
-  const AVATAR_COLORS = ['#4f8ef7','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#f97316','#6366f1'];
-  const getColor = (name) => AVATAR_COLORS[(name.charCodeAt(0) || 0) % AVATAR_COLORS.length];
-
-  box.innerHTML = rows.map((row, idx) => {
-    const isComplete = row.total > 0 && row.completed === row.total;
-    const hasOverdue  = row.overdue > 0;
-    const hasDueSoon  = row.dueSoon > 0;
-    const name  = row.user.displayName || '用';
-    const initial = name.trim().charAt(0);
-    const color = hasOverdue ? '#ef4444' : (isComplete ? '#10b981' : getColor(name));
-    const fillClass = hasOverdue ? 'dbf-overdue' : (isComplete ? 'dbf-complete' : 'dbf-normal');
-    const rateClass = hasOverdue ? 'dbr-overdue' : (isComplete ? 'dbr-complete' : '');
-
-    const statBits = [];
-    statBits.push(`<span class="dbs-done">✓ ${row.completed}</span>`);
-    if (row.pending > 0)  statBits.push(`<span class="dbs-pend">待 ${row.pending}</span>`);
-    if (hasOverdue)       statBits.push(`<span class="dbs-over">逾期 ${row.overdue}</span>`);
-    if (hasDueSoon)       statBits.push(`<span class="dbs-soon">临近 ${row.dueSoon}</span>`);
-
-    return `
-    <div class="db2-row ${idx % 2 ? 'db2-row-alt' : ''}" data-dashboard-user-id="${row.user.id}"
-         title="点击查看 ${escapeHtml(name)} 的工作日历" style="--db-rate:${row.rate}%">
-      <div class="db2-avatar" style="background:${color}">${escapeHtml(initial)}</div>
-      <div class="db2-info">
-        <div class="db2-name">${escapeHtml(name)}</div>
-        ${row.user.departmentName ? `<span class="db2-dept">${escapeHtml(row.user.departmentName)}</span>` : ''}
+  box.innerHTML = rows.length
+    ? rows.map((row) => {
+      const isComplete = row.total > 0 && row.completed === row.total;
+      const hasOverdue = row.overdue > 0;
+      const initial = (row.user.displayName || '用').trim().charAt(0);
+      return `
+      <div class="dashboard-user-row ${isComplete ? 'is-complete' : ''} ${hasOverdue ? 'has-overdue' : ''}" data-dashboard-user-id="${row.user.id}" title="点击穿透查看 ${escapeHtml(row.user.displayName)} 的工作日历" style="--dashboard-rate:${row.rate}%">
+        <div class="user-row-profile">
+          <div class="user-row-avatar ${isComplete ? 'avatar-complete' : (hasOverdue ? 'avatar-overdue' : 'avatar-normal')}">
+            ${escapeHtml(initial)}
+          </div>
+          <div class="user-row-info">
+            <div class="dashboard-user-name">${escapeHtml(row.user.displayName)}</div>
+            <div class="dashboard-user-role">
+              <span class="user-role-tag">${escapeHtml(displayUserRole(row.user))}</span>
+              ${row.user.departmentName ? `<span class="user-dept-tag">${escapeHtml(row.user.departmentName)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="user-row-center">
+          <div class="dashboard-progress">
+            <div class="dashboard-progress-fill ${isComplete ? 'fill-complete' : (hasOverdue ? 'fill-overdue' : 'fill-normal')}"></div>
+          </div>
+          <div class="dashboard-user-stats">
+            <span class="stat-pill pill-total">总 ${row.total}</span>
+            <span class="stat-pill pill-completed"><i class="fas fa-check"></i> ${row.completed}</span>
+            <span class="stat-pill pill-pending">未完 ${row.pending}</span>
+            <span class="stat-pill pill-overdue ${row.overdue > 0 ? 'is-alert' : ''}"><i class="fas fa-exclamation-circle"></i> 逾期 ${row.overdue}</span>
+            <span class="stat-pill pill-duesoon ${row.dueSoon > 0 ? 'is-alert' : ''}"><i class="far fa-clock"></i> 临近 ${row.dueSoon}</span>
+          </div>
+        </div>
+        <div class="user-row-rate">
+          <div class="dashboard-user-rate ${isComplete ? 'rate-complete' : ''}">${row.rate}%</div>
+          <div class="user-rate-label">${isComplete ? '全达成' : '完成率'}</div>
+        </div>
       </div>
-      <div class="db2-progress-wrap">
-        <div class="db2-bar"><div class="db2-bar-fill ${fillClass}"></div></div>
-        <div class="db2-stats">${statBits.join('')}</div>
-      </div>
-      <div class="db2-rate ${rateClass}">${row.rate}%</div>
-    </div>`;
-  }).join('');
+    `;
+    }).join('')
+    : '<div class="dashboard-empty"><i class="fas fa-users" style="font-size:2rem;margin-bottom:8px;opacity:0.4;display:block;"></i>当前月份范围内暂无人员任务数据</div>';
+}
+
+function dashboardRiskEntries() {
+  const now = new Date();
+  return dashboardMemos()
+    .filter((memo) => !memo.completed)
+    .map((memo) => {
+      if (isOverdueMemo(memo, now)) return { memo, level: 'danger', label: '已逾期', priority: 1 };
+      if (isDueSoonMemo(memo, now)) return { memo, level: 'warning', label: '临近截止', priority: 2 };
+      if (isStaleMemo(memo, now)) return { memo, level: 'muted', label: '长时间未更新', priority: 3 };
+      return null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.priority - b.priority || (memoDeadlineDate(a.memo)?.getTime() || 0) - (memoDeadlineDate(b.memo)?.getTime() || 0))
+    .slice(0, 8);
 }
 
 function renderDashboardRisks() {
   const list = $('dashboardRiskList');
   if (!list) return;
   const risks = dashboardRiskEntries();
-  if (!risks.length) {
-    list.innerHTML = '<div class="db2-empty db2-ok-msg"><i class="fas fa-check-circle"></i> 暂无风险任务</div>';
-    return;
-  }
-  list.innerHTML = risks.map(({ memo, level, label }) => {
-    const timeStr = memo.dueTime
-      ? new Date(memo.dueTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-      : memo.date;
-    const ownerInitial = (memo.ownerName || '?').trim().charAt(0);
-    return `
-    <div class="dbr2-item" data-memo-id="${memo.id}" title="点击查看详情">
-      <span class="dbr2-badge dbr2-${level}">${escapeHtml(label)}</span>
-      <span class="dbr2-title">${escapeHtml(memo.title || '无标题任务')}</span>
-      <div class="dbr2-meta">
-        <span class="dbr2-owner-dot" title="${escapeHtml(memo.ownerName || '')}">${escapeHtml(ownerInitial)}</span>
-        <span class="dbr2-time">${escapeHtml(timeStr)}</span>
-        <span class="dbr2-arrow">→</span>
+  list.innerHTML = risks.length
+    ? risks.map(({ memo, level, label }) => {
+      const icon = level === 'danger' ? 'fas fa-exclamation-circle' : (level === 'warning' ? 'fas fa-clock' : 'fas fa-history');
+      const timeStr = memo.dueTime 
+        ? new Date(memo.dueTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) 
+        : memo.date;
+      return `
+      <div class="dashboard-risk-item risk-${level}" data-memo-id="${memo.id}" title="点击查看备忘录详情并处理">
+        <div class="dashboard-risk-header">
+          <span class="risk-badge badge-${level}">${level === 'danger' ? '<span class="risk-pulse-dot"></span>' : ''}<i class="${icon}"></i> ${escapeHtml(label)}</span>
+          <span class="dashboard-risk-title">${escapeHtml(memo.title || '无标题任务')}</span>
+        </div>
+        <div class="dashboard-risk-meta">
+          <span class="risk-meta-user"><i class="fas fa-user-circle"></i> ${escapeHtml(memo.ownerName || '未知人员')}</span>
+          <span class="risk-meta-time"><i class="far fa-calendar-alt"></i> ${escapeHtml(timeStr)}</span>
+          <span class="risk-meta-action"><i class="fas fa-arrow-right"></i> 查看处理</span>
+        </div>
       </div>
-    </div>`;
-  }).join('');
+    `;
+    }).join('')
+    : '<div class="dashboard-empty"><i class="fas fa-check-circle" style="font-size:2rem;margin-bottom:8px;color:#10b981;display:block;"></i>当前暂无风险任务，团队研发进度良好</div>';
 }
 
 function dashboardTrendDays() {
@@ -5592,37 +5630,39 @@ function renderDashboardTrend() {
   if (!box) return;
   const memos = dashboardMemos();
   const days = dashboardTrendDays();
-  const todayKey = dateKey(new Date());
+  const today = new Date();
+  const todayKey = dateKey(today);
   const rows = days.map((day) => {
     const key = dateKey(day);
-    const total = memos.filter((m) => m.date === key).length;
-    const completed = memos.filter((m) => m.date === key && m.completed).length;
-    const weekDays = ['日','一','二','三','四','五','六'];
-    return { key, label: `${day.getMonth()+1}/${day.getDate()}`, week: `周${weekDays[day.getDay()]}`, total, completed, isToday: key === todayKey };
-  }).filter((r) => r.total > 0 || r.isToday);
-
-  if (!rows.length) {
-    box.innerHTML = '<div class="db2-empty">暂无趋势数据</div>';
-    return;
-  }
-  const max = Math.max(1, ...rows.map((r) => r.completed));
-  box.innerHTML = rows.map((row) => {
-    const pct = Math.round((row.completed / max) * 100);
-    return `
-    <div class="dbt2-row ${row.isToday ? 'dbt2-today' : ''}">
-      <div class="dbt2-date">
-        <span>${escapeHtml(row.label)}</span>
-        <span class="dbt2-week">${row.isToday ? '<b>今天</b>' : escapeHtml(row.week)}</span>
+    const total = memos.filter((memo) => memo.date === key).length;
+    const completed = memos.filter((memo) => memo.date === key && memo.completed).length;
+    const isToday = key === todayKey;
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+    const weekLabel = `周${weekDays[day.getDay()]}`;
+    return { key, label: `${day.getMonth() + 1}/${day.getDate()}`, weekLabel, total, completed, isToday };
+  });
+  const max = Math.max(1, ...rows.map((row) => row.completed));
+  box.innerHTML = rows.some((row) => row.total > 0)
+    ? rows.map((row) => {
+      const rate = Math.round((row.completed / max) * 100);
+      const isAllDone = row.total > 0 && row.completed === row.total;
+      return `
+      <div class="dashboard-trend-row ${row.isToday ? 'is-today' : ''}">
+        <div class="trend-date-col">
+          <span class="trend-date">${escapeHtml(row.label)}</span>
+          <span class="trend-week">${row.isToday ? '<span class="today-chip">今天</span>' : escapeHtml(row.weekLabel)}</span>
+        </div>
+        <div class="dashboard-trend-bar" title="${row.label}: 已完成 ${row.completed} / 总 ${row.total}">
+          <div class="dashboard-trend-fill ${isAllDone ? 'fill-all-done' : ''}" style="--trend-rate:${rate}%"></div>
+        </div>
+        <div class="trend-stat-col">
+          <span class="trend-badge ${row.completed > 0 ? (isAllDone ? 'badge-all' : 'badge-done') : 'badge-zero'}">${row.completed}</span>
+        </div>
       </div>
-      <div class="dbt2-bar">
-        <div class="dbt2-fill" style="width:${pct}%"></div>
-      </div>
-      <div class="dbt2-num">${row.completed}</div>
-    </div>`;
-  }).join('');
+    `;
+    }).join('')
+    : '<div class="dashboard-empty"><i class="fas fa-chart-bar" style="font-size:2rem;margin-bottom:8px;opacity:0.4;display:block;"></i>当前范围内暂无可展示趋势</div>';
 }
-
-
 
 function renderDashboard() {
   const page = $('dashboardPage');
