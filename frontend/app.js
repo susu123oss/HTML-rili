@@ -7065,13 +7065,13 @@ function renderWeeklyPlanPage() {
   // 顶部卡片内紧凑指标状态条（无多余大卡片侵占视线）
   if (statsGroup) {
     statsGroup.innerHTML = `
-      <span class="wp-stat-chip total" title="本周计划数"><i class="fas fa-tasks"></i> <strong>${thisWeekMemos.length}</strong> 项计划</span>
+      <span class="wp-stat-chip total" title="本周计划数"><i class="fas fa-tasks"></i> 计划 <strong>${thisWeekMemos.length}</strong><span class="hide-mobile"> 项</span></span>
       <span class="wp-stat-chip done" title="已完成计划数"><i class="fas fa-check-circle"></i> 完成 <strong>${completed.length}</strong></span>
       ${open.length ? `<span class="wp-stat-chip pending" title="尚未完成的计划"><i class="fas fa-clock"></i> 待办 <strong>${open.length}</strong></span>` : ''}
       ${overdue.length ? `<span class="wp-stat-chip pending" title="已过截止时间"><i class="fas fa-exclamation-circle"></i> 逾期 <strong>${overdue.length}</strong></span>` : ''}
       ${rolledOver.length ? `<span class="wp-stat-chip" title="保留原记录的顺延计划">顺延 <strong>${rolledOver.length}</strong></span>` : ''}
-      <span class="wp-stat-chip rate" title="本周计划完成率；无计划时不计算"><i class="fas fa-chart-line"></i> <strong>${planRate}</strong></span>
-      <span class="wp-stat-chip next" title="下周已预排计划数"><i class="far fa-calendar-check"></i> 下周预排 <strong>${nextWeekMemos.length}</strong></span>
+      <span class="wp-stat-chip rate" title="本周计划完成率；无计划时不计算"><i class="fas fa-chart-line"></i> 达成 <strong>${planRate}</strong></span>
+      <span class="wp-stat-chip next" title="下周已预排计划数"><i class="far fa-calendar-check"></i> <span class="hide-mobile">下周</span>预排 <strong>${nextWeekMemos.length}</strong></span>
     `;
   }
 
