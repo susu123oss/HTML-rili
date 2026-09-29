@@ -3756,6 +3756,16 @@ html[data-theme='light'] .memo-calendar-popup {
   border-color: #10b981;
   transform: translateY(-1px);
 }
+.mht-btn-carryover:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none !important;
+}
+.mht-btn-carryover.success {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
 .mht-react-bar {
   display: inline-flex;
   align-items: center;
@@ -3819,6 +3829,56 @@ html[data-theme='dark'] .mht-btn-react {
   background: #0f172a !important;
   border-color: #334155 !important;
   color: #94a3b8 !important;
+}
+
+/* ── 全局悬浮气泡通知 (轻量无感 Toast) ──────────────── */
+.global-toast-container {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.global-toast-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.94);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  animation: toastFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.global-toast-item.success i {
+  color: #34d399;
+}
+.global-toast-item.error i {
+  color: #f87171;
+}
+.global-toast-item.info i {
+  color: #60a5fa;
+}
+.global-toast-item.fade-out {
+  animation: toastFadeOut 0.22s forwards;
+}
+@keyframes toastFadeIn {
+  from { opacity: 0; transform: translateY(-12px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastFadeOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-8px) scale(0.95); }
 }
 
 /* ── 移动端日程聚焦脉冲动画 ────────────────────────── */

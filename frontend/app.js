@@ -6424,19 +6424,49 @@ function initMemoDuePicker() {
   });
 }
 
-async function carryOverSingleMemoToNextDay(memoId) {
+function showGlobalToast(message, type = 'success') {
+  let container = $('globalToastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'globalToastContainer';
+    container.className = 'global-toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `global-toast-item ${type}`;
+  const icon = type === 'success' ? 'fa-check-circle' : (type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle');
+  toast.innerHTML = `<i class="fas ${icon}"></i> <span>${escapeHtml(message)}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 260);
+  }, 2500);
+}
+
+async function carryOverSingleMemoToNextDay(memoId, triggerBtn = null) {
   const memo = state.memos?.find((m) => String(m.id) === String(memoId));
   if (!memo) {
-    alert('未找到该事项信息');
+    showGlobalToast('未找到该事项信息', 'error');
     return;
   }
+  const isCompleted = Boolean(memo.completed || memo.status === 'completed');
+  if (isCompleted) {
+    showGlobalToast('该事项已完成，无需结转', 'info');
+    return;
+  }
+
   const curDate = new Date((memo.date || dateKey(new Date())) + 'T00:00:00');
   const nextDate = new Date(curDate);
   nextDate.setDate(curDate.getDate() + 1);
   const nextKey = dateKey(nextDate);
 
-  const confirmMsg = `是否将事项【${memo.title}】\n一键复制并结转至下一天【${nextKey}】的日历格子中？`;
-  if (!confirm(confirmMsg)) return;
+  let originalBtnHtml = '';
+  if (triggerBtn) {
+    originalBtnHtml = triggerBtn.innerHTML;
+    triggerBtn.disabled = true;
+    triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 转结中...';
+  }
 
   try {
     const newTitle = memo.title.startsWith('[结转]') ? memo.title : `[结转] ${memo.title}`;
@@ -6452,16 +6482,27 @@ async function carryOverSingleMemoToNextDay(memoId) {
     };
     await request('/memos', { method: 'POST', body: JSON.stringify(payload) });
 
-    const tooltip = $('memoHoverTooltip');
-    if (tooltip) tooltip.classList.remove('visible');
+    if (triggerBtn) {
+      triggerBtn.classList.add('success');
+      triggerBtn.innerHTML = '<i class="fas fa-check"></i> 已转到下一天';
+    }
+
+    setTimeout(() => {
+      const tooltip = $('memoHoverTooltip');
+      if (tooltip) tooltip.classList.remove('visible');
+    }, 700);
 
     await loadMemos({ force: true });
     if (state.dailyDetailDate) {
       loadDailyDetailMemos(state.dailyDetailDate);
     }
-    alert(`✔ 成功将【${memo.title}】结转至 ${nextKey} 日历中！`);
+    showGlobalToast(`✔ 成功将【${memo.title}】转至 ${nextKey} 日历！`, 'success');
   } catch (err) {
-    alert(`结转失败：${err.message || '网络异常'}`);
+    if (triggerBtn) {
+      triggerBtn.disabled = false;
+      triggerBtn.innerHTML = originalBtnHtml;
+    }
+    showGlobalToast(`转结失败：${err.message || '网络异常'}`, 'error');
   }
 }
 
@@ -6503,7 +6544,8 @@ function initMemoHoverTooltip() {
     const memo = state.memos.find((m) => String(m.id) === String(memoId));
     if (!memo) return;
 
-    const dotColor = memo.completed ? '#94a3b8' : (memo.color || '#3b82f6');
+    const isCompleted = Boolean(memo.completed || memo.status === 'completed');
+    const dotColor = isCompleted ? '#94a3b8' : (memo.color || '#3b82f6');
     const deadline = memoDeadlineDate(memo);
     const timeText = deadline
       ? `${deadline.getFullYear()}/${deadline.getMonth() + 1}/${deadline.getDate()} ${pad(deadline.getHours())}:${pad(deadline.getMinutes())}`
@@ -6526,6 +6568,19 @@ function initMemoHoverTooltip() {
       </div>
     ` : '';
 
+    const carryOverHtml = !isCompleted ? `
+      <button class="mht-btn-carryover" data-memo-id="${memo.id}" type="button" title="将未完成事项结转到下一天日历">
+        <i class="fas fa-arrow-right"></i> 转到下一天
+      </button>
+    ` : '';
+
+    const actionsBarHtml = (carryOverHtml || adminReactHtml) ? `
+      <div class="mht-actions-bar">
+        ${carryOverHtml}
+        ${adminReactHtml}
+      </div>
+    ` : '';
+
     tooltip.innerHTML = `
       <div class="mht-header" style="cursor:pointer;" title="点击查看详情">
         <span class="mht-dot" style="background:${escapeHtml(dotColor)}"></span>
@@ -6534,15 +6589,10 @@ function initMemoHoverTooltip() {
       ${memo.contentPreview ? `<div class="mht-content" style="cursor:pointer;" title="点击查看详情">${escapeHtml(memo.contentPreview)}</div>` : ''}
       <div class="mht-meta">
         <span><i class="far fa-clock"></i> ${escapeHtml(timeText)}</span>
-        <span class="mht-badge ${memo.completed ? 'completed' : 'pending'}">${memo.completed ? '已完成' : '进行中'}</span>
+        <span class="mht-badge ${isCompleted ? 'completed' : 'pending'}">${isCompleted ? '已完成' : '进行中'}</span>
         ${stampsHtml}
       </div>
-      <div class="mht-actions-bar">
-        <button class="mht-btn-carryover" data-memo-id="${memo.id}" type="button" title="一键复制结转到下一天日历格子">
-          <i class="fas fa-arrow-right"></i> 结转到下一天
-        </button>
-        ${adminReactHtml}
-      </div>
+      ${actionsBarHtml}
     `;
 
     positionTooltip(memoItem);
@@ -6592,7 +6642,7 @@ function initMemoHoverTooltip() {
     const carryBtn = e.target.closest('.mht-btn-carryover');
     if (carryBtn) {
       e.stopPropagation();
-      await carryOverSingleMemoToNextDay(carryBtn.dataset.memoId);
+      await carryOverSingleMemoToNextDay(carryBtn.dataset.memoId, carryBtn);
       return;
     }
     const reactBtn = e.target.closest('.mht-btn-react');
@@ -6968,12 +7018,6 @@ function handleMemoTemplateChipsClick(event) {
   if (tplBtn) {
     event.preventDefault();
     applyMemoTemplate(tplBtn.dataset.tpl);
-    return;
-  }
-  const carryBtn = event.target.closest?.('#btnCarryoverYesterday');
-  if (carryBtn) {
-    event.preventDefault();
-    autoCarryOverYesterdayMemos($('memoDate')?.value);
     return;
   }
 }
@@ -8090,9 +8134,10 @@ function createTaskItem(memo) {
         <button class="task-btn task-btn-complete" data-id="${memo.id}">
           ${memo.completed ? '<i class="fas fa-undo"></i> 标记为未完成' : '<i class="fas fa-check"></i> 标记为完成'}
         </button>
+        ${!memo.completed ? `
         <button class="task-btn task-btn-carryover" data-id="${memo.id}" title="复制结转此事项至下一天日历格子">
-          <i class="fas fa-arrow-right"></i> 结转下一天
-        </button>
+          <i class="fas fa-arrow-right"></i> 转到下一天
+        </button>` : ''}
         ${reactActionsHtml}
         <button class="task-btn task-btn-edit" data-id="${memo.id}">
           <i class="fas fa-edit"></i> 编辑
@@ -9260,8 +9305,6 @@ function initEventListeners() {
   $('memoTextToolbar')?.addEventListener('click', handleMemoTextToolbarClick);
   $('memoTemplateChipsBar')?.addEventListener('click', handleMemoTemplateChipsClick);
   $('btnQuickWeeklyReport')?.addEventListener('click', openQuickWeeklyReportFromTopbar);
-  $('btnQuickCarryoverToday')?.addEventListener('click', () => autoCarryOverYesterdayMemos(new Date()));
-  $('btnDailyCarryover')?.addEventListener('click', () => autoCarryOverYesterdayMemos(state.dailyDetailDate || new Date()));
   $('memoTabEdit')?.addEventListener('click', () => switchMemoContentTab('edit'));
   $('memoTabPreview')?.addEventListener('click', () => switchMemoContentTab('preview'));
   $('quickDueChips')?.addEventListener('click', handleQuickDueChipClick);
@@ -9439,7 +9482,7 @@ function initEventListeners() {
     const singleCarryBtn = event.target.closest('.task-btn-carryover');
     if (singleCarryBtn) {
       event.stopPropagation();
-      await carryOverSingleMemoToNextDay(singleCarryBtn.dataset.id);
+      await carryOverSingleMemoToNextDay(singleCarryBtn.dataset.id, singleCarryBtn);
       return;
     }
     const editBtn = event.target.closest('.task-btn-edit');

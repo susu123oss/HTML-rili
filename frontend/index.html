@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260929_worklog_v3" defer></script>
+    <script src="./app.js?v=20260929_worklog_v4" defer></script>
     <style>
         * {
             margin: 0;
@@ -3920,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_worklog_v3" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_worklog_v4" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4119,11 +4119,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- 一键结转昨日待办到今日日历 -->
-                    <button class="btn btn-outline-success btn-quick-carryover" id="btnQuickCarryoverToday" type="button" title="一键将昨日未完成的事项自动复制到今日日历格子">
-                        <i class="fas fa-history"></i> <span>结转昨日未完</span>
-                    </button>
 
                     <!-- 快捷生成周报按钮 -->
                     <button class="btn btn-outline-primary btn-quick-report" id="btnQuickWeeklyReport" type="button" title="一键生成本周工作总结与周报">
@@ -4499,7 +4494,6 @@
                                     <button type="button" class="btn-template-chip" data-tpl="dev" title="插入标准研发工作日志模板">⚡ 研发日志</button>
                                     <button type="button" class="btn-template-chip" data-tpl="meeting" title="插入会议纪要与行动项模板">📝 会议纪要</button>
                                     <button type="button" class="btn-template-chip" data-tpl="qa" title="插入装配与品质检验模板">🔍 质检/测试</button>
-                                    <button type="button" class="btn-template-chip chip-carryover" id="btnCarryoverYesterday" title="从昨天未完成的备忘或待办中自动结转过来"><i class="fas fa-history"></i> 结转昨日待办</button>
                                 </div>
                             </div>
                             <textarea class="form-control" id="memoContent" placeholder="输入备忘录或工作日志内容，支持Markdown语法..."></textarea>
@@ -4820,9 +4814,6 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="closeDailyDetailModalBtn">关闭</button>
-                <button class="btn btn-outline-success btn-daily-carryover" id="btnDailyCarryover" type="button" title="一键将前一天未完成的事项自动复制到当天日历格子">
-                    <i class="fas fa-history"></i> 结转昨日未完项
-                </button>
                 <button class="btn btn-primary" id="addNewMemoBtn">
                     <i class="fas fa-plus"></i> 添加详细备忘录
                 </button>
