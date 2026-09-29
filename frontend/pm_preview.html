@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业项目管理演进预览 (Project Management Pro) - 工作日历</title>
+    <link rel="stylesheet" href="css/all.min.css">
+    <link rel="stylesheet" href="./vendor/tabler-core/tabler.min.css">
+    <style>
+        /* ================= 基础变量与设计系统 ================= */
+        :root {
+            --pm-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            
+            /* 浅色主题基调 (Light) */
+            --pm-bg-body: #f8fafc;
+            --pm-bg-surface: #ffffff;
+            --pm-bg-subtle: #f1f5f9;
+            --pm-bg-hover: #e2e8f0;
+            --pm-border: #e2e8f0;
+            --pm-border-subtle: #f1f5f9;
+            
+            --pm-text-main: #0f172a;
+            --pm-text-muted: #64748b;
+            --pm-text-subtle: #94a3b8;
+            
+            --pm-primary: #2563eb;
+            --pm-primary-light: #eff6ff;
+            --pm-primary-border: #bfdbfe;
+            --pm-primary-hover: #1d4ed8;
+
+            --pm-success: #10b981;
+            --pm-success-light: #ecfdf5;
+            --pm-warning: #f59e0b;
+            --pm-warning-light: #fffbeb;
+            --pm-danger: #ef4444;
+            --pm-danger-light: #fef2f2;
+            --pm-purple: #8b5cf6;
+            --pm-purple-light: #f5f3ff;
+            
+            --pm-sidebar-w: 240px;
+            --pm-sidebar-collapsed-w: 68px;
+            --pm-header-h: 58px;
+            --pm-radius: 12px;
+            --pm-radius-sm: 8px;
+            --pm-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+            --pm-shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+            --pm-shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.12);
+        }
+
+        /* 深色主题基调 (Dark) */
+        html[data-theme="dark"] {
+            --pm-bg-body: #0b131f;
+            --pm-bg-surface: #141f2e;
+            --pm-bg-subtle: #1c2b3f;
+            --pm-bg-hover: #263852;
+            --pm-border: #23354d;
+            --pm-border-subtle: #192638;
+            
+            --pm-text-main: #f1f5f9;
+            --pm-text-muted: #94a3b8;
+            --pm-text-subtle: #64748b;
+            
+            --pm-primary: #3b82f6;
+            --pm-primary-light: rgba(59, 130, 246, 0.15);
+            --pm-primary-border: rgba(59, 130, 246, 0.35);
+            --pm-primary-hover: #60a5fa;
+
+            --pm-success: #10b981;
+            --pm-success-light: rgba(16, 185, 129, 0.15);
+            --pm-warning: #f59e0b;
+            --pm-warning-light: rgba(245, 158, 11, 0.15);
+            --pm-danger: #f87171;
+            --pm-danger-light: rgba(239, 68, 68, 0.15);
+            --pm-purple: #a78bfa;
+            --pm-purple-light: rgba(167, 139, 250, 0.15);
+
+            --pm-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --pm-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
+            --pm-shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--pm-font);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--pm-bg-body);
+            color: var(--pm-text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        /* ================= 侧边栏 (Sidebar - 继承系统折叠规范) ================= */
+        .pm-sidebar {
+            width: var(--pm-sidebar-w);
+            background: var(--pm-bg-surface);
+            border-right: 1px solid var(--pm-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            user-select: none;
+        }
+
+        .pm-sidebar.collapsed {
+            width: var(--pm-sidebar-collapsed-w);
+        }
+
+        .pm-sidebar-header {
+            height: var(--pm-header-h);
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            border-bottom: 1px solid var(--pm-border);
+            gap: 12px;
+            transition: padding 0.2s ease;
+        }
+
+        .pm-sidebar.collapsed .pm-sidebar-header {
+            padding: 0;
+            justify-content: center;
+        }
+
+        .pm-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            flex-shrink: 0;
+        }
+
+        .pm-logo-text {
+            font-weight: 700;
+            font-size: 1.05rem;
+            letter-spacing: -0.01em;
+            color: var(--pm-text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            transition: opacity 0.2s ease, max-width 0.2s ease;
+        }
+
+        .pm-sidebar.collapsed .pm-logo-text {
+            max-width: 0;
+            opacity: 0;
+            display: none;
+        }
+
+        .pm-sidebar-nav {
+            flex: 1;
+            padding: 16px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+        }
+
+        .pm-sidebar.collapsed .pm-sidebar-nav {
+            padding: 14px 0;
+            align-items: center;
+        }
+
+        .pm-nav-group-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--pm-text-subtle);
+            padding: 10px 12px 4px;
+            transition: opacity 0.2s ease;
+        }
+
+        .pm-sidebar.collapsed .pm-nav-group-title {
+            display: none !important;
+        }
+
+        .pm-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 12px;
+            border-radius: 10px;
+            color: var(--pm-text-muted);
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.16s ease;
+            position: relative;
+        }
+
+        .pm-nav-item:hover {
+            color: var(--pm-text-main);
+            background: var(--pm-bg-subtle);
+        }
+
+        .pm-nav-item.active {
+            color: var(--pm-primary);
+            background: var(--pm-primary-light);
+            font-weight: 600;
+        }
+
+        .pm-nav-item i {
+            font-size: 1.05rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .pm-sidebar.collapsed .pm-nav-item {
+            width: 42px;
+            height: 42px;
+            padding: 0 !important;
+            margin: 2px auto !important;
+            justify-content: center !important;
+            border-radius: 11px;
+            gap: 0 !important;
+        }
+
+        .pm-sidebar.collapsed .pm-nav-item span {
+            display: none !important;
+        }
+
+        .pm-sidebar.collapsed .pm-nav-item i {
+            font-size: 1.12rem;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pm-sidebar.collapsed .pm-nav-item:hover {
+            transform: scale(1.06);
+        }
+
+        .pm-sidebar-divider {
+            height: 1px;
+            background: var(--pm-border);
+            margin: 8px 10px;
+        }
+
+        .pm-sidebar.collapsed .pm-sidebar-divider {
+            width: 32px;
+            margin: 8px auto;
+        }
+
+        .pm-sidebar-footer {
+            padding: 14px;
+            border-top: 1px solid var(--pm-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pm-sidebar.collapsed .pm-sidebar-footer {
+            padding: 12px 0;
+            justify-content: center;
+        }
+
+        .pm-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            flex-shrink: 0;
+        }
+
+        .pm-user-meta {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .pm-user-name {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--pm-text-main);
+        }
+
+        .pm-user-role {
+            font-size: 0.75rem;
+            color: var(--pm-text-subtle);
+        }
+
+        .pm-sidebar.collapsed .pm-user-meta {
+            display: none;
+        }
+
+        /* ================= 主工作区 (Main Content) ================= */
+        .pm-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 顶部导航与项目切换 (Header Bar) */
+        .pm-header {
+            height: var(--pm-header-h);
+            background: var(--pm-bg-surface);
+            border-bottom: 1px solid var(--pm-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .pm-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .pm-toggle-btn {
+            background: transparent;
+            border: 1px solid var(--pm-border);
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--pm-text-muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .pm-toggle-btn:hover {
+            color: var(--pm-text-main);
+            background: var(--pm-bg-subtle);
+        }
+
+        /* 项目选择器 (Project Picker Dropdown) */
+        .pm-project-picker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--pm-bg-subtle);
+            border: 1px solid var(--pm-border);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--pm-text-main);
+            transition: all 0.16s ease;
+            position: relative;
+        }
+
+        .pm-project-picker:hover {
+            border-color: var(--pm-primary);
+        }
+
+        .pm-project-badge {
+            background: var(--pm-primary-light);
+            color: var(--pm-primary);
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .pm-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pm-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+        }
+
+        .pm-btn-primary {
+            background: var(--pm-primary);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+        }
+
+        .pm-btn-primary:hover {
+            background: var(--pm-primary-hover);
+        }
+
+        .pm-btn-outline {
+            background: var(--pm-bg-surface);
+            border-color: var(--pm-border);
+            color: var(--pm-text-main);
+        }
+
+        .pm-btn-outline:hover {
+            background: var(--pm-bg-subtle);
+        }
+
+        .pm-theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--pm-border);
+            background: var(--pm-bg-surface);
+            color: var(--pm-text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .pm-theme-toggle:hover {
+            color: var(--pm-primary);
+            border-color: var(--pm-primary);
+        }
+
+        /* ================= 视图切换栏 (View Subheader & Filter) ================= */
+        .pm-subbar {
+            background: var(--pm-bg-surface);
+            border-bottom: 1px solid var(--pm-border);
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .pm-view-tabs {
+            display: flex;
+            align-items: center;
+            background: var(--pm-bg-subtle);
+            padding: 3px;
+            border-radius: 10px;
+            gap: 2px;
+        }
+
+        .pm-view-tab {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.86rem;
+            font-weight: 500;
+            color: var(--pm-text-muted);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            transition: all 0.15s ease;
+        }
+
+        .pm-view-tab:hover {
+            color: var(--pm-text-main);
+        }
+
+        .pm-view-tab.active {
+            background: var(--pm-bg-surface);
+            color: var(--pm-primary);
+            font-weight: 600;
+            box-shadow: var(--pm-shadow-sm);
+        }
+
+        .pm-view-tab .badge {
+            background: var(--pm-primary-light);
+            color: var(--pm-primary);
+            font-size: 0.72rem;
+            padding: 1px 6px;
+            border-radius: 10px;
+        }
+
+        .pm-filters {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pm-filter-select {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--pm-border);
+            background: var(--pm-bg-surface);
+            color: var(--pm-text-main);
+            font-size: 0.84rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .pm-search-box {
+            position: relative;
+        }
+
+        .pm-search-box input {
+            padding: 6px 12px 6px 32px;
+            border-radius: 8px;
+            border: 1px solid var(--pm-border);
+            background: var(--pm-bg-surface);
+            color: var(--pm-text-main);
+            font-size: 0.84rem;
+            width: 180px;
+            outline: none;
+            transition: width 0.2s ease, border-color 0.2s ease;
+        }
+
+        .pm-search-box input:focus {
+            width: 220px;
+            border-color: var(--pm-primary);
+        }
+
+        .pm-search-box i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--pm-text-subtle);
+            font-size: 0.85rem;
+        }
+
+        /* ================= 视图展示区 (View Container) ================= */
+        .pm-content-body {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+        }
+
+        .pm-view-pane {
+            flex: 1;
+            height: 100%;
+            overflow-y: auto;
+            display: none;
+            padding: 20px 24px;
+        }
+
+        .pm-view-pane.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ---------------- VIEW 1: 敏捷看板 (Kanban) ---------------- */
+        .pm-kanban-board {
+            display: flex;
+            gap: 16px;
+            height: 100%;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            align-items: flex-start;
+        }
+
+        .pm-kanban-col {
+            width: 300px;
+            min-width: 300px;
+            background: var(--pm-bg-surface);
+            border: 1px solid var(--pm-border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+            box-shadow: var(--pm-shadow-sm);
+        }
+
+        .pm-col-header {
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--pm-border-subtle);
+        }
+
+        .pm-col-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--pm-text-main);
+        }
+
+        .pm-col-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+        }
+
+        .pm-col-count {
+            background: var(--pm-bg-subtle);
+            color: var(--pm-text-muted);
+            font-size: 0.74rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        .pm-col-cards {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 120px;
+        }
+
+        .pm-col-cards.drag-over {
+            background: var(--pm-primary-light);
+            outline: 2px dashed var(--pm-primary);
+            border-radius: 8px;
+        }
+
+        /* 看板任务卡片 (Card) */
+        .pm-card {
+            background: var(--pm-bg-surface);
+            border: 1px solid var(--pm-border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            cursor: grab;
+            transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .pm-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--pm-shadow-md);
+            border-color: var(--pm-primary-border);
+        }
+
+        .pm-card.dragging {
+            opacity: 0.4;
+            transform: scale(0.96);
+        }
+
+        .pm-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .pm-card-id {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--pm-text-subtle);
+            letter-spacing: 0.02em;
+        }
+
+        .pm-priority-pill {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .prio-p0 { background: var(--pm-danger-light); color: var(--pm-danger); }
+        .prio-p1 { background: var(--pm-warning-light); color: var(--pm-warning); }
+        .prio-p2 { background: var(--pm-primary-light); color: var(--pm-primary); }
+        .prio-p3 { background: var(--pm-bg-subtle); color: var(--pm-text-muted); }
+
+        .pm-card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            line-height: 1.4;
+            color: var(--pm-text-main);
+            margin-bottom: 10px;
+        }
+
+        .pm-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .pm-tag {
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 5px;
+            background: var(--pm-bg-subtle);
+            color: var(--pm-text-muted);
+            border: 1px solid var(--pm-border-subtle);
+        }
+
+        .pm-card-progress {
+            margin-bottom: 10px;
+        }
+
+        .pm-progress-bar {
+            height: 5px;
+            background: var(--pm-bg-subtle);
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .pm-progress-fill {
+            background: var(--pm-primary);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .pm-card-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 8px;
+            border-top: 1px solid var(--pm-border-subtle);
+            font-size: 0.76rem;
+            color: var(--pm-text-muted);
+        }
+
+        .pm-card-dates {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pm-card-dates.overdue {
+            color: var(--pm-danger);
+            font-weight: 600;
+        }
+
+        .pm-assignee {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pm-mini-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        /* ---------------- VIEW 2: 甘特图 / 时间线 (Gantt & Timeline) ---------------- */
+        .pm-gantt-wrap {
+            display: flex;
+            background: var(--pm-bg-surface);
+            border: 1px solid var(--pm-border);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 100%;
+            box-shadow: var(--pm-shadow-sm);
+        }
+
+        .pm-gantt-tree {
+            width: 320px;
+            min-width: 320px;
+            border-right: 1px solid var(--pm-border);
+            display: flex;
+            flex-direction: column;
+            background: var(--pm-bg-surface);
+        }
+
+        .pm-gantt-header {
+            height: 48px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            font-size: 0.86rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--pm-border);
+            background: var(--pm-bg-subtle);
+            color: var(--pm-text-main);
+        }
+
+        .pm-tree-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .pm-tree-node {
+            height: 52px;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--pm-border-subtle);
+            font-size: 0.88rem;
+            transition: background 0.12s ease;
+        }
+
+        .pm-tree-node:hover {
+            background: var(--pm-bg-subtle);
+        }
+
+        .pm-tree-node.stage-node {
+            background: var(--pm-bg-subtle);
+            font-weight: 700;
+        }
+
+        .pm-tree-node-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pm-tree-node-title i {
+            color: var(--pm-text-subtle);
+            font-size: 0.85rem;
+        }
+
+        .pm-gantt-canvas {
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: auto;
+            position: relative;
+            background: var(--pm-bg-surface);
+        }
+
+        .pm-timeline-header {
+            height: 48px;
+            display: flex;
+            border-bottom: 1px solid var(--pm-border);
+            background: var(--pm-bg-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            min-width: 800px;
+        }
+
+        .pm-timeline-day {
+            flex: 1;
+            min-width: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            color: var(--pm-text-muted);
+            border-right: 1px dashed var(--pm-border-subtle);
+        }
+
+        .pm-timeline-day.today {
+            background: var(--pm-primary-light);
+            color: var(--pm-primary);
+            font-weight: 700;
+        }
+
+        .pm-gantt-grid {
+            position: relative;
+            min-width: 800px;
+        }
+
+        .pm-gantt-row {
+            height: 52px;
+            border-bottom: 1px solid var(--pm-border-subtle);
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .pm-gantt-row:hover {
+            background: rgba(37, 99, 235, 0.02);
+        }
+
+        /* 甘特图条形块 (Bar) */
+        .pm-gantt-bar {
+            position: absolute;
+            height: 28px;
+            border-radius: 7px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            transition: transform 0.15s ease, filter 0.15s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pm-gantt-bar:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.08);
+            z-index: 5;
+        }
+
+        .bar-done { background: linear-gradient(90deg, #10b981, #059669); }
+        .bar-progress { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+        .bar-warning { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .bar-stage { background: linear-gradient(90deg, #64748b, #475569); opacity: 0.85; height: 18px; border-radius: 4px; }
+
+        .pm-milestone-marker {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            transform: rotate(45deg);
+            background: #ef4444;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 6;
+        }
+
+        /* ---------------- VIEW 3: 多维表格 (Table & List) ---------------- */
+        .pm-table-wrap {
+            background: var(--pm-bg-surface);
+            border: 1px solid var(--pm-border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--pm-shadow-sm);
+        }
+
+        .pm-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        .pm-table th {
+            background: var(--pm-bg-subtle);
+            padding: 12px 16px;
+            font-weight: 600;
+            color: var(--pm-text-muted);
+            border-bottom: 1px solid var(--pm-border);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .pm-table td {
+            padding: 13px 16px;
+            border-bottom: 1px solid var(--pm-border-subtle);
+            color: var(--pm-text-main);
+            vertical-align: middle;
+        }
+
+        .pm-table tr:hover td {
+            background: var(--pm-bg-subtle);
+        }
+
+        .pm-status-select {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+
+        .st-todo { background: var(--pm-bg-subtle); color: var(--pm-text-muted); }
+        .st-prog { background: var(--pm-primary-light); color: var(--pm-primary); }
+        .st-rev { background: var(--pm-purple-light); color: var(--pm-purple); }
+        .st-done { background: var(--pm-success-light); color: var(--pm-success); }
+
+        /* ---------------- VIEW 4: 项目健康度与统计仪表盘 (Dashboard) ---------------- */
+        .pm-dash-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .pm-stat-card {
+            background: var(--pm-bg-surface);
+            border: 1px solid var(--pm-border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: var(--pm-shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pm-stat-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--pm-text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pm-stat-num {
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--pm-text-main);
+        }
+
+        .pm-stat-meta {
+            font-size: 0.78rem;
+            color: var(--pm-text-subtle);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pm-dash-charts {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .pm-chart-card {
+            background: var(--pm-bg-surface);
+            border: 1px solid var(--pm-border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--pm-shadow-sm);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pm-chart-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ================= 任务详情侧边滑动抽屉 (Slide-Over Drawer) ================= */
+        .pm-drawer-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 500;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.22s ease;
+        }
+
+        .pm-drawer-backdrop.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .pm-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 480px;
+            max-width: 90vw;
+            height: 100vh;
+            background: var(--pm-bg-surface);
+            box-shadow: var(--pm-shadow-lg);
+            z-index: 501;
+            transform: translateX(100%);
+            transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pm-drawer.open {
+            transform: translateX(0);
+        }
+
+        .pm-drawer-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--pm-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pm-drawer-close {
+            background: transparent;
+            border: none;
+            color: var(--pm-text-muted);
+            font-size: 1.15rem;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pm-drawer-close:hover {
+            background: var(--pm-bg-subtle);
+            color: var(--pm-text-main);
+        }
+
+        .pm-drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .pm-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .pm-form-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--pm-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .pm-form-input, .pm-form-textarea {
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--pm-border);
+            background: var(--pm-bg-surface);
+            color: var(--pm-text-main);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .pm-form-input:focus, .pm-form-textarea:focus {
+            border-color: var(--pm-primary);
+        }
+
+        .pm-checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+            font-size: 0.88rem;
+        }
+
+        .pm-checklist-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--pm-primary);
+            cursor: pointer;
+        }
+
+        /* 响应式支持 */
+        @media (max-width: 900px) {
+            .pm-sidebar {
+                position: fixed;
+                left: -260px;
+            }
+            .pm-sidebar.mobile-open {
+                left: 0;
+            }
+            .pm-dash-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .pm-dash-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 侧边栏 (Sidebar - 严格继承规范) -->
+    <aside class="pm-sidebar" id="pmSidebar">
+        <div class="pm-sidebar-header">
+            <div class="pm-logo-icon"><i class="fas fa-cubes"></i></div>
+            <span class="pm-logo-text">项目管理 PRO</span>
+        </div>
+
+        <div class="pm-sidebar-nav">
+            <div class="pm-nav-group-title">核心空间</div>
+            <a class="pm-nav-item active" title="研发项目矩阵">
+                <i class="fas fa-project-diagram"></i>
+                <span>研发项目矩阵</span>
+            </a>
+            <a class="pm-nav-item" href="index.html" title="返回工作日历">
+                <i class="fas fa-calendar-alt"></i>
+                <span>原工作日历</span>
+            </a>
+            <a class="pm-nav-item" title="需求任务池">
+                <i class="fas fa-tasks"></i>
+                <span>需求任务池</span>
+            </a>
+            <a class="pm-nav-item" title="工时与资源负荷">
+                <i class="fas fa-users-cog"></i>
+                <span>资源负荷热力</span>
+            </a>
+
+            <div class="pm-sidebar-divider"></div>
+
+            <div class="pm-nav-group-title">质量与交付</div>
+            <a class="pm-nav-item" title="里程碑交付看板">
+                <i class="fas fa-flag-checkered"></i>
+                <span>里程碑看板</span>
+            </a>
+            <a class="pm-nav-item" title="缺陷与风险排查">
+                <i class="fas fa-bug"></i>
+                <span>缺陷与风险库</span>
+            </a>
+            <a class="pm-nav-item" title="项目资料与文档">
+                <i class="fas fa-folder-open"></i>
+                <span>项目文件中心</span>
+            </a>
+
+            <div class="pm-sidebar-divider"></div>
+
+            <div class="pm-nav-group-title">配置与报表</div>
+            <a class="pm-nav-item" title="报表中心">
+                <i class="fas fa-chart-pie"></i>
+                <span>交付度量报表</span>
+            </a>
+            <a class="pm-nav-item" title="项目配置">
+                <i class="fas fa-sliders-h"></i>
+                <span>项目工作流设置</span>
+            </a>
+        </div>
+
+        <div class="pm-sidebar-footer">
+            <div class="pm-user-avatar">邹</div>
+            <div class="pm-user-meta">
+                <div class="pm-user-name">邹木生</div>
+                <div class="pm-user-role">电气项目主管 · 研发部</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 主工作区 -->
+    <main class="pm-main">
+        <!-- 顶部 Header -->
+        <header class="pm-header">
+            <div class="pm-header-left">
+                <button class="pm-toggle-btn" id="pmSidebarToggle" title="折叠/展开侧边栏">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- 当前项目选择 -->
+                <div class="pm-project-picker" id="projectPicker">
+                    <i class="fas fa-bolt" style="color: #f59e0b;"></i>
+                    <span>2026年度智能配电柜升级研发</span>
+                    <span class="pm-project-badge">进行中 · 68%</span>
+                    <i class="fas fa-chevron-down" style="font-size: 0.72rem; color: var(--pm-text-subtle);"></i>
+                </div>
+            </div>
+
+            <div class="pm-header-right">
+                <button class="pm-theme-toggle" id="themeToggleBtn" title="切换深浅主题">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="pm-action-btn pm-btn-outline" onclick="alert('即将导出项目甘特排期与任务报表 (Excel/PDF)')">
+                    <i class="fas fa-file-export"></i> 导出报表
+                </button>
+                <button class="pm-action-btn pm-btn-primary" onclick="openNewTaskDrawer()">
+                    <i class="fas fa-plus"></i> 新建任务
+                </button>
+            </div>
+        </header>
+
+        <!-- 视图切换与筛选栏 -->
+        <div class="pm-subbar">
+            <!-- 多维视图切换器 -->
+            <div class="pm-view-tabs">
+                <button class="pm-view-tab active" data-view="kanban">
+                    <i class="fas fa-columns"></i> 看板视图 <span class="badge" id="kanbanCountBadge">10</span>
+                </button>
+                <button class="pm-view-tab" data-view="gantt">
+                    <i class="fas fa-stream"></i> 甘特图与时间线
+                </button>
+                <button class="pm-view-tab" data-view="table">
+                    <i class="fas fa-table"></i> 任务多维表
+                </button>
+                <button class="pm-view-tab" data-view="insights">
+                    <i class="fas fa-chart-line"></i> 项目健康洞察
+                </button>
+            </div>
+
+            <!-- 快捷筛选 -->
+            <div class="pm-filters">
+                <select class="pm-filter-select" id="memberFilter" onchange="applyFilters()">
+                    <option value="all">全部负责人 (5人)</option>
+                    <option value="邹木生">邹木生 (电气)</option>
+                    <option value="蔡涛">蔡涛 (固件)</option>
+                    <option value="廖斌儒">廖斌儒 (结构)</option>
+                    <option value="陈强">陈强 (仿真)</option>
+                    <option value="孔维">孔维 (BOM)</option>
+                </select>
+
+                <select class="pm-filter-select" id="priorityFilter" onchange="applyFilters()">
+                    <option value="all">全部优先级</option>
+                    <option value="P0">P0 紧急</option>
+                    <option value="P1">P1 高优</option>
+                    <option value="P2">P2 中优</option>
+                </select>
+
+                <div class="pm-search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="taskSearchInput" placeholder="快速搜任务或编码..." oninput="applyFilters()">
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图内容容器 -->
+        <div class="pm-content-body">
+            
+            <!-- ---------------- VIEW 1: 敏捷看板 ---------------- -->
+            <div class="pm-view-pane active" id="view-kanban">
+                <div class="pm-kanban-board">
+                    <!-- 列 1: 需求池 -->
+                    <div class="pm-kanban-col" data-status="backlog">
+                        <div class="pm-col-header">
+                            <div class="pm-col-title">
+                                <span class="pm-col-dot" style="background: #94a3b8;"></span>
+                                <span>需求池 / 待规划</span>
+                            </div>
+                            <span class="pm-col-count">2</span>
+                        </div>
+                        <div class="pm-col-cards" id="col-backlog" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'backlog')">
+                            <!-- Card 1 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-101" data-member="孔维" data-prio="P2" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-101')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-101</span>
+                                    <span class="pm-priority-pill prio-p2">P2 中优</span>
+                                </div>
+                                <div class="pm-card-title">柜体二次降噪与防震选型方案调研</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">结构调研</span>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates"><i class="far fa-calendar-alt"></i> 10月08日 - 10月16日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#6366f1;">孔</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-102" data-member="蔡涛" data-prio="P3" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-102')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-102</span>
+                                    <span class="pm-priority-pill prio-p3">P3 低优</span>
+                                </div>
+                                <div class="pm-card-title">远程升级 OTA 固件加密签名机制兼容设计</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">固件安全</span>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates"><i class="far fa-calendar-alt"></i> 10月12日 - 10月20日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#0ea5e9;">蔡</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 列 2: 待开始 -->
+                    <div class="pm-kanban-col" data-status="todo">
+                        <div class="pm-col-header">
+                            <div class="pm-col-title">
+                                <span class="pm-col-dot" style="background: #3b82f6;"></span>
+                                <span>待开始 (Todo)</span>
+                            </div>
+                            <span class="pm-col-count">2</span>
+                        </div>
+                        <div class="pm-col-cards" id="col-todo" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'todo')">
+                            <!-- Card 3 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-103" data-member="邹木生" data-prio="P1" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-103')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-103</span>
+                                    <span class="pm-priority-pill prio-p1">P1 高优</span>
+                                </div>
+                                <div class="pm-card-title">防雷与浪涌抑制保护电路详细接线设计</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">电气图纸</span>
+                                    <span class="pm-tag">安全规范</span>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates"><i class="far fa-calendar-alt"></i> 10月02日 - 10月06日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#2563eb;">邹</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 4 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-104" data-member="廖斌儒" data-prio="P1" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-104')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-104</span>
+                                    <span class="pm-priority-pill prio-p1">P1 高优</span>
+                                </div>
+                                <div class="pm-card-title">配电柜母线排安装钣金支架开模复核</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">结构3D</span>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates"><i class="far fa-calendar-alt"></i> 10月03日 - 10月08日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#f59e0b;">廖</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 列 3: 进行中 -->
+                    <div class="pm-kanban-col" data-status="inprogress">
+                        <div class="pm-col-header">
+                            <div class="pm-col-title">
+                                <span class="pm-col-dot" style="background: #f59e0b;"></span>
+                                <span>进行中 (In Progress)</span>
+                            </div>
+                            <span class="pm-col-count">3</span>
+                        </div>
+                        <div class="pm-col-cards" id="col-inprogress" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'inprogress')">
+                            <!-- Card 5 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-105" data-member="邹木生" data-prio="P0" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-105')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-105</span>
+                                    <span class="pm-priority-pill prio-p0"><i class="fas fa-fire"></i> P0 紧急</span>
+                                </div>
+                                <div class="pm-card-title">智能断路器远程分合闸通信规约联调</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">核心交付</span>
+                                    <span class="pm-tag">Modbus</span>
+                                </div>
+                                <div class="pm-card-progress">
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 75%;"></div></div>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates"><i class="far fa-clock"></i> 9月26日 - 10月02日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#2563eb;">邹</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 6 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-106" data-member="陈强" data-prio="P1" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-106')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-106</span>
+                                    <span class="pm-priority-pill prio-p1">P1 高优</span>
+                                </div>
+                                <div class="pm-card-title">柜体密闭强迫风冷散热 CFD 热力学流场仿真</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">热学仿真</span>
+                                </div>
+                                <div class="pm-card-progress">
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 50%;"></div></div>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates overdue"><i class="fas fa-exclamation-circle"></i> 滞后1天 · 9月25日-9月30日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#10b981;">陈</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 7 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-107" data-member="蔡涛" data-prio="P2" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-107')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-107</span>
+                                    <span class="pm-priority-pill prio-p2">P2 中优</span>
+                                </div>
+                                <div class="pm-card-title">电量及三相电流谐波采集上报驱动编程</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">STM32</span>
+                                    <span class="pm-tag">驱动</span>
+                                </div>
+                                <div class="pm-card-progress">
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 60%;"></div></div>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates"><i class="far fa-calendar-alt"></i> 9月27日 - 10月04日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#0ea5e9;">蔡</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 列 4: 审核/测试 -->
+                    <div class="pm-kanban-col" data-status="review">
+                        <div class="pm-col-header">
+                            <div class="pm-col-title">
+                                <span class="pm-col-dot" style="background: #8b5cf6;"></span>
+                                <span>测试与评审 (Review)</span>
+                            </div>
+                            <span class="pm-col-count">1</span>
+                        </div>
+                        <div class="pm-col-cards" id="col-review" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'review')">
+                            <!-- Card 8 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-108" data-member="廖斌儒" data-prio="P1" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-108')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-108</span>
+                                    <span class="pm-priority-pill prio-p1">P1 高优</span>
+                                </div>
+                                <div class="pm-card-title">配电柜外壳 IP55 防护等级密封圈结构评审</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">防护等级</span>
+                                    <span class="pm-tag">图纸评审</span>
+                                </div>
+                                <div class="pm-card-progress">
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 90%; background:#8b5cf6;"></div></div>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates"><i class="far fa-calendar-alt"></i> 9月22日 - 9月29日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#f59e0b;">廖</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 列 5: 已完成 -->
+                    <div class="pm-kanban-col" data-status="done">
+                        <div class="pm-col-header">
+                            <div class="pm-col-title">
+                                <span class="pm-col-dot" style="background: #10b981;"></span>
+                                <span>已交付 (Done)</span>
+                            </div>
+                            <span class="pm-col-count">2</span>
+                        </div>
+                        <div class="pm-col-cards" id="col-done" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'done')">
+                            <!-- Card 9 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-109" data-member="邹木生" data-prio="P0" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-109')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-109</span>
+                                    <span class="pm-priority-pill prio-p0">P0 紧急</span>
+                                </div>
+                                <div class="pm-card-title">主回路额定 400A 电气一次系统图方案确定</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">一次系统</span>
+                                    <span class="pm-tag">已盖章</span>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates" style="color:var(--pm-success);"><i class="fas fa-check-circle"></i> 9月15日 - 9月24日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#2563eb;">邹</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 10 -->
+                            <div class="pm-card" draggable="true" data-id="PRJ-110" data-member="孔维" data-prio="P2" ondragstart="handleDragStart(event)" onclick="openTaskDetail('PRJ-110')">
+                                <div class="pm-card-top">
+                                    <span class="pm-card-id">PRJ-110</span>
+                                    <span class="pm-priority-pill prio-p2">P2 中优</span>
+                                </div>
+                                <div class="pm-card-title">首批核心电气元器件 ERP BOM 编码入库建立</div>
+                                <div class="pm-card-tags">
+                                    <span class="pm-tag">ERP物料</span>
+                                </div>
+                                <div class="pm-card-bottom">
+                                    <span class="pm-card-dates" style="color:var(--pm-success);"><i class="fas fa-check-circle"></i> 9月18日 - 9月25日</span>
+                                    <div class="pm-assignee">
+                                        <div class="pm-mini-avatar" style="background:#6366f1;">孔</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ---------------- VIEW 2: 甘特图与时间线 ---------------- -->
+            <div class="pm-view-pane" id="view-gantt">
+                <div class="pm-gantt-wrap">
+                    <!-- 左侧：WBS 任务树 -->
+                    <div class="pm-gantt-tree">
+                        <div class="pm-gantt-header">
+                            <span>任务 WBS 目录 / 责任人</span>
+                            <span style="font-size:0.75rem; color:var(--pm-text-muted);">进度</span>
+                        </div>
+                        <div class="pm-tree-list">
+                            <div class="pm-tree-node stage-node">
+                                <span class="pm-tree-node-title"><i class="fas fa-folder-open" style="color:#2563eb;"></i> 阶段一：电气方案与核心原理</span>
+                                <span>100%</span>
+                            </div>
+                            <div class="pm-tree-node">
+                                <span class="pm-tree-node-title" style="padding-left:16px;">一次系统图与断路器配置 (邹)</span>
+                                <span style="color:var(--pm-success); font-weight:600;">已完成</span>
+                            </div>
+                            <div class="pm-tree-node">
+                                <span class="pm-tree-node-title" style="padding-left:16px;">断路器通信联调 (邹)</span>
+                                <span>75%</span>
+                            </div>
+                            <div class="pm-tree-node">
+                                <span class="pm-tree-node-title" style="padding-left:16px;">防雷与浪涌电路 (邹)</span>
+                                <span style="color:var(--pm-text-muted);">0%</span>
+                            </div>
+
+                            <div class="pm-tree-node stage-node">
+                                <span class="pm-tree-node-title"><i class="fas fa-folder-open" style="color:#f59e0b;"></i> 阶段二：结构钣金与热力学仿真</span>
+                                <span>65%</span>
+                            </div>
+                            <div class="pm-tree-node">
+                                <span class="pm-tree-node-title" style="padding-left:16px;">IP55 密封圈结构评审 (廖)</span>
+                                <span>90%</span>
+                            </div>
+                            <div class="pm-tree-node">
+                                <span class="pm-tree-node-title" style="padding-left:16px;">散热 CFD 流场仿真 (陈)</span>
+                                <span style="color:var(--pm-danger); font-weight:600;">50% 滞后</span>
+                            </div>
+                            <div class="pm-tree-node">
+                                <span class="pm-tree-node-title" style="padding-left:16px;">母线排钣金开模复核 (廖)</span>
+                                <span style="color:var(--pm-text-muted);">0%</span>
+                            </div>
+
+                            <div class="pm-tree-node stage-node">
+                                <span class="pm-tree-node-title"><i class="fas fa-folder-open" style="color:#8b5cf6;"></i> 阶段三：控制固件与驱动编程</span>
+                                <span>45%</span>
+                            </div>
+                            <div class="pm-tree-node">
+                                <span class="pm-tree-node-title" style="padding-left:16px;">三相电量采集驱动 (蔡)</span>
+                                <span>60%</span>
+                            </div>
+                            <div class="pm-tree-node stage-node" style="color:#ef4444;">
+                                <span class="pm-tree-node-title"><i class="fas fa-flag" style="color:#ef4444;"></i> 里程碑：样机组装与厂内联调</span>
+                                <span>10月15日</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：时间线排期网格 -->
+                    <div class="pm-gantt-canvas">
+                        <div class="pm-timeline-header">
+                            <div class="pm-timeline-day"><span>9/20</span><span>日</span></div>
+                            <div class="pm-timeline-day"><span>9/21</span><span>一</span></div>
+                            <div class="pm-timeline-day"><span>9/22</span><span>二</span></div>
+                            <div class="pm-timeline-day"><span>9/23</span><span>三</span></div>
+                            <div class="pm-timeline-day"><span>9/24</span><span>四</span></div>
+                            <div class="pm-timeline-day"><span>9/25</span><span>五</span></div>
+                            <div class="pm-timeline-day"><span>9/26</span><span>六</span></div>
+                            <div class="pm-timeline-day"><span>9/27</span><span>日</span></div>
+                            <div class="pm-timeline-day"><span>9/28</span><span>一</span></div>
+                            <div class="pm-timeline-day today"><span>9/29</span><span>今天</span></div>
+                            <div class="pm-timeline-day"><span>9/30</span><span>三</span></div>
+                            <div class="pm-timeline-day"><span>10/1</span><span>四</span></div>
+                            <div class="pm-timeline-day"><span>10/2</span><span>五</span></div>
+                            <div class="pm-timeline-day"><span>10/3</span><span>六</span></div>
+                            <div class="pm-timeline-day"><span>10/4</span><span>日</span></div>
+                            <div class="pm-timeline-day"><span>10/5</span><span>一</span></div>
+                            <div class="pm-timeline-day"><span>10/6</span><span>二</span></div>
+                            <div class="pm-timeline-day"><span>10/7</span><span>三</span></div>
+                            <div class="pm-timeline-day"><span>10/8</span><span>四</span></div>
+                            <div class="pm-timeline-day"><span>10/9</span><span>五</span></div>
+                            <div class="pm-timeline-day"><span>10/15</span><span>里程碑</span></div>
+                        </div>
+
+                        <div class="pm-gantt-grid">
+                            <!-- 行 1: 阶段一 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-stage" style="left: 0; width: 480px;">电气阶段整体排期</div>
+                            </div>
+                            <!-- 行 2: 一次系统图 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-done" style="left: 0; width: 230px;" title="9/15 - 9/24 · 邹木生">一次系统图方案 (已交付)</div>
+                            </div>
+                            <!-- 行 3: 断路器联调 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-progress" style="left: 280px; width: 320px;" title="9/26 - 10/02 · 邹木生">断路器通信联调 (75%)</div>
+                            </div>
+                            <!-- 行 4: 防雷浪涌 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-stage" style="left: 560px; width: 210px; opacity:0.6;" title="10/02 - 10/06 · 邹木生">防雷电路待启动</div>
+                            </div>
+
+                            <!-- 行 5: 阶段二 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-stage" style="left: 100px; width: 560px;">结构与散热阶段整体排期</div>
+                            </div>
+                            <!-- 行 6: 密封圈评审 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-progress" style="left: 100px; width: 350px; background:#8b5cf6;" title="9/22 - 9/29 · 廖斌儒">IP55 密封圈评审 (90%)</div>
+                            </div>
+                            <!-- 行 7: 散热流场仿真 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-warning" style="left: 240px; width: 270px;" title="9/25 - 9/30 · 陈强 (延期风险)">CFD 热仿真 (滞后1天 ⚠️)</div>
+                            </div>
+                            <!-- 行 8: 母线开模 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-stage" style="left: 610px; width: 260px; opacity:0.6;">母线排开模复核</div>
+                            </div>
+
+                            <!-- 行 9: 阶段三 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-stage" style="left: 330px; width: 440px;">固件编程与采集驱动</div>
+                            </div>
+                            <!-- 行 10: 驱动编程 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-gantt-bar bar-progress" style="left: 330px; width: 360px;" title="9/27 - 10/04 · 蔡涛">三相电量采集驱动 (60%)</div>
+                            </div>
+                            <!-- 行 11: 里程碑 -->
+                            <div class="pm-gantt-row">
+                                <div class="pm-milestone-marker" style="left: 980px;" title="10月15日 首台工程样机出库联调"></div>
+                                <span style="position:absolute; left:1010px; font-weight:700; color:#ef4444; font-size:0.8rem;">🚩 首台样机联调里程碑 (10/15)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ---------------- VIEW 3: 任务多维表 ---------------- -->
+            <div class="pm-view-pane" id="view-table">
+                <div class="pm-table-wrap">
+                    <table class="pm-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">编码</th>
+                                <th>任务名称</th>
+                                <th style="width: 100px;">优先级</th>
+                                <th style="width: 120px;">状态</th>
+                                <th style="width: 100px;">负责人</th>
+                                <th style="width: 180px;">排期时间</th>
+                                <th style="width: 140px;">进度</th>
+                                <th style="width: 80px;">预估工时</th>
+                                <th style="width: 60px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr onclick="openTaskDetail('PRJ-105')">
+                                <td><span style="font-weight:700; color:var(--pm-text-subtle);">PRJ-105</span></td>
+                                <td><span style="font-weight:600;">智能断路器远程分合闸通信规约联调</span></td>
+                                <td><span class="pm-priority-pill prio-p0">P0 紧急</span></td>
+                                <td><span class="pm-status-select st-prog">进行中</span></td>
+                                <td>
+                                    <div class="pm-assignee"><div class="pm-mini-avatar" style="background:#2563eb;">邹</div> 邹木生</div>
+                                </td>
+                                <td>09/26 ~ 10/02</td>
+                                <td>
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 75%;"></div></div>
+                                </td>
+                                <td>24h / 18h</td>
+                                <td><a href="javascript:void(0)" style="color:var(--pm-primary);"><i class="fas fa-edit"></i></a></td>
+                            </tr>
+                            <tr onclick="openTaskDetail('PRJ-106')">
+                                <td><span style="font-weight:700; color:var(--pm-text-subtle);">PRJ-106</span></td>
+                                <td><span style="font-weight:600;">柜体密闭强迫风冷散热 CFD 热力学流场仿真</span></td>
+                                <td><span class="pm-priority-pill prio-p1">P1 高优</span></td>
+                                <td><span class="pm-status-select st-prog" style="color:var(--pm-warning);">滞后中</span></td>
+                                <td>
+                                    <div class="pm-assignee"><div class="pm-mini-avatar" style="background:#10b981;">陈</div> 陈强</div>
+                                </td>
+                                <td style="color:var(--pm-danger); font-weight:600;">09/25 ~ 09/30 (超期1天)</td>
+                                <td>
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 50%; background:var(--pm-warning);"></div></div>
+                                </td>
+                                <td>32h / 26h</td>
+                                <td><a href="javascript:void(0)" style="color:var(--pm-primary);"><i class="fas fa-edit"></i></a></td>
+                            </tr>
+                            <tr onclick="openTaskDetail('PRJ-107')">
+                                <td><span style="font-weight:700; color:var(--pm-text-subtle);">PRJ-107</span></td>
+                                <td><span style="font-weight:600;">电量及三相电流谐波采集上报驱动编程</span></td>
+                                <td><span class="pm-priority-pill prio-p2">P2 中优</span></td>
+                                <td><span class="pm-status-select st-prog">进行中</span></td>
+                                <td>
+                                    <div class="pm-assignee"><div class="pm-mini-avatar" style="background:#0ea5e9;">蔡</div> 蔡涛</div>
+                                </td>
+                                <td>09/27 ~ 10/04</td>
+                                <td>
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 60%;"></div></div>
+                                </td>
+                                <td>20h / 12h</td>
+                                <td><a href="javascript:void(0)" style="color:var(--pm-primary);"><i class="fas fa-edit"></i></a></td>
+                            </tr>
+                            <tr onclick="openTaskDetail('PRJ-108')">
+                                <td><span style="font-weight:700; color:var(--pm-text-subtle);">PRJ-108</span></td>
+                                <td><span style="font-weight:600;">配电柜外壳 IP55 防护等级密封圈结构评审</span></td>
+                                <td><span class="pm-priority-pill prio-p1">P1 高优</span></td>
+                                <td><span class="pm-status-select st-rev">审核中</span></td>
+                                <td>
+                                    <div class="pm-assignee"><div class="pm-mini-avatar" style="background:#f59e0b;">廖</div> 廖斌儒</div>
+                                </td>
+                                <td>09/22 ~ 09/29</td>
+                                <td>
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 90%; background:#8b5cf6;"></div></div>
+                                </td>
+                                <td>16h / 14h</td>
+                                <td><a href="javascript:void(0)" style="color:var(--pm-primary);"><i class="fas fa-edit"></i></a></td>
+                            </tr>
+                            <tr onclick="openTaskDetail('PRJ-109')">
+                                <td><span style="font-weight:700; color:var(--pm-text-subtle);">PRJ-109</span></td>
+                                <td><span style="font-weight:600;">主回路额定 400A 电气一次系统图方案确定</span></td>
+                                <td><span class="pm-priority-pill prio-p0">P0 紧急</span></td>
+                                <td><span class="pm-status-select st-done">已交付</span></td>
+                                <td>
+                                    <div class="pm-assignee"><div class="pm-mini-avatar" style="background:#2563eb;">邹</div> 邹木生</div>
+                                </td>
+                                <td>09/15 ~ 09/24</td>
+                                <td>
+                                    <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 100%; background:var(--pm-success);"></div></div>
+                                </td>
+                                <td>40h / 38h</td>
+                                <td><a href="javascript:void(0)" style="color:var(--pm-primary);"><i class="fas fa-edit"></i></a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ---------------- VIEW 4: 项目健康洞察 ---------------- -->
+            <div class="pm-view-pane" id="view-insights">
+                <!-- 指标概览卡片 -->
+                <div class="pm-dash-grid">
+                    <div class="pm-stat-card">
+                        <div class="pm-stat-label"><span>整体交付进度</span> <i class="fas fa-chart-line" style="color:var(--pm-primary);"></i></div>
+                        <div class="pm-stat-num" style="color:var(--pm-primary);">68%</div>
+                        <div class="pm-stat-meta"><i class="fas fa-arrow-up" style="color:var(--pm-success);"></i> 较上周提速 14%</div>
+                    </div>
+                    <div class="pm-stat-card">
+                        <div class="pm-stat-label"><span>任务统计</span> <i class="fas fa-tasks" style="color:#6366f1;"></i></div>
+                        <div class="pm-stat-num">10 项</div>
+                        <div class="pm-stat-meta">已交付 2 · 进行中 3 · 待开始 5</div>
+                    </div>
+                    <div class="pm-stat-card">
+                        <div class="pm-stat-label"><span>延期风险卡点</span> <i class="fas fa-exclamation-triangle" style="color:var(--pm-danger);"></i></div>
+                        <div class="pm-stat-num" style="color:var(--pm-danger);">1 项</div>
+                        <div class="pm-stat-meta">陈强 · 散热仿真滞后 1 天</div>
+                    </div>
+                    <div class="pm-stat-card">
+                        <div class="pm-stat-label"><span>团队负荷率</span> <i class="fas fa-tachometer-alt" style="color:var(--pm-success);"></i></div>
+                        <div class="pm-stat-num" style="color:var(--pm-success);">84%</div>
+                        <div class="pm-stat-meta">处于健康高效区间</div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="pm-dash-charts">
+                    <!-- 燃尽图 -->
+                    <div class="pm-chart-card">
+                        <div class="pm-chart-title">
+                            <span>🔥 项目 Sprint 燃尽图 (Burndown Chart)</span>
+                            <span style="font-size:0.75rem; color:var(--pm-text-muted);">距 10/15 里程碑剩余 16 天</span>
+                        </div>
+                        <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+                            <svg viewBox="0 0 500 200" style="width:100%; height:180px;">
+                                <!-- 网格线 -->
+                                <line x1="40" y1="20" x2="480" y2="20" stroke="var(--pm-border)" stroke-dasharray="3"/>
+                                <line x1="40" y1="70" x2="480" y2="70" stroke="var(--pm-border)" stroke-dasharray="3"/>
+                                <line x1="40" y1="120" x2="480" y2="120" stroke="var(--pm-border)" stroke-dasharray="3"/>
+                                <line x1="40" y1="170" x2="480" y2="170" stroke="var(--pm-border)"/>
+                                
+                                <!-- 理想斜率折线 (虚线) -->
+                                <line x1="40" y1="30" x2="480" y2="170" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 5"/>
+                                
+                                <!-- 实际完成曲线 (实线) -->
+                                <polyline fill="none" stroke="var(--pm-primary)" stroke-width="3" points="40,30 110,45 180,65 250,85 320,110" />
+                                
+                                <!-- 数据点 -->
+                                <circle cx="40" cy="30" r="4" fill="var(--pm-primary)"/>
+                                <circle cx="110" cy="45" r="4" fill="var(--pm-primary)"/>
+                                <circle cx="180" cy="65" r="4" fill="var(--pm-primary)"/>
+                                <circle cx="250" cy="85" r="4" fill="var(--pm-primary)"/>
+                                <circle cx="320" cy="110" r="5" fill="#ef4444"/>
+                                
+                                <text x="325" y="105" font-size="11" fill="#ef4444" font-weight="bold">当前 (9/29)</text>
+                                <text x="40" y="190" font-size="10" fill="var(--pm-text-muted)">9/15</text>
+                                <text x="180" y="190" font-size="10" fill="var(--pm-text-muted)">9/25</text>
+                                <text x="320" y="190" font-size="10" fill="var(--pm-text-muted)">9/29</text>
+                                <text x="450" y="190" font-size="10" fill="var(--pm-text-muted)">10/15</text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- 人员负荷热力图 -->
+                    <div class="pm-chart-card">
+                        <div class="pm-chart-title">
+                            <span>👥 团队工时负荷率</span>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:14px; justify-content:center; flex:1;">
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px;">
+                                    <span>邹木生 (电气)</span>
+                                    <span style="font-weight:700; color:var(--pm-warning);">94% (满负荷)</span>
+                                </div>
+                                <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 94%; background:var(--pm-warning);"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px;">
+                                    <span>蔡涛 (固件)</span>
+                                    <span style="font-weight:700; color:var(--pm-primary);">82% (适中)</span>
+                                </div>
+                                <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 82%;"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px;">
+                                    <span>廖斌儒 (结构)</span>
+                                    <span style="font-weight:700; color:var(--pm-primary);">86% (适中)</span>
+                                </div>
+                                <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 86%;"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px;">
+                                    <span>陈强 (仿真)</span>
+                                    <span style="font-weight:700; color:var(--pm-danger);">96% (过载)</span>
+                                </div>
+                                <div class="pm-progress-bar"><div class="pm-progress-fill" style="width: 96%; background:var(--pm-danger);"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ================= 任务详情侧边滑动抽屉 (Slide-Over Drawer) ================= -->
+    <div class="pm-drawer-backdrop" id="drawerBackdrop" onclick="closeTaskDrawer()"></div>
+    <div class="pm-drawer" id="taskDrawer">
+        <div class="pm-drawer-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="pm-card-id" id="drawerTaskId">PRJ-105</span>
+                <span class="pm-priority-pill prio-p0" id="drawerTaskPrio">P0 紧急</span>
+            </div>
+            <button class="pm-drawer-close" onclick="closeTaskDrawer()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="pm-drawer-body">
+            <div class="pm-form-group">
+                <label class="pm-form-label">任务名称</label>
+                <input type="text" class="pm-form-input" id="drawerTaskTitle" value="智能断路器远程分合闸通信规约联调">
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div class="pm-form-group">
+                    <label class="pm-form-label">负责人</label>
+                    <select class="pm-form-input" id="drawerTaskAssignee">
+                        <option value="邹木生">邹木生</option>
+                        <option value="蔡涛">蔡涛</option>
+                        <option value="廖斌儒">廖斌儒</option>
+                        <option value="陈强">陈强</option>
+                        <option value="孔维">孔维</option>
+                    </select>
+                </div>
+                <div class="pm-form-group">
+                    <label class="pm-form-label">任务状态</label>
+                    <select class="pm-form-input" id="drawerTaskStatus">
+                        <option value="backlog">待规划</option>
+                        <option value="todo">待开始</option>
+                        <option value="inprogress" selected>进行中</option>
+                        <option value="review">评审/测试</option>
+                        <option value="done">已完成</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div class="pm-form-group">
+                    <label class="pm-form-label">开始日期</label>
+                    <input type="date" class="pm-form-input" value="2026-09-26">
+                </div>
+                <div class="pm-form-group">
+                    <label class="pm-form-label">截止日期</label>
+                    <input type="date" class="pm-form-input" value="2026-10-02">
+                </div>
+            </div>
+
+            <!-- 子任务 Checklist -->
+            <div class="pm-form-group">
+                <label class="pm-form-label">子任务清单 (Checklist · 3/4 已完成)</label>
+                <div style="background:var(--pm-bg-subtle); padding:10px 14px; border-radius:8px;">
+                    <div class="pm-checklist-item">
+                        <input type="checkbox" checked id="chk1"> <label for="chk1" style="text-decoration:line-through; color:var(--pm-text-muted);">RS-485 硬件物理链路差分波形测量</label>
+                    </div>
+                    <div class="pm-checklist-item">
+                        <input type="checkbox" checked id="chk2"> <label for="chk2" style="text-decoration:line-through; color:var(--pm-text-muted);">Modbus-RTU 寄存器寻址与指令集协议解析</label>
+                    </div>
+                    <div class="pm-checklist-item">
+                        <input type="checkbox" checked id="chk3"> <label for="chk3" style="text-decoration:line-through; color:var(--pm-text-muted);">分闸/合闸继电器驱动线圈触点响应时间测量</label>
+                    </div>
+                    <div class="pm-checklist-item">
+                        <input type="checkbox" id="chk4"> <label for="chk4">高压异常带载跳闸压力模拟测试 (进行中)</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务描述与交付物 -->
+            <div class="pm-form-group">
+                <label class="pm-form-label">任务交付物与技术要点</label>
+                <textarea class="pm-form-textarea" rows="4">1. 联调断路器分合闸延时必须控制在 80ms 以内；
+2. 确保在母线短路瞬间能够可靠触发上级脱扣器连锁保护机制；
+3. 输出完整的《智能断路器通讯规约联调测试报告》及波形截图。</textarea>
+            </div>
+
+            <div style="margin-top:auto; padding-top:14px; border-top:1px solid var(--pm-border); display:flex; justify-content:flex-end; gap:10px;">
+                <button class="pm-action-btn pm-btn-outline" onclick="closeTaskDrawer()">取消</button>
+                <button class="pm-action-btn pm-btn-primary" onclick="saveTaskDrawer()"><i class="fas fa-save"></i> 保存更新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 交互控制脚本 ================= -->
+    <script>
+        // 1. 侧边栏折叠联动 (遵循原有极简导轨设计)
+        const pmSidebar = document.getElementById('pmSidebar');
+        const pmSidebarToggle = document.getElementById('pmSidebarToggle');
+        
+        pmSidebarToggle.addEventListener('click', () => {
+            pmSidebar.classList.toggle('collapsed');
+        });
+
+        // 2. 主题明暗切换 (深浅色无缝转换)
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        function initTheme() {
+            const saved = localStorage.getItem('appThemePreference') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+            updateThemeIcon(saved);
+        }
+        function updateThemeIcon(t) {
+            themeToggleBtn.innerHTML = t === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        }
+        themeToggleBtn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('appThemePreference', next);
+            updateThemeIcon(next);
+        });
+        initTheme();
+
+        // 3. 多视图切换 (Tabs)
+        const viewTabs = document.querySelectorAll('.pm-view-tab');
+        const viewPanes = {
+            'kanban': document.getElementById('view-kanban'),
+            'gantt': document.getElementById('view-gantt'),
+            'table': document.getElementById('view-table'),
+            'insights': document.getElementById('view-insights')
+        };
+
+        viewTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                viewTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const targetView = tab.getAttribute('data-view');
+                Object.keys(viewPanes).forEach(k => {
+                    viewPanes[k].classList.remove('active');
+                });
+                viewPanes[targetView].classList.add('active');
+            });
+        });
+
+        // 4. 看板拖拽流转 (HTML5 Drag & Drop)
+        let draggedCard = null;
+
+        function handleDragStart(e) {
+            draggedCard = e.currentTarget;
+            e.dataTransfer.setData('text/plain', draggedCard.getAttribute('data-id'));
+            setTimeout(() => draggedCard.classList.add('dragging'), 0);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e, status) {
+            e.preventDefault();
+            const col = e.currentTarget;
+            col.classList.remove('drag-over');
+            if (draggedCard) {
+                draggedCard.classList.remove('dragging');
+                col.appendChild(draggedCard);
+                updateColCounts();
+            }
+        }
+
+        document.addEventListener('dragend', () => {
+            if (draggedCard) draggedCard.classList.remove('dragging');
+        });
+
+        function updateColCounts() {
+            document.querySelectorAll('.pm-kanban-col').forEach(col => {
+                const count = col.querySelectorAll('.pm-card').length;
+                const countBadge = col.querySelector('.pm-col-count');
+                if (countBadge) countBadge.innerText = count;
+            });
+        }
+
+        // 5. 任务筛选 (负责人、优先级、关键词)
+        function applyFilters() {
+            const member = document.getElementById('memberFilter').value;
+            const prio = document.getElementById('priorityFilter').value;
+            const query = document.getElementById('taskSearchInput').value.trim().toLowerCase();
+
+            document.querySelectorAll('.pm-card').forEach(card => {
+                const cMember = card.getAttribute('data-member') || '';
+                const cPrio = card.getAttribute('data-prio') || '';
+                const text = card.innerText.toLowerCase();
+
+                const matchMember = (member === 'all' || cMember === member);
+                const matchPrio = (prio === 'all' || cPrio === prio);
+                const matchQuery = (!query || text.includes(query));
+
+                if (matchMember && matchPrio && matchQuery) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            updateColCounts();
+        }
+
+        // 6. 任务抽屉交互 (Slide-Over Drawer)
+        const drawerBackdrop = document.getElementById('drawerBackdrop');
+        const taskDrawer = document.getElementById('taskDrawer');
+
+        function openTaskDetail(taskId) {
+            document.getElementById('drawerTaskId').innerText = taskId;
+            drawerBackdrop.classList.add('open');
+            taskDrawer.classList.add('open');
+        }
+
+        function openNewTaskDrawer() {
+            document.getElementById('drawerTaskId').innerText = 'NEW-TASK';
+            document.getElementById('drawerTaskTitle').value = '';
+            drawerBackdrop.classList.add('open');
+            taskDrawer.classList.add('open');
+        }
+
+        function closeTaskDrawer() {
+            drawerBackdrop.classList.remove('open');
+            taskDrawer.classList.remove('open');
+        }
+
+        function saveTaskDrawer() {
+            closeTaskDrawer();
+            alert('任务信息已更新保存！');
+        }
+
+        // 键盘 Esc 关闭抽屉
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeTaskDrawer();
+        });
+    </script>
+</body>
+</html>
