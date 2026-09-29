@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260929_v8" defer></script>
+    <script src="./app.js?v=20260929_worklog_v1" defer></script>
     <style>
         * {
             margin: 0;
@@ -3920,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_v9" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_worklog_v1" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4119,6 +4119,11 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 快捷生成周报按钮 -->
+                    <button class="btn btn-outline-primary btn-quick-report" id="btnQuickWeeklyReport" type="button" title="一键生成本周工作总结与周报">
+                        <i class="fas fa-file-contract"></i> <span>生成周报</span>
+                    </button>
                 </div>
             </header>
 
@@ -4477,6 +4482,13 @@
                                 <button class="memo-text-tool icon-only" type="button" data-format="ul" title="无序列表" aria-label="无序列表"><span class="memo-list-icon bulleted" aria-hidden="true"><span></span><span></span><span></span></span></button>
                                 <button class="memo-text-tool icon-only" type="button" data-format="ol" title="有序列表" aria-label="有序列表"><span class="memo-list-icon ordered" aria-hidden="true"><span>1.</span><span>2.</span><span>3.</span></span></button>
                                 <button class="memo-text-tool icon-only" type="button" data-format="task" title="任务项" aria-label="任务项"><span class="memo-list-icon task" aria-hidden="true"><span></span><span></span><span></span></span></button>
+                            </div>
+                            <div class="memo-template-chips-bar" id="memoTemplateChipsBar">
+                                <span class="template-chips-label"><i class="fas fa-magic"></i> 快速模板:</span>
+                                <button type="button" class="btn-template-chip" data-tpl="dev" title="插入标准研发工作日志模板">⚡ 研发日志</button>
+                                <button type="button" class="btn-template-chip" data-tpl="meeting" title="插入会议纪要与行动项模板">📝 会议纪要</button>
+                                <button type="button" class="btn-template-chip" data-tpl="qa" title="插入装配与品质检验模板">🔍 质检/测试</button>
+                                <button type="button" class="btn-template-chip chip-carryover" id="btnCarryoverYesterday" title="从昨天未完成的备忘或待办中自动结转过来"><i class="fas fa-history"></i> 结转昨日待办</button>
                             </div>
                             <textarea class="form-control" id="memoContent" rows="5" placeholder="输入备忘录内容，支持Markdown语法..."></textarea>
                             <div class="markdown-preview is-hidden" id="markdownPreview" style="display: none;" hidden>

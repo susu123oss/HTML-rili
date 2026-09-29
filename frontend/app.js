@@ -6650,6 +6650,113 @@ function handleMemoTextToolbarClick(event) {
   applyMemoTextFormat(button.dataset.format);
 }
 
+function applyMemoTemplate(type) {
+  const templates = {
+    dev: `### 💻 今日研发进度
+- [ ] 核心模块设计与编码实现
+- [ ] 联调测试与缺陷排查
+- [ ] 提交代码评审与更新技术文档
+
+### 📌 关键交付与进展
+1. 
+
+### ⚠️ 风险与协助需求
+- 无`,
+    meeting: `### 📝 会议纪要
+- **会议主题**: 
+- **参会人员**: 
+- **时间地点**: 
+
+### 🎯 核心结论与共识
+1. 
+
+### 📋 待办行动项 (Action Items)
+- [ ] 事项1 (负责人: , 截止: )
+- [ ] 事项2 (负责人: , 截止: )`,
+    qa: `### 🔍 质检/测试记录
+- **受检项目/版本**: 
+- **检验批次/环境**: 
+
+### ⚙️ 检验指标与核查清单
+- [ ] 外观与装配标准检查: 合格
+- [ ] 核心功能与性能表现: 正常
+- [ ] 边界用例与异常恢复: 达标
+
+### 🏁 判定结论
+- 检验结果: [合格 / 待复检]`
+  };
+
+  const tpl = templates[type];
+  if (!tpl) return;
+  const textarea = $('memoContent');
+  if (!textarea) return;
+  const curVal = textarea.value.trim();
+  textarea.value = curVal ? `${curVal}\n\n${tpl}` : tpl;
+  textarea.focus();
+  updateMarkdownPreview();
+}
+
+function carryOverYesterdayMemos() {
+  const currentDateVal = $('memoDate')?.value;
+  if (!currentDateVal) return;
+  const curDate = new Date(currentDateVal + 'T00:00:00');
+  const prevDate = new Date(curDate);
+  prevDate.setDate(curDate.getDate() - 1);
+  const prevDateKey = dateKey(prevDate);
+
+  const targetUserId = state.selectedUserId !== 'all' ? Number(state.selectedUserId) : state.user?.id;
+  
+  const allMemos = state.memos || [];
+  const yesterdayMemos = allMemos.filter(m => 
+    m.date === prevDateKey && 
+    (!targetUserId || Number(m.ownerId) === targetUserId) &&
+    !m.completed
+  );
+
+  if (yesterdayMemos.length === 0) {
+    alert(`昨日 (${prevDateKey}) 没有未完成的待办事项，无需结转！`);
+    return;
+  }
+
+  const carryLines = [];
+  yesterdayMemos.forEach(m => {
+    carryLines.push(`- [ ] [昨日未完] ${m.title}`);
+    if (m.content) {
+      const lines = m.content.split('\n');
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('- [ ]')) {
+          carryLines.push(`  ${trimmed}`);
+        }
+      });
+    }
+  });
+
+  const carryBlock = `### ⏳ 昨日待办结转 (${prevDateKey})\n` + carryLines.join('\n');
+  const textarea = $('memoContent');
+  if (!textarea) return;
+  const curVal = textarea.value.trim();
+  textarea.value = curVal ? `${curVal}\n\n${carryBlock}` : carryBlock;
+  textarea.focus();
+  updateMarkdownPreview();
+}
+
+function handleMemoTemplateChipsClick(event) {
+  const tplBtn = event.target.closest?.('[data-tpl]');
+  if (tplBtn) {
+    event.preventDefault();
+    applyMemoTemplate(tplBtn.dataset.tpl);
+    return;
+  }
+  const carryBtn = event.target.closest?.('#btnCarryoverYesterday');
+  if (carryBtn) {
+    event.preventDefault();
+    carryOverYesterdayMemos();
+    return;
+  }
+}
+
+
 function continueOrderedMemoLine(event) {
   if (event.key !== 'Enter' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
   const textarea = event.currentTarget;
@@ -7369,7 +7476,14 @@ function buildWeeklyReportMarkdown() {
   const nextSunKey = dateKey(nextSunday);
 
   const targetUserId = getWeeklyTargetUserId();
-  const userMemos = state.weeklyMemos.filter(m => Number(m.ownerId) === targetUserId && m.planKind === 'plan');
+  const allCandidateMemos = (state.weeklyMemos && state.weeklyMemos.length)
+    ? state.weeklyMemos
+    : (state.memos || []);
+  let userMemos = allCandidateMemos.filter(m => !targetUserId || Number(m.ownerId) === targetUserId);
+  const planOnly = userMemos.filter(m => m.planKind === 'plan');
+  if (planOnly.length > 0) {
+    userMemos = planOnly;
+  }
   const thisWeekMemos = userMemos.filter(m => m.date >= monKey && m.date <= sunKey);
   const nextWeekMemos = userMemos.filter(m => m.date >= nextMonKey && m.date <= nextSunKey);
 
@@ -7498,6 +7612,27 @@ function copyWeeklyReportMarkdown() {
   dialog.showModal();
   preview.focus();
 }
+
+async function openQuickWeeklyReportFromTopbar() {
+  if (!state.weeklyPlanDate) {
+    state.weeklyPlanDate = new Date();
+  }
+  const { monday, nextSunday } = getWeekRange(state.weeklyPlanDate);
+  const start = dateKey(monday);
+  const end = dateKey(nextSunday);
+  if (!state.weeklyMemos || state.weeklyMemos.length === 0) {
+    state.weeklyMemos = (state.memos || []).filter(m => m.date >= start && m.date <= end);
+  }
+  try {
+    if (typeof loadWeeklyPlanData === 'function') {
+      await loadWeeklyPlanData();
+    }
+  } catch (e) {
+    console.warn('loadWeeklyPlanData fallback', e);
+  }
+  copyWeeklyReportMarkdown();
+}
+
 
 async function confirmCopyWeeklyReport() {
   const preview = $('wpReportPreview');
@@ -7666,6 +7801,21 @@ function getCountdown(memo) {
   return `<span class="countdown success">${daysDiff} 天后到期</span>`;
 }
 
+function getMemoReactions(memoId) {
+  try {
+    const raw = localStorage.getItem(`memo_reactions_${memoId}`);
+    return raw ? JSON.parse(raw) : { isRead: false, isLiked: false };
+  } catch (e) {
+    return { isRead: false, isLiked: false };
+  }
+}
+
+function setMemoReactions(memoId, reactions) {
+  try {
+    localStorage.setItem(`memo_reactions_${memoId}`, JSON.stringify(reactions));
+  } catch (e) {}
+}
+
 function createTaskItem(memo) {
   let dueDateText = '无截止时间';
   if (memo.dueTime) {
@@ -7682,12 +7832,20 @@ function createTaskItem(memo) {
   const statusBadge = memo.completed
     ? '<span class="task-status-pill completed"><i class="fas fa-check-circle"></i> 已完成</span>'
     : '<span class="task-status-pill pending"><i class="fas fa-clock"></i> 进行中</span>';
+
+  const reactions = getMemoReactions(memo.id);
+  const stampsHtml = `
+    ${reactions.isRead ? '<span class="task-stamp read"><i class="fas fa-check-double"></i> 已阅</span>' : ''}
+    ${reactions.isLiked ? '<span class="task-stamp like"><i class="fas fa-thumbs-up"></i> +1</span>' : ''}
+  `;
+
   return `
     <div class="task-item ${memo.completed ? 'completed' : ''}" style="border-left-color:${itemColor}">
       <div class="task-header">
         <div class="task-title ${memo.completed ? 'completed' : ''}">
           <span class="task-title-text">${escapeHtml(memoFullTitle(memo))}</span>
           ${statusBadge}
+          ${stampsHtml}
         </div>
         <div class="task-color" style="background-color:${itemColor}"></div>
       </div>
@@ -7699,6 +7857,12 @@ function createTaskItem(memo) {
         <button class="task-btn task-btn-complete" data-id="${memo.id}">
           ${memo.completed ? '<i class="fas fa-undo"></i> 标记为未完成' : '<i class="fas fa-check"></i> 标记为完成'}
         </button>
+        <button class="task-btn task-btn-react ${reactions.isRead ? 'active' : ''}" data-action="toggle-read" data-id="${memo.id}" title="审阅并盖章已阅">
+          <i class="fas fa-check-double"></i> ${reactions.isRead ? '已阅' : '审阅'}
+        </button>
+        <button class="task-btn task-btn-react ${reactions.isLiked ? 'active' : ''}" data-action="toggle-like" data-id="${memo.id}" title="为工作点赞">
+          <i class="fas fa-thumbs-up"></i> ${reactions.isLiked ? '已赞' : '点赞'}
+        </button>
         <button class="task-btn task-btn-edit" data-id="${memo.id}">
           <i class="fas fa-edit"></i> 编辑
         </button>
@@ -7709,6 +7873,7 @@ function createTaskItem(memo) {
     </div>
   `;
 }
+
 
 function loadDailyDetailMemos(date) {
   const key = dateKey(date);
@@ -8808,6 +8973,8 @@ function initEventListeners() {
   $('memoContent').addEventListener('input', updateMarkdownPreview);
   $('memoContent').addEventListener('keydown', continueOrderedMemoLine);
   $('memoTextToolbar')?.addEventListener('click', handleMemoTextToolbarClick);
+  $('memoTemplateChipsBar')?.addEventListener('click', handleMemoTemplateChipsClick);
+  $('btnQuickWeeklyReport')?.addEventListener('click', openQuickWeeklyReportFromTopbar);
   $('memoTabEdit')?.addEventListener('click', () => switchMemoContentTab('edit'));
   $('memoTabPreview')?.addEventListener('click', () => switchMemoContentTab('preview'));
   $('quickDueChips')?.addEventListener('click', handleQuickDueChipClick);
@@ -8951,6 +9118,23 @@ function initEventListeners() {
     if (memoItem) { event.stopPropagation(); await openMemoModal(memoItem.dataset.memoId); return; }
     const completeBtn = event.target.closest('.task-btn-complete');
     if (completeBtn) { event.stopPropagation(); await toggleMemoCompletion(completeBtn.dataset.id); return; }
+    const reactBtn = event.target.closest('.task-btn-react');
+    if (reactBtn) {
+      event.stopPropagation();
+      const memoId = reactBtn.dataset.id;
+      const action = reactBtn.dataset.action;
+      const cur = getMemoReactions(memoId);
+      if (action === 'toggle-read') {
+        cur.isRead = !cur.isRead;
+      } else if (action === 'toggle-like') {
+        cur.isLiked = !cur.isLiked;
+      }
+      setMemoReactions(memoId, cur);
+      if (state.dailyDetailDate) {
+        loadDailyDetailMemos(state.dailyDetailDate);
+      }
+      return;
+    }
     const editBtn = event.target.closest('.task-btn-edit');
     if (editBtn) {
       event.stopPropagation();
