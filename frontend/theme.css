@@ -6192,7 +6192,7 @@ html[data-theme='dark'] .user-avatar {
 }
 
 /* 核心导航项：统一规格的 42x42 方圆精致磁贴 (Icon Tile) */
-.app-sidebar.collapsed .nav-item {
+.app-sidebar.collapsed .nav-item:not([hidden]) {
   width: 42px !important;
   height: 42px !important;
   min-width: 42px !important;
@@ -6209,6 +6209,12 @@ html[data-theme='dark'] .user-avatar {
   position: relative !important;
   box-sizing: border-box !important;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.app-sidebar.collapsed .nav-item[hidden],
+.app-sidebar.collapsed .nav-item[style*="display: none"],
+.app-sidebar.collapsed .nav-item[style*="display:none"] {
+  display: none !important;
 }
 
 .app-sidebar.collapsed .nav-item i {
