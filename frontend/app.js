@@ -6049,6 +6049,7 @@ function closeMemoModal() {
   hideDialog('memoModal');
   state.selectedMemoId = null;
   state.detailDraftFromQuickAdd = false;
+  switchMemoContentTab('edit');
 }
 
 let memoPickerState = {
@@ -6504,13 +6505,20 @@ function switchMemoContentTab(mode) {
     previewTab.classList.add('active');
     if (toolbar) toolbar.style.display = 'none';
     textarea.style.display = 'none';
+    textarea.hidden = true;
     preview.style.display = 'block';
+    preview.hidden = false;
+    preview.classList.remove('is-hidden');
     updateMarkdownPreview();
   } else {
     previewTab.classList.remove('active');
     editTab.classList.add('active');
     if (toolbar) toolbar.style.display = 'flex';
     textarea.style.display = 'block';
+    textarea.hidden = false;
+    preview.style.display = 'none';
+    preview.hidden = true;
+    preview.classList.add('is-hidden');
     try {
       textarea.focus({ preventScroll: true });
     } catch (e) {

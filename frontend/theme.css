@@ -245,16 +245,57 @@ html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderMo
   color: var(--ui-text) !important;
 }
 
-html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.close-modal, .close-reminder) {
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.close-modal, .close-reminder),
+.close-modal,
+.close-reminder {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  font-size: 0 !important;
   color: var(--ui-text-muted) !important;
   background: var(--ui-surface-soft) !important;
   border: 1px solid var(--ui-border) !important;
   border-radius: 9px !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  flex: 0 0 32px !important;
+  flex-shrink: 0 !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.close-modal, .close-reminder):hover {
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.close-modal, .close-reminder):hover,
+.close-modal:hover,
+.close-reminder:hover {
   color: var(--ui-text) !important;
   background: var(--ui-surface-hover) !important;
+  border-color: var(--ui-border-strong) !important;
+  transform: scale(1.05);
+}
+
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.close-modal, .close-reminder):active,
+.close-modal:active,
+.close-reminder:active {
+  transform: scale(0.95);
+}
+
+html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderModal) :is(.close-modal, .close-reminder) svg,
+.close-modal svg,
+.close-reminder svg {
+  width: 14px !important;
+  height: 14px !important;
+  display: block !important;
+  stroke: currentColor !important;
+  flex-shrink: 0 !important;
+  pointer-events: none !important;
 }
 
 html[data-theme] :is(#functionsModal, #memoModal) .form-group label {
@@ -1971,6 +2012,12 @@ header.app-topbar {
   background: var(--ui-surface-soft) !important;
   font-size: 0.88rem !important;
   line-height: 1.6 !important;
+}
+
+#memoModal #markdownPreview[hidden],
+#memoModal #markdownPreview[style*="display: none"],
+#memoModal #markdownPreview.is-hidden {
+  display: none !important;
 }
 
 /* 全能工具箱：现代胶囊分段选项卡 (Segmented Control Tabs) */

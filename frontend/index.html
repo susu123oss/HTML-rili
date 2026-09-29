@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260929_v6" defer></script>
+    <script src="./app.js?v=20260929_v7" defer></script>
     <style>
         * {
             margin: 0;
@@ -1315,16 +1315,25 @@
         }
 
         .close-modal {
-            background: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            min-height: 32px;
+            padding: 0;
             border: none;
+            background: none;
             color: white;
-            font-size: 1.6rem;
             cursor: pointer;
+            line-height: 1;
+            box-sizing: border-box;
             transition: var(--transition);
         }
 
         .close-modal:hover {
-            transform: rotate(90deg);
+            transform: scale(1.08);
         }
 
         @media (max-width: 520px) {
@@ -3911,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_v6" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260929_v7" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4316,7 +4325,7 @@
                 <div class="reminder-title">
                     <i class="fas fa-bell"></i> 提醒中心
                 </div>
-                <button class="close-reminder" id="closeReminderModal">&times;</button>
+                <button class="close-reminder" id="closeReminderModal" title="关闭" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
             <div class="reminder-body">
                 <div class="reminder-filter-tabs" id="reminderFilterTabs">
@@ -4357,7 +4366,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title">备忘录编辑</div>
-                <button class="close-modal" id="closeMemoModal">&times;</button>
+                <button class="close-modal" id="closeMemoModal" title="关闭" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
             <div class="modal-body">
                 <form id="memoForm" autocomplete="off">
@@ -4470,7 +4479,7 @@
                                 <button class="memo-text-tool icon-only" type="button" data-format="task" title="任务项" aria-label="任务项"><span class="memo-list-icon task" aria-hidden="true"><span></span><span></span><span></span></span></button>
                             </div>
                             <textarea class="form-control" id="memoContent" rows="5" placeholder="输入备忘录内容，支持Markdown语法..."></textarea>
-                            <div class="markdown-preview" id="markdownPreview" style="display: none;">
+                            <div class="markdown-preview is-hidden" id="markdownPreview" style="display: none;" hidden>
                                 预览将在这里显示...
                             </div>
                             <div class="memo-text-helper">
@@ -4495,7 +4504,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title">功能面板</div>
-                <button class="close-modal" id="closeFunctionsModal">&times;</button>
+                <button class="close-modal" id="closeFunctionsModal" title="关闭" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
             <div class="modal-body">
                 <div class="tabs">
@@ -4761,7 +4770,7 @@
                     <i class="fas fa-list"></i> 每日备忘录详情
                     <span style="font-size: 1.1rem; opacity: 0.9; margin-left: 12px; font-weight: normal;" id="dailyDetailDate">2023年10月1日</span>
                 </div>
-                <button class="close-modal" id="closeDailyDetailModal">&times;</button>
+                <button class="close-modal" id="closeDailyDetailModal" title="关闭" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
             <div class="modal-body">
                 <!-- 快速添加备忘录 -->
