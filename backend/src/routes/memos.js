@@ -459,7 +459,7 @@ memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
     if (action === 'toggle-read') {
       newReviewed = !newReviewed;
       await query(`UPDATE memos SET is_reviewed = $1, updated_at = NOW() WHERE id = $2`, [newReviewed, memoId]);
-      if (newReviewed && Number(memo.ownerId) !== Number(req.user.id)) {
+      if (newReviewed) {
         await query(
           `INSERT INTO notifications(user_id, memo_id, type, title, content, sender_id, sender_name)
            VALUES($1, $2, 'review', $3, $4, $5, $6)`,
@@ -476,7 +476,7 @@ memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
     } else if (action === 'toggle-like') {
       newLiked = !newLiked;
       await query(`UPDATE memos SET is_liked = $1, updated_at = NOW() WHERE id = $2`, [newLiked, memoId]);
-      if (newLiked && Number(memo.ownerId) !== Number(req.user.id)) {
+      if (newLiked) {
         await query(
           `INSERT INTO notifications(user_id, memo_id, type, title, content, sender_id, sender_name)
            VALUES($1, $2, 'like', $3, $4, $5, $6)`,

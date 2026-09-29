@@ -3642,16 +3642,17 @@ html[data-theme='light'] .memo-calendar-popup {
 .memo-hover-tooltip {
   position: fixed;
   z-index: 99999;
-  pointer-events: none;
-  width: 270px;
+  pointer-events: auto;
+  width: 290px;
   max-width: calc(100vw - 32px);
   padding: 10px 12px;
   border-radius: 10px;
   font-size: 0.82rem;
   line-height: 1.45;
-  box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--ui-border);
+  box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--ui-border);
   background: var(--ui-surface, #ffffff);
   color: var(--ui-text, #1e293b);
+  border: 1px solid var(--ui-border, #e2e8f0);
   transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1), transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0;
   transform: scale(0.96) translateY(4px);
@@ -3685,12 +3686,13 @@ html[data-theme='light'] .memo-calendar-popup {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   font-size: 0.74rem;
   color: var(--ui-text-muted, #64748b);
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid var(--ui-border);
+  flex-wrap: wrap;
 }
 .mht-badge {
   padding: 1px 7px;
@@ -3709,6 +3711,114 @@ html[data-theme='light'] .memo-calendar-popup {
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
+}
+.mht-stamp {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 2px;
+}
+.mht-stamp.read {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+.mht-stamp.like {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+.mht-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ui-border, #e2e8f0);
+}
+.mht-btn-carryover {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.mht-btn-carryover:hover {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  transform: translateY(-1px);
+}
+.mht-react-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mht-btn-react {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid var(--ui-border, #e2e8f0);
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-text-muted, #64748b);
+  transition: all 0.15s ease;
+}
+.mht-btn-react:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+.mht-btn-react.active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+.mht-btn-react[data-action="toggle-like"].active {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+html[data-theme='dark'] .memo-hover-tooltip {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px #334155 !important;
+  color: #f1f5f9 !important;
+}
+html[data-theme='dark'] .mht-title {
+  color: #f8fafc !important;
+}
+html[data-theme='dark'] .mht-content {
+  color: #cbd5e1 !important;
+}
+html[data-theme='dark'] .mht-meta,
+html[data-theme='dark'] .mht-actions-bar {
+  border-color: #334155 !important;
+}
+html[data-theme='dark'] .mht-btn-carryover {
+  color: #34d399 !important;
+  background: rgba(52, 211, 153, 0.15) !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+html[data-theme='dark'] .mht-btn-carryover:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+html[data-theme='dark'] .mht-btn-react {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
 }
 
 /* ── 移动端日程聚焦脉冲动画 ────────────────────────── */

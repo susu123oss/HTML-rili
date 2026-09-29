@@ -6424,6 +6424,47 @@ function initMemoDuePicker() {
   });
 }
 
+async function carryOverSingleMemoToNextDay(memoId) {
+  const memo = state.memos?.find((m) => String(m.id) === String(memoId));
+  if (!memo) {
+    alert('未找到该事项信息');
+    return;
+  }
+  const curDate = new Date((memo.date || dateKey(new Date())) + 'T00:00:00');
+  const nextDate = new Date(curDate);
+  nextDate.setDate(curDate.getDate() + 1);
+  const nextKey = dateKey(nextDate);
+
+  const confirmMsg = `是否将事项【${memo.title}】\n一键复制并结转至下一天【${nextKey}】的日历格子中？`;
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const newTitle = memo.title.startsWith('[结转]') ? memo.title : `[结转] ${memo.title}`;
+    const payload = {
+      ownerId: memo.ownerId || state.user?.id,
+      date: nextKey,
+      title: newTitle,
+      content: memo.content || memo.contentPreview || '',
+      color: memo.color || '#4361ee',
+      completed: false,
+      planKind: memo.planKind || 'memo',
+      dueTime: `${nextKey} 18:00:00`
+    };
+    await request('/memos', { method: 'POST', body: JSON.stringify(payload) });
+
+    const tooltip = $('memoHoverTooltip');
+    if (tooltip) tooltip.classList.remove('visible');
+
+    await loadMemos({ force: true });
+    if (state.dailyDetailDate) {
+      loadDailyDetailMemos(state.dailyDetailDate);
+    }
+    alert(`✔ 成功将【${memo.title}】结转至 ${nextKey} 日历中！`);
+  } catch (err) {
+    alert(`结转失败：${err.message || '网络异常'}`);
+  }
+}
+
 function initMemoHoverTooltip() {
   let tooltip = $('memoHoverTooltip');
   if (!tooltip) {
@@ -6438,13 +6479,26 @@ function initMemoHoverTooltip() {
   calendar.dataset.tooltipBound = 'true';
 
   let currentTarget = null;
+  let hideTimer = null;
 
-  calendar.addEventListener('mouseover', (e) => {
-    if (window.matchMedia?.('(max-width: 768px)').matches) return;
-    const memoItem = e.target.closest('.day-memo-item[data-memo-id]');
-    if (!memoItem || memoItem === currentTarget) return;
+  function cancelHide() {
+    if (hideTimer) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+    }
+  }
+
+  function scheduleHide() {
+    cancelHide();
+    hideTimer = setTimeout(() => {
+      currentTarget = null;
+      tooltip.classList.remove('visible');
+    }, 180);
+  }
+
+  function showTooltip(memoItem) {
+    cancelHide();
     currentTarget = memoItem;
-
     const memoId = memoItem.dataset.memoId;
     const memo = state.memos.find((m) => String(m.id) === String(memoId));
     if (!memo) return;
@@ -6455,43 +6509,128 @@ function initMemoHoverTooltip() {
       ? `${deadline.getFullYear()}/${deadline.getMonth() + 1}/${deadline.getDate()} ${pad(deadline.getHours())}:${pad(deadline.getMinutes())}`
       : (memo.date || '无时间');
 
+    const isReviewed = Boolean(memo.isReviewed || getMemoReactions(memo.id).isRead);
+    const isLiked = Boolean(memo.isLiked || getMemoReactions(memo.id).isLiked);
+    const stampsHtml = (isReviewed ? '<span class="mht-stamp read" title="管理员已审阅"><i class="fas fa-check-double"></i> 已阅</span>' : '') +
+                       (isLiked ? '<span class="mht-stamp like" title="管理员点赞"><i class="fas fa-thumbs-up"></i> +1</span>' : '');
+
+    const isAdmin = canManageWorkspace();
+    const adminReactHtml = isAdmin ? `
+      <div class="mht-react-bar">
+        <button class="mht-btn-react ${isReviewed ? 'active' : ''}" data-action="toggle-read" data-id="${memo.id}" title="管理员审阅并盖章，将通知员工">
+          <i class="fas fa-check-double"></i> ${isReviewed ? '已阅' : '审阅'}
+        </button>
+        <button class="mht-btn-react ${isLiked ? 'active' : ''}" data-action="toggle-like" data-id="${memo.id}" title="管理员点赞，将通知员工">
+          <i class="fas fa-thumbs-up"></i> ${isLiked ? '已赞' : '点赞'}
+        </button>
+      </div>
+    ` : '';
+
     tooltip.innerHTML = `
-      <div class="mht-header">
+      <div class="mht-header" style="cursor:pointer;" title="点击查看详情">
         <span class="mht-dot" style="background:${escapeHtml(dotColor)}"></span>
         <div class="mht-title">${escapeHtml(memoFullTitle(memo))}</div>
       </div>
-      ${memo.contentPreview ? `<div class="mht-content">${escapeHtml(memo.contentPreview)}</div>` : ''}
+      ${memo.contentPreview ? `<div class="mht-content" style="cursor:pointer;" title="点击查看详情">${escapeHtml(memo.contentPreview)}</div>` : ''}
       <div class="mht-meta">
         <span><i class="far fa-clock"></i> ${escapeHtml(timeText)}</span>
         <span class="mht-badge ${memo.completed ? 'completed' : 'pending'}">${memo.completed ? '已完成' : '进行中'}</span>
+        ${stampsHtml}
+      </div>
+      <div class="mht-actions-bar">
+        <button class="mht-btn-carryover" data-memo-id="${memo.id}" type="button" title="一键复制结转到下一天日历格子">
+          <i class="fas fa-arrow-right"></i> 结转到下一天
+        </button>
+        ${adminReactHtml}
       </div>
     `;
 
     positionTooltip(memoItem);
     tooltip.classList.add('visible');
-  });
+  }
 
   function positionTooltip(el) {
     const rect = el.getBoundingClientRect();
-    const ttWidth = 270;
+    const ttWidth = 290;
     const spaceRight = window.innerWidth - rect.right;
     let left = spaceRight >= ttWidth + 12 ? rect.right + 8 : rect.left - ttWidth - 8;
     if (left < 10) left = 10;
     let top = rect.top - 8;
-    if (top + 160 > window.innerHeight) top = window.innerHeight - 170;
+    if (top + 180 > window.innerHeight) top = window.innerHeight - 190;
     if (top < 10) top = 10;
 
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
   }
 
+  calendar.addEventListener('mouseover', (e) => {
+    if (window.matchMedia?.('(max-width: 768px)').matches) return;
+    const memoItem = e.target.closest('.day-memo-item[data-memo-id]');
+    if (!memoItem) return;
+    showTooltip(memoItem);
+  });
+
   calendar.addEventListener('mouseout', (e) => {
     const memoItem = e.target.closest('.day-memo-item[data-memo-id]');
     if (!memoItem) return;
     const related = e.relatedTarget;
-    if (memoItem.contains(related)) return;
-    currentTarget = null;
-    tooltip.classList.remove('visible');
+    if (memoItem.contains(related) || tooltip.contains(related)) return;
+    scheduleHide();
+  });
+
+  tooltip.addEventListener('mouseenter', () => {
+    cancelHide();
+  });
+
+  tooltip.addEventListener('mouseleave', (e) => {
+    const related = e.relatedTarget;
+    if (currentTarget && currentTarget.contains(related)) return;
+    scheduleHide();
+  });
+
+  tooltip.addEventListener('click', async (e) => {
+    const carryBtn = e.target.closest('.mht-btn-carryover');
+    if (carryBtn) {
+      e.stopPropagation();
+      await carryOverSingleMemoToNextDay(carryBtn.dataset.memoId);
+      return;
+    }
+    const reactBtn = e.target.closest('.mht-btn-react');
+    if (reactBtn) {
+      e.stopPropagation();
+      if (!canManageWorkspace()) return;
+      const memoId = reactBtn.dataset.id;
+      const action = reactBtn.dataset.action;
+      reactBtn.disabled = true;
+      try {
+        const res = await request(`/memos/${memoId}/react`, {
+          method: 'POST',
+          body: JSON.stringify({ action })
+        });
+        if (res && res.ok) {
+          const targetMemo = state.memos?.find((m) => String(m.id) === String(memoId));
+          if (targetMemo) {
+            targetMemo.isReviewed = res.isReviewed;
+            targetMemo.isLiked = res.isLiked;
+          }
+          setMemoReactions(memoId, { isRead: res.isReviewed, isLiked: res.isLiked });
+          renderMultiMonthCalendar();
+          if (currentTarget) showTooltip(currentTarget);
+        }
+      } catch (err) {
+        alert(err.message || '操作失败');
+      } finally {
+        reactBtn.disabled = false;
+      }
+      return;
+    }
+    const headerOrContent = e.target.closest('.mht-header, .mht-content');
+    if (headerOrContent && currentTarget) {
+      e.stopPropagation();
+      tooltip.classList.remove('visible');
+      await openMemoModal(currentTarget.dataset.memoId);
+      return;
+    }
   });
 
   window.addEventListener('scroll', () => {
@@ -7951,6 +8090,9 @@ function createTaskItem(memo) {
         <button class="task-btn task-btn-complete" data-id="${memo.id}">
           ${memo.completed ? '<i class="fas fa-undo"></i> 标记为未完成' : '<i class="fas fa-check"></i> 标记为完成'}
         </button>
+        <button class="task-btn task-btn-carryover" data-id="${memo.id}" title="复制结转此事项至下一天日历格子">
+          <i class="fas fa-arrow-right"></i> 结转下一天
+        </button>
         ${reactActionsHtml}
         <button class="task-btn task-btn-edit" data-id="${memo.id}">
           <i class="fas fa-edit"></i> 编辑
@@ -8389,7 +8531,7 @@ function reminderMemoTitle(memo) {
 function updateReminderBadge() {
   const now = new Date();
   const count = reminderMemos().filter((memo) => isOverdueMemo(memo, now) || isDueSoonMemo(memo, now) || memo.isUrged).length;
-  const notifCount = (state.user?.role !== 'admin' && Array.isArray(state.engineerNotifications)) ? state.engineerNotifications.length : 0;
+  const notifCount = Array.isArray(state.engineerNotifications) ? state.engineerNotifications.length : 0;
   const totalCount = count + notifCount;
   const badge = $('reminderBadge');
   const bell = $('floatingReminder');
@@ -8711,13 +8853,17 @@ async function batchUrgeReminders() {
   }
 }
 
-function showReminderModal() {
+async function showReminderModal() {
+  if (state.token) {
+    try {
+      await checkEngineerNotifications();
+    } catch (_) {}
+  }
   renderReminderList();
   showDialog('reminderModal', 'closeReminderModal');
   updateReminderBadge();
 
-  // 若工程师有未读催办/审阅/点赞通知，打开提醒中心时自动向服务端标记已读
-  if (state.user?.role !== 'admin' && state.engineerNotifications.length) {
+  if (state.engineerNotifications.length) {
     request('/notifications/read', { method: 'POST', body: JSON.stringify({ all: true }) })
       .then(() => {
         dismissEngineerUrgeBanner();
@@ -8728,10 +8874,8 @@ function showReminderModal() {
 
 function closeReminderModal() {
   hideDialog('reminderModal');
-  if (state.user?.role !== 'admin' && state.engineerNotifications.length) {
-    state.engineerNotifications = [];
-    updateReminderBadge();
-  }
+  state.engineerNotifications = [];
+  updateReminderBadge();
 }
 
 function showEngineerUrgeBanner(notifications) {
@@ -8773,7 +8917,7 @@ function dismissEngineerUrgeBanner() {
 }
 
 async function checkEngineerNotifications() {
-  if (!state.token || state.user?.role === 'admin') return;
+  if (!state.token) return;
   try {
     const res = await request('/notifications');
     if (Array.isArray(res.notifications) && res.notifications.length) {
@@ -9292,6 +9436,12 @@ function initEventListeners() {
       }
       return;
     }
+    const singleCarryBtn = event.target.closest('.task-btn-carryover');
+    if (singleCarryBtn) {
+      event.stopPropagation();
+      await carryOverSingleMemoToNextDay(singleCarryBtn.dataset.id);
+      return;
+    }
     const editBtn = event.target.closest('.task-btn-edit');
     if (editBtn) {
       event.stopPropagation();
@@ -9748,4 +9898,9 @@ patchStaticText();
 if (window.innerWidth <= 768 && 'scrollRestoration' in history) {
   history.scrollRestoration = 'manual';
 }
+// 事项提醒后台心跳轮询与标签页聚焦激活
+window.addEventListener('focus', () => { if (state.token) checkEngineerNotifications(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.token) checkEngineerNotifications(); });
+window.setInterval(() => { if (state.token) checkEngineerNotifications(); }, 8000);
+
 restoreSession();
