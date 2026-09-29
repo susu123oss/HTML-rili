@@ -3662,145 +3662,179 @@ html[data-theme='light'] .memo-calendar-popup {
   transform: scale(1.1);
 }
 
-/* ── 审阅与点赞：日历事项高亮闪烁效果 ───────────── */
+/* ── 审阅与点赞：日历事项强高亮边框效果 ───────────── */
 .memo-praise-highlight {
   position: relative !important;
-  z-index: 50 !important;
-  animation: memoPraiseFlash 3.2s ease-in-out !important;
+  z-index: 60 !important;
   border-radius: 6px !important;
+  animation: memoPraiseFlash 3.6s ease-in-out forwards !important;
+  pointer-events: auto !important;
 }
 
 @keyframes memoPraiseFlash {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
-  15% {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.8), 0 4px 18px rgba(16, 185, 129, 0.55);
-    background-color: #ecfdf5 !important;
-    border-color: #10b981 !important;
-  }
-  30% {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.7), 0 2px 10px rgba(245, 158, 11, 0.4);
-    background-color: #fffbeb !important;
-    border-color: #f59e0b !important;
-  }
-  45% {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.85), 0 4px 20px rgba(16, 185, 129, 0.6);
-    background-color: #ecfdf5 !important;
-    border-color: #10b981 !important;
-  }
-  60% {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.7), 0 2px 10px rgba(245, 158, 11, 0.4);
-    background-color: #fffbeb !important;
-    border-color: #f59e0b !important;
-  }
-  75% {
-    transform: scale(1.06);
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.75), 0 3px 15px rgba(16, 185, 129, 0.5);
-    background-color: #ecfdf5 !important;
-    border-color: #10b981 !important;
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
+  0%   { box-shadow: none; }
+  10%  { outline: 3px solid #10b981; outline-offset: 2px;
+         background-color: #ecfdf5; border-left-color: #10b981;
+         box-shadow: 0 0 0 4px rgba(16,185,129,0.35), 0 0 20px 4px rgba(16,185,129,0.45); }
+  22%  { outline: 3px solid #f59e0b; outline-offset: 3px;
+         background-color: #fffbeb; border-left-color: #f59e0b;
+         box-shadow: 0 0 0 5px rgba(245,158,11,0.4), 0 0 22px 6px rgba(245,158,11,0.5); }
+  36%  { outline: 4px solid #10b981; outline-offset: 2px;
+         background-color: #ecfdf5; border-left-color: #10b981;
+         box-shadow: 0 0 0 6px rgba(16,185,129,0.45), 0 0 26px 8px rgba(16,185,129,0.5); }
+  50%  { outline: 3px solid #f59e0b; outline-offset: 3px;
+         background-color: #fffbeb; border-left-color: #f59e0b;
+         box-shadow: 0 0 0 5px rgba(245,158,11,0.35), 0 0 22px 6px rgba(245,158,11,0.45); }
+  64%  { outline: 4px solid #10b981; outline-offset: 2px;
+         background-color: #ecfdf5; border-left-color: #10b981;
+         box-shadow: 0 0 0 6px rgba(16,185,129,0.4), 0 0 24px 6px rgba(16,185,129,0.45); }
+  78%  { outline: 3px solid #f59e0b; outline-offset: 2px;
+         background-color: #fffbeb; border-left-color: #f59e0b;
+         box-shadow: 0 0 0 4px rgba(245,158,11,0.3), 0 0 16px 4px rgba(245,158,11,0.35); }
+  90%  { outline: 2px solid #10b981; outline-offset: 1px;
+         background-color: #f0fdf4;
+         box-shadow: 0 0 0 2px rgba(16,185,129,0.2); }
+  100% { outline: none; background-color: inherit; box-shadow: none; }
 }
 
 html[data-theme='dark'] .memo-praise-highlight {
-  animation: memoPraiseFlashDark 3.2s ease-in-out !important;
+  animation: memoPraiseFlashDark 3.6s ease-in-out forwards !important;
 }
 
 @keyframes memoPraiseFlashDark {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
-  15% {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.8), 0 4px 18px rgba(52, 211, 153, 0.55);
-    background-color: #064e3b !important;
-    border-color: #34d399 !important;
-  }
-  30% {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.7), 0 2px 10px rgba(251, 191, 36, 0.4);
-    background-color: #451a03 !important;
-    border-color: #fbbf24 !important;
-  }
-  45% {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.85), 0 4px 20px rgba(52, 211, 153, 0.6);
-    background-color: #064e3b !important;
-    border-color: #34d399 !important;
-  }
-  60% {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.7), 0 2px 10px rgba(251, 191, 36, 0.4);
-    background-color: #451a03 !important;
-    border-color: #fbbf24 !important;
-  }
-  75% {
-    transform: scale(1.06);
-    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.75), 0 3px 15px rgba(52, 211, 153, 0.5);
-    background-color: #064e3b !important;
-    border-color: #34d399 !important;
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
-  }
+  0%   { box-shadow: none; }
+  10%  { outline: 3px solid #34d399; outline-offset: 2px;
+         background-color: #064e3b; border-left-color: #34d399;
+         box-shadow: 0 0 0 4px rgba(52,211,153,0.4), 0 0 20px 4px rgba(52,211,153,0.5); }
+  22%  { outline: 3px solid #fbbf24; outline-offset: 3px;
+         background-color: #431407; border-left-color: #fbbf24;
+         box-shadow: 0 0 0 5px rgba(251,191,36,0.45), 0 0 22px 6px rgba(251,191,36,0.5); }
+  36%  { outline: 4px solid #34d399; outline-offset: 2px;
+         background-color: #064e3b; border-left-color: #34d399;
+         box-shadow: 0 0 0 6px rgba(52,211,153,0.5), 0 0 26px 8px rgba(52,211,153,0.55); }
+  50%  { outline: 3px solid #fbbf24; outline-offset: 3px;
+         background-color: #431407; border-left-color: #fbbf24;
+         box-shadow: 0 0 0 5px rgba(251,191,36,0.4), 0 0 22px 6px rgba(251,191,36,0.45); }
+  64%  { outline: 4px solid #34d399; outline-offset: 2px;
+         background-color: #064e3b; border-left-color: #34d399;
+         box-shadow: 0 0 0 6px rgba(52,211,153,0.45), 0 0 24px 6px rgba(52,211,153,0.5); }
+  78%  { outline: 3px solid #fbbf24; outline-offset: 2px;
+         background-color: #431407;
+         box-shadow: 0 0 0 4px rgba(251,191,36,0.3), 0 0 16px 4px rgba(251,191,36,0.35); }
+  90%  { outline: 2px solid #34d399; outline-offset: 1px;
+         background-color: #052e16;
+         box-shadow: 0 0 0 2px rgba(52,211,153,0.25); }
+  100% { outline: none; background-color: inherit; box-shadow: none; }
 }
 
-/* 日历格子闪烁背景波纹 */
+/* 日历格子强高亮边框波纹 */
 .calendar-day-praise-flash {
-  animation: dayPraiseGlow 3s ease-in-out !important;
-  position: relative;
+  animation: dayPraiseGlow 3.6s ease-in-out forwards !important;
+  position: relative !important;
+  z-index: 5 !important;
 }
 
 @keyframes dayPraiseGlow {
-  0% {
-    background-color: inherit;
-  }
-  20% {
-    background-color: rgba(16, 185, 129, 0.12) !important;
-  }
-  50% {
-    background-color: rgba(245, 158, 11, 0.12) !important;
-  }
-  80% {
-    background-color: rgba(16, 185, 129, 0.1) !important;
-  }
-  100% {
-    background-color: inherit;
-  }
+  0%   { box-shadow: none; }
+  10%  { box-shadow: inset 0 0 0 3px rgba(16,185,129,0.9), 0 0 16px rgba(16,185,129,0.5);
+         background-color: rgba(16,185,129,0.1); }
+  22%  { box-shadow: inset 0 0 0 3px rgba(245,158,11,0.9), 0 0 18px rgba(245,158,11,0.55);
+         background-color: rgba(245,158,11,0.1); }
+  36%  { box-shadow: inset 0 0 0 4px rgba(16,185,129,0.95), 0 0 22px rgba(16,185,129,0.6);
+         background-color: rgba(16,185,129,0.12); }
+  50%  { box-shadow: inset 0 0 0 3px rgba(245,158,11,0.9), 0 0 18px rgba(245,158,11,0.5);
+         background-color: rgba(245,158,11,0.1); }
+  64%  { box-shadow: inset 0 0 0 4px rgba(16,185,129,0.9), 0 0 18px rgba(16,185,129,0.55);
+         background-color: rgba(16,185,129,0.1); }
+  80%  { box-shadow: inset 0 0 0 2px rgba(16,185,129,0.6);
+         background-color: rgba(16,185,129,0.05); }
+  100% { box-shadow: none; background-color: inherit; }
 }
 
 html[data-theme='dark'] .calendar-day-praise-flash {
-  animation: dayPraiseGlowDark 3s ease-in-out !important;
+  animation: dayPraiseGlowDark 3.6s ease-in-out forwards !important;
 }
 
 @keyframes dayPraiseGlowDark {
-  0% {
-    background-color: inherit;
-  }
-  20% {
-    background-color: rgba(16, 185, 129, 0.2) !important;
-  }
-  50% {
-    background-color: rgba(245, 158, 11, 0.18) !important;
-  }
-  80% {
-    background-color: rgba(16, 185, 129, 0.15) !important;
-  }
-  100% {
-    background-color: inherit;
-  }
+  0%   { box-shadow: none; }
+  10%  { box-shadow: inset 0 0 0 3px rgba(52,211,153,0.9), 0 0 16px rgba(52,211,153,0.55);
+         background-color: rgba(52,211,153,0.14); }
+  22%  { box-shadow: inset 0 0 0 3px rgba(251,191,36,0.9), 0 0 18px rgba(251,191,36,0.55);
+         background-color: rgba(251,191,36,0.12); }
+  36%  { box-shadow: inset 0 0 0 4px rgba(52,211,153,0.95), 0 0 24px rgba(52,211,153,0.65);
+         background-color: rgba(52,211,153,0.16); }
+  50%  { box-shadow: inset 0 0 0 3px rgba(251,191,36,0.9), 0 0 18px rgba(251,191,36,0.5);
+         background-color: rgba(251,191,36,0.12); }
+  64%  { box-shadow: inset 0 0 0 4px rgba(52,211,153,0.9), 0 0 20px rgba(52,211,153,0.6);
+         background-color: rgba(52,211,153,0.14); }
+  80%  { box-shadow: inset 0 0 0 2px rgba(52,211,153,0.6);
+         background-color: rgba(52,211,153,0.07); }
+  100% { box-shadow: none; background-color: inherit; }
 }
+
+
+/* 多事项导航浮层 */
+#praisePager {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8888;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #059669, #0284c7);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 30px;
+  box-shadow: 0 6px 24px rgba(5,150,105,0.45), 0 2px 8px rgba(0,0,0,0.15);
+  font-size: 0.85rem;
+  font-weight: 600;
+  animation: praisePagerIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  user-select: none;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+@keyframes praisePagerIn {
+  from { transform: translateX(-50%) translateY(30px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
+}
+
+#praisePager.pager-out {
+  animation: praisePagerOut 0.25s ease forwards;
+}
+@keyframes praisePagerOut {
+  to { transform: translateX(-50%) translateY(30px); opacity: 0; }
+}
+
+#praisePager button {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+#praisePager button:hover { background: rgba(255,255,255,0.4); transform: scale(1.1); }
+#praisePager button:disabled { opacity: 0.35; cursor: default; transform: none; }
+#praisePager .pager-label { padding: 0 4px; letter-spacing: 0.02em; }
+#praisePager .pager-close {
+  background: rgba(255,255,255,0.18);
+  border: none; color: #fff;
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-left: 2px;
+  transition: background 0.15s ease;
+}
+#praisePager .pager-close:hover { background: rgba(255,255,255,0.4); }
+
 
 /* ── 桌面端任务悬浮卡片 (Memo Hover Tooltip) ───────────── */
 .memo-hover-tooltip {

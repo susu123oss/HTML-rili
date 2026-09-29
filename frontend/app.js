@@ -9058,34 +9058,86 @@ async function navigateToAndHighlightMemos(memoIds) {
 }
 
 function executeMemosHighlight(memoIdStrs) {
-  let firstFoundEl = null;
-
+  // 收集所有匹配的事项元素（去重，保持顺序）
+  const allEls = [];
   memoIdStrs.forEach((id) => {
-    const cellBtns = document.querySelectorAll(`.day-memo-item[data-memo-id="${id}"]`);
-    cellBtns.forEach((btn) => {
-      if (!firstFoundEl) firstFoundEl = btn;
-
-      btn.classList.remove('memo-praise-highlight');
-      void btn.offsetWidth; // 触发 reflow 重置动画
-      btn.classList.add('memo-praise-highlight');
-
-      const dayCell = btn.closest('.calendar-day');
-      if (dayCell) {
-        dayCell.classList.remove('calendar-day-praise-flash');
-        void dayCell.offsetWidth;
-        dayCell.classList.add('calendar-day-praise-flash');
-        setTimeout(() => dayCell.classList.remove('calendar-day-praise-flash'), 3500);
-      }
-
-      setTimeout(() => {
-        btn.classList.remove('memo-praise-highlight');
-      }, 3600);
+    const btns = document.querySelectorAll(`.day-memo-item[data-memo-id="${id}"]`);
+    btns.forEach(btn => {
+      if (!allEls.includes(btn)) allEls.push(btn);
     });
   });
 
-  if (firstFoundEl) {
-    firstFoundEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  if (!allEls.length) return;
+
+  // 高亮单个元素并滚动到视口中央
+  function highlightEl(el) {
+    const dayCell = el.closest('.calendar-day');
+
+    // 重置并触发 memo 高亮
+    el.classList.remove('memo-praise-highlight');
+    void el.offsetWidth;
+    el.classList.add('memo-praise-highlight');
+    setTimeout(() => el.classList.remove('memo-praise-highlight'), 3700);
+
+    // 重置并触发日历格子边框高亮
+    if (dayCell) {
+      dayCell.classList.remove('calendar-day-praise-flash');
+      void dayCell.offsetWidth;
+      dayCell.classList.add('calendar-day-praise-flash');
+      setTimeout(() => dayCell.classList.remove('calendar-day-praise-flash'), 3700);
+    }
+
+    // 精准滚动到视口中央
+    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
   }
+
+  if (allEls.length === 1) {
+    // 单条事项：直接高亮，无需分页
+    highlightEl(allEls[0]);
+    return;
+  }
+
+  // 多条事项：弹出分页导航浮层
+  let current = 0;
+  highlightEl(allEls[0]);
+
+  // 移除旧分页器
+  const oldPager = document.getElementById('praisePager');
+  if (oldPager) oldPager.remove();
+
+  const pager = document.createElement('div');
+  pager.id = 'praisePager';
+
+  function renderPager() {
+    pager.innerHTML = `
+      <button id="praisePrev" ${current === 0 ? 'disabled' : ''} title="上一条">&#8592;</button>
+      <span class="pager-label">\u2728 ${current + 1} / ${allEls.length}</span>
+      <button id="praiseNext" ${current === allEls.length - 1 ? 'disabled' : ''} title="下一条">&#8594;</button>
+      <button class="pager-close" id="praisePagerClose" title="关闭">\u2715</button>
+    `;
+    document.getElementById('praisePrev').onclick = () => {
+      if (current > 0) { current--; highlightEl(allEls[current]); renderPager(); }
+    };
+    document.getElementById('praiseNext').onclick = () => {
+      if (current < allEls.length - 1) { current++; highlightEl(allEls[current]); renderPager(); }
+    };
+    document.getElementById('praisePagerClose').onclick = () => {
+      pager.classList.add('pager-out');
+      setTimeout(() => pager.remove(), 280);
+    };
+  }
+
+  renderPager();
+  document.body.appendChild(pager);
+
+  // 4 秒后（末条动画结束后）自动消失
+  const autoDismiss = setTimeout(() => {
+    if (document.getElementById('praisePager') === pager) {
+      pager.classList.add('pager-out');
+      setTimeout(() => pager.remove(), 280);
+    }
+  }, 4000);
+  pager.querySelector('#praisePagerClose').addEventListener('click', () => clearTimeout(autoDismiss), { once: true });
 }
 
 async function markNotificationsRead(notifications) {
