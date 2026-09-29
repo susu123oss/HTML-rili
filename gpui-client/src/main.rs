@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod api;
 mod models;
 mod theme;
@@ -4465,6 +4467,10 @@ fn main() {
             .open_window(
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    titlebar: Some(gpui::TitlebarOptions {
+                        title: Some("智能工作日历备忘录 · GPUI 桌面版 (管理端 / 员工端)".into()),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 },
                 |_, cx| cx.new(|cx| WorkCalendarApp::new(cx)),
