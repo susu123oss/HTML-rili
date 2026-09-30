@@ -4847,7 +4847,17 @@ function themeToggleLabelText(pref) {
   return '跟随系统';
 }
 
+let activeThemeTransition = null;
+let themeTransitionVersion = 0;
+let themeFallbackTimer = null;
+
 function applyTheme(preference, originEl) {
+  const version = ++themeTransitionVersion;
+  activeThemeTransition?.skipTransition();
+  activeThemeTransition = null;
+  window.clearTimeout(themeFallbackTimer);
+  const root = document.documentElement;
+  root.classList.remove('to-dark', 'to-light', 'theme-transitioning');
   const pref = (preference === 'system' || preference === 'dark' || preference === 'light')
     ? preference
     : (localStorage.getItem('appThemePreference') || 'system');
@@ -4867,6 +4877,7 @@ function applyTheme(preference, originEl) {
 
   // 实际更新 DOM 属性
   function commitTheme() {
+    if (version !== themeTransitionVersion) return;
     const root = document.documentElement;
     root.setAttribute('data-theme', effectiveTheme);
     root.setAttribute('data-bs-theme', effectiveTheme);
@@ -4893,10 +4904,19 @@ function applyTheme(preference, originEl) {
     }
   }
 
-  // 尊重用户减弱动画设置，或浏览器不支持 View Transitions API
+  // 未改变实际颜色和减弱动画模式直接更新按钮状态。
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!document.startViewTransition || prefersReduced) {
+  if (prefersReduced || root.dataset.theme === effectiveTheme) {
     commitTheme();
+    return;
+  }
+  if (!document.startViewTransition) {
+    root.classList.add('theme-transitioning');
+    void root.offsetWidth;
+    commitTheme();
+    themeFallbackTimer = window.setTimeout(() => {
+      if (version === themeTransitionVersion) root.classList.remove('theme-transitioning');
+    }, 350);
     return;
   }
 
@@ -4915,7 +4935,6 @@ function applyTheme(preference, originEl) {
     Math.max(y, window.innerHeight - y)
   ));
 
-  const root = document.documentElement;
   root.style.setProperty('--theme-x', `${x}px`);
   root.style.setProperty('--theme-y', `${y}px`);
   root.style.setProperty('--theme-r', `${maxRadius}px`);
@@ -4924,10 +4943,21 @@ function applyTheme(preference, originEl) {
   root.classList.remove('to-dark', 'to-light');
   root.classList.add(isDark ? 'to-dark' : 'to-light');
 
-  const transition = document.startViewTransition(commitTheme);
-  transition.finished.then(() => {
+  try {
+    const transition = document.startViewTransition(commitTheme);
+    activeThemeTransition = transition;
+    // Skipping an animation also rejects ready; consume it to avoid an unhandled rejection.
+    transition.ready?.catch(() => {});
+    transition.updateCallbackDone?.catch(() => {});
+    transition.finished.catch(() => {}).finally(() => {
+      if (version !== themeTransitionVersion) return;
+      root.classList.remove('to-dark', 'to-light');
+      if (activeThemeTransition === transition) activeThemeTransition = null;
+    });
+  } catch (error) {
     root.classList.remove('to-dark', 'to-light');
-  }).catch(() => {});
+    commitTheme();
+  }
 }
 
 
@@ -9352,6 +9382,7 @@ function setupDialogBackdropClose(dialogId) {
   if (!dialog || dialog.dataset.backdropBound) return;
   dialog.dataset.backdropBound = 'true';
   dialog.addEventListener('click', (e) => {
+    if (e.target !== dialog) return;
     const rect = dialog.getBoundingClientRect();
     const isInDialog = (
       rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
@@ -9788,10 +9819,7 @@ function setActiveTab(tabName) {
     renderTaskAssignees();
     renderColorOptions(state.selectedTaskColor, 'task');
     const today = new Date();
-    const end = new Date();
-    end.setDate(today.getDate() + 7);
-    $('taskStartDate').value = dateKey(today);
-    $('taskEndDate').value = dateKey(end);
+    if ($('taskStartDate')) $('taskStartDate').value = dateKey(today);
   }
 }
 
@@ -9799,13 +9827,12 @@ async function publishTask() {
   if (!canManageWorkspace() || state.taskPublishBusy) return;
   const title = $('taskTitle').value.trim();
   const expectedDeliverable = $('taskExpectedDeliverable')?.value.trim() || '';
-  const start = $('taskStartDate').value;
-  const end = $('taskEndDate').value;
+  const targetDate = $('taskStartDate').value;
   const taskDueTime = $('taskDueTime').value;
   const assigneeIds = selectedTaskAssigneeIds();
 
-  if (!title || !start || !end) {
-    alert('请填写任务标题和日期范围');
+  if (!title || !targetDate) {
+    alert('请填写任务标题和任务日期');
     return;
   }
 
@@ -9815,36 +9842,27 @@ async function publishTask() {
   }
 
   if (!taskDueTime) {
-    alert('请添加每日截止时间后再发布');
+    alert('请设置截止时间后再发布');
     $('taskDueTime').focus();
     return;
   }
 
-  if (end < start) {
-    setOperationFeedback('taskPublishFeedback', '结束日期不能早于开始日期');
-    $('taskEndDate').focus();
-    return;
-  }
-  const [startYear, startMonth, startDay] = start.split('-').map(Number);
-  const [endYear, endMonth, endDay] = end.split('-').map(Number);
-  const startDate = new Date(startYear, startMonth - 1, startDay);
-  const endDate = new Date(endYear, endMonth - 1, endDay);
-  if (dateKey(startDate) !== start || dateKey(endDate) !== end) {
-    setOperationFeedback('taskPublishFeedback', '日期范围无效，请重新选择');
+  const [year, month, day] = targetDate.split('-').map(Number);
+  const parsedDate = new Date(year, month - 1, day);
+  if (dateKey(parsedDate) !== targetDate) {
+    setOperationFeedback('taskPublishFeedback', '任务日期无效，请重新选择');
     return;
   }
   const tasks = [];
   const content = $('taskDescription').value;
-  for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-    for (const ownerId of assigneeIds) {
-      tasks.push({
-        ownerId,
-        date: dateKey(date),
-        dueTime: `${dateKey(date)}T${taskDueTime}`
-      });
-    }
+  for (const ownerId of assigneeIds) {
+    tasks.push({
+      ownerId,
+      date: targetDate,
+      dueTime: `${targetDate}T${taskDueTime}`
+    });
   }
-  if (!confirm(`将向 ${assigneeIds.length} 人、按 ${tasks.length / assigneeIds.length} 天发布，共创建 ${tasks.length} 条任务。确认继续？`)) return;
+  if (!confirm(`将向 ${assigneeIds.length} 人发布 ${targetDate} 的任务，共创建 ${tasks.length} 条记录。确认继续？`)) return;
   const button = $('publishTask');
   const originalLabel = button.innerHTML;
   state.taskPublishBusy = true;
@@ -10678,7 +10696,23 @@ async function openNotificationHistory() {
     dialog.id = 'notificationHistoryDialog';
     dialog.className = 'notification-history-dialog';
     dialog.setAttribute('aria-labelledby', 'notificationHistoryTitle');
-    dialog.innerHTML = `<header class="notification-history-header"><h3 id="notificationHistoryTitle"><i class="fas fa-history"></i> 消息记录</h3><button type="button" class="btn btn-secondary" data-history-close aria-label="关闭消息记录">关闭</button></header><div class="notification-history-list" role="list" aria-live="polite"></div><footer class="notification-history-footer"><button type="button" class="btn btn-secondary" data-history-more>加载更多</button><span>已读消息也会保留在这里</span></footer>`;
+    dialog.innerHTML = `
+      <header class="nh-header">
+        <h3 class="nh-title" id="notificationHistoryTitle"><i class="fas fa-history" aria-hidden="true"></i> 消息记录</h3>
+        <div class="nh-header-actions">
+        <button type="button" class="nh-clear" data-history-clear title="清空消息记录" aria-label="清空消息记录" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg>
+        </button>
+        <button type="button" class="nh-close" data-history-close aria-label="关闭消息记录">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        </div>
+      </header>
+      <div class="nh-list" role="list" aria-live="polite"></div>
+      <footer class="nh-footer">
+        <button type="button" class="nh-load-more" data-history-more hidden>加载更多</button>
+        <span class="nh-hint">已读消息会保留，可手动清空</span>
+      </footer>`;
     document.body.appendChild(dialog);
     dialog.querySelector('[data-history-close]').onclick = () => dialog.close();
     setupDialogBackdropClose(dialog.id);
@@ -10686,19 +10720,39 @@ async function openNotificationHistory() {
   if (!dialog.open) dialog.showModal();
   const token = state.token;
   let notices = [], nextCursor = null, busy = false;
-  const list = dialog.querySelector('.notification-history-list');
+  const list = dialog.querySelector('.nh-list');
   const more = dialog.querySelector('[data-history-more]');
+  const clear = dialog.querySelector('[data-history-clear]');
+
+  function updateControls() {
+    more.disabled = busy;
+    clear.disabled = busy || !notices.length;
+  }
 
   function render() {
-    list.innerHTML = notices.length ? notices.map((notice) => `<article class="notification-history-item ${notice.isRead ? '' : 'unread'}" role="listitem" data-notice-id="${Number(notice.id)}"><div class="notification-history-meta"><strong>${escapeHtml(notice.title)}</strong><span>${notice.isRead ? '已读' : '未读'}</span></div><p>${escapeHtml(notice.content)}</p><div class="notification-history-item-footer"><time>${escapeHtml(new Date(notice.createdAt).toLocaleString('zh-CN', { hour12: false }))}</time><div>${notice.memoId ? '<button type="button" class="btn btn-primary" data-history-view>查看事项</button>' : '<span>关联事项已删除</span>'}${!notice.isRead ? '<button type="button" class="btn btn-secondary" data-history-read>标为已读</button>' : ''}</div></div></article>`).join('') : '<div class="empty-state">暂无消息记录</div>';
+    list.innerHTML = notices.length ? notices.map((notice) => `
+      <article class="nh-item${notice.isRead ? '' : ' unread'}" role="listitem" data-notice-id="${Number(notice.id)}">
+        <div class="nh-item-head">
+          <strong class="nh-item-title">${escapeHtml(notice.title)}</strong>
+          ${notice.isRead ? '<span class="nh-read-label">已读</span>' : '<span class="nh-unread-dot" role="img" aria-label="未读"></span>'}
+        </div>
+        <p class="nh-item-body">${escapeHtml(notice.content)}</p>
+        <div class="nh-item-foot">
+          <time class="nh-item-time">${escapeHtml(new Date(notice.createdAt).toLocaleString('zh-CN', { hour12: false }))}</time>
+          <div class="nh-item-actions">
+            ${notice.memoId ? '<button type="button" class="nh-action-link" data-history-view>查看事项 →</button>' : '<span class="nh-action-gone">事项已删除</span>'}
+            ${!notice.isRead ? '<button type="button" class="nh-action-read" data-history-read>标为已读</button>' : ''}
+          </div>
+        </div>
+      </article>`).join('') : '<div class="empty-state">暂无消息记录</div>';
     more.hidden = !nextCursor;
-    more.disabled = busy;
+    updateControls();
     more.textContent = '加载更多';
   }
 
   async function load(append = false) {
     if (busy) return;
-    busy = true; more.disabled = true;
+    busy = true; updateControls();
     if (!append) list.innerHTML = '<div class="empty-state">正在读取消息…</div>';
     try {
       const result = await request(`/notifications/history${append && nextCursor ? `?before=${nextCursor}` : ''}`);
@@ -10712,7 +10766,7 @@ async function openNotificationHistory() {
       else showGlobalToast(`消息读取失败：${error.message}`, 'error');
       more.hidden = false;
       more.textContent = '重新加载';
-    } finally { busy = false; more.disabled = false; }
+    } finally { busy = false; updateControls(); }
   }
 
   list.onclick = async (event) => {
@@ -10723,13 +10777,39 @@ async function openNotificationHistory() {
     const notice = notices.find((item) => String(item.id) === row?.dataset.noticeId);
     if (!notice) return;
     busy = true;
+    updateControls();
     try {
       if (view && !await navigateToAndHighlightMemos([notice.memoId])) return;
       if (!notice.isRead && await markNotificationsRead([notice])) notice.isRead = true;
       render();
       await checkEngineerNotifications();
       if (view) dialog.close();
-    } finally { busy = false; }
+    } finally { busy = false; updateControls(); }
+  };
+  clear.onclick = async () => {
+    if (busy || !notices.length || state.token !== token) return;
+    if (!confirm('清空当前账号的消息记录（包括未读消息）？')) return;
+    const throughId = Math.max(...notices.map((notice) => Number(notice.id)));
+    busy = true; updateControls();
+    let cleared = false;
+    try {
+      const result = await request('/notifications/clear', { method: 'POST', body: JSON.stringify({ throughId }) });
+      if (state.token !== token) return;
+      state.notificationChangeVersion = (state.notificationChangeVersion || 0) + 1;
+      state.engineerNotifications = (state.engineerNotifications || []).filter((notice) => Number(notice.id) > throughId);
+      if (state.engineerNotifications.length) showEngineerUrgeBanner(state.engineerNotifications);
+      else dismissEngineerUrgeBanner();
+      updateReminderBadge();
+      notices = []; nextCursor = null; render();
+      showGlobalToast(`已清空 ${result.count ?? 0} 条消息记录`, 'success');
+      cleared = true;
+    } catch (error) {
+      if (state.token === token) showGlobalToast(`清空失败：${error.message}`, 'error');
+    } finally { busy = false; updateControls(); }
+    if (cleared) {
+      await load();
+      await checkEngineerNotifications();
+    }
   };
   more.textContent = '加载更多';
   more.hidden = true;
@@ -10750,8 +10830,11 @@ function dismissEngineerUrgeBanner() {
 
 async function checkEngineerNotifications() {
   if (!state.token) return;
+  const token = state.token;
+  const version = state.notificationChangeVersion || 0;
   try {
     const res = await request('/notifications');
+    if (state.token !== token || version !== (state.notificationChangeVersion || 0)) return;
     if (Array.isArray(res.notifications) && res.notifications.length) {
       state.engineerNotifications = res.notifications;
       showEngineerUrgeBanner(res.notifications);
