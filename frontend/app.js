@@ -9813,7 +9813,7 @@ function setActiveTab(tabName) {
     renderExcelExportPanel();
   }
   if (tabName === 'userManagement') renderUserManagement();
-  if (tabName === 'opsMonitor') refreshOpsStatus();
+  if (tabName === 'opsMonitor' && !state.opsStatus) refreshOpsStatus();
   if (tabName === 'taskPublish') {
     state.selectedTaskColor = randomMemoColor(latestMemoColor());
     renderTaskAssignees();
@@ -10147,14 +10147,33 @@ function renderOpsStatus() {
 }
 
 async function refreshOpsStatus() {
-  if (state.user?.role !== 'admin') return;
+  if (state.user?.role !== 'admin' || state.opsLoading) return;
+  state.opsLoading = true;
   const box = $('opsMonitorContent');
-  if (box) box.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>正在读取服务器状态...</p></div>';
+  const btn = $('refreshOpsStatus');
+  const prevBtnHtml = btn?.innerHTML;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 刷新中';
+  }
+  if (box && !state.opsStatus) {
+    box.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>正在读取服务器状态...</p></div>';
+  }
   try {
     state.opsStatus = await request('/ops/status');
     renderOpsStatus();
   } catch (error) {
-    if (box) box.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>${escapeHtml(error.message)}</p></div>`;
+    if (box && !state.opsStatus) {
+      box.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>${escapeHtml(error.message)}</p></div>`;
+    } else {
+      showGlobalToast(`刷新状态失败：${error.message}`, 'error');
+    }
+  } finally {
+    state.opsLoading = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = prevBtnHtml || '<i class="fas fa-sync-alt"></i> 刷新状态';
+    }
   }
 }
 
