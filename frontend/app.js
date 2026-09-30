@@ -6224,6 +6224,334 @@ function createProgressCircle(percent, index) {
   `;
 }
 
+const cnCalendarInfoCache = new Map();
+const cnLunarFormatter = (() => {
+  try {
+    return new Intl.DateTimeFormat('zh-CN-u-ca-chinese', { month: 'short', day: 'numeric' });
+  } catch (_) {
+    return null;
+  }
+})();
+
+const CN_LUNAR_DAY_NAMES = [
+  '',
+  '初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
+  '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
+  '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'
+];
+
+const CN_SOLAR_TERM_NAMES = [
+  '小寒', '大寒', '立春', '雨水', '惊蛰', '春分',
+  '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
+  '小暑', '大暑', '立秋', '处暑', '白露', '秋分',
+  '寒露', '霜降', '立冬', '小雪', '大雪', '冬至'
+];
+
+const CN_SOLAR_TERM_C21 = [
+  5.4055, 20.12, 3.87, 18.73, 5.63, 20.646,
+  4.81, 20.1, 5.52, 21.04, 5.678, 21.37,
+  7.108, 22.83, 7.5, 23.13, 7.646, 23.042,
+  8.318, 23.438, 7.438, 22.36, 7.18, 21.94
+];
+
+// 国务院法定节假日（休）与调休补班（班）精确表（2024-2027）
+const CN_STATUTORY_SCHEDULE = {
+  // 2024
+  '2024-01-01': { badge: '休', name: '元旦' },
+  '2024-02-04': { badge: '班', name: '春节补班' },
+  '2024-02-10': { badge: '休', name: '春节' },
+  '2024-02-11': { badge: '休', name: '春节' },
+  '2024-02-12': { badge: '休', name: '春节' },
+  '2024-02-13': { badge: '休', name: '春节' },
+  '2024-02-14': { badge: '休', name: '春节' },
+  '2024-02-15': { badge: '休', name: '春节' },
+  '2024-02-16': { badge: '休', name: '春节' },
+  '2024-02-17': { badge: '休', name: '春节' },
+  '2024-02-18': { badge: '班', name: '春节补班' },
+  '2024-04-04': { badge: '休', name: '清明节' },
+  '2024-04-05': { badge: '休', name: '清明节' },
+  '2024-04-06': { badge: '休', name: '清明节' },
+  '2024-04-07': { badge: '班', name: '清明补班' },
+  '2024-04-28': { badge: '班', name: '五一补班' },
+  '2024-05-01': { badge: '休', name: '劳动节' },
+  '2024-05-02': { badge: '休', name: '劳动节' },
+  '2024-05-03': { badge: '休', name: '劳动节' },
+  '2024-05-04': { badge: '休', name: '劳动节' },
+  '2024-05-05': { badge: '休', name: '劳动节' },
+  '2024-05-11': { badge: '班', name: '五一补班' },
+  '2024-06-08': { badge: '休', name: '端午节' },
+  '2024-06-09': { badge: '休', name: '端午节' },
+  '2024-06-10': { badge: '休', name: '端午节' },
+  '2024-09-14': { badge: '班', name: '中秋补班' },
+  '2024-09-15': { badge: '休', name: '中秋节' },
+  '2024-09-16': { badge: '休', name: '中秋节' },
+  '2024-09-17': { badge: '休', name: '中秋节' },
+  '2024-09-29': { badge: '班', name: '国庆补班' },
+  '2024-10-01': { badge: '休', name: '国庆节' },
+  '2024-10-02': { badge: '休', name: '国庆节' },
+  '2024-10-03': { badge: '休', name: '国庆节' },
+  '2024-10-04': { badge: '休', name: '国庆节' },
+  '2024-10-05': { badge: '休', name: '国庆节' },
+  '2024-10-06': { badge: '休', name: '国庆节' },
+  '2024-10-07': { badge: '休', name: '国庆节' },
+  '2024-10-12': { badge: '班', name: '国庆补班' },
+
+  // 2025（含最新增加除夕与五一假期规定）
+  '2025-01-01': { badge: '休', name: '元旦' },
+  '2025-01-26': { badge: '班', name: '春节补班' },
+  '2025-01-28': { badge: '休', name: '除夕' },
+  '2025-01-29': { badge: '休', name: '春节' },
+  '2025-01-30': { badge: '休', name: '春节' },
+  '2025-01-31': { badge: '休', name: '春节' },
+  '2025-02-01': { badge: '休', name: '春节' },
+  '2025-02-02': { badge: '休', name: '春节' },
+  '2025-02-03': { badge: '休', name: '春节' },
+  '2025-02-04': { badge: '休', name: '春节' },
+  '2025-02-08': { badge: '班', name: '春节补班' },
+  '2025-04-04': { badge: '休', name: '清明节' },
+  '2025-04-05': { badge: '休', name: '清明节' },
+  '2025-04-06': { badge: '休', name: '清明节' },
+  '2025-04-27': { badge: '班', name: '五一补班' },
+  '2025-05-01': { badge: '休', name: '劳动节' },
+  '2025-05-02': { badge: '休', name: '劳动节' },
+  '2025-05-03': { badge: '休', name: '劳动节' },
+  '2025-05-04': { badge: '休', name: '劳动节' },
+  '2025-05-05': { badge: '休', name: '劳动节' },
+  '2025-05-31': { badge: '休', name: '端午节' },
+  '2025-06-01': { badge: '休', name: '端午节' },
+  '2025-06-02': { badge: '休', name: '端午节' },
+  '2025-09-28': { badge: '班', name: '国庆补班' },
+  '2025-10-01': { badge: '休', name: '国庆节' },
+  '2025-10-02': { badge: '休', name: '国庆节' },
+  '2025-10-03': { badge: '休', name: '国庆节' },
+  '2025-10-04': { badge: '休', name: '国庆节' },
+  '2025-10-05': { badge: '休', name: '国庆节' },
+  '2025-10-06': { badge: '休', name: '中秋节' },
+  '2025-10-07': { badge: '休', name: '国庆节' },
+  '2025-10-08': { badge: '休', name: '国庆节' },
+  '2025-10-11': { badge: '班', name: '国庆补班' },
+
+  // 2026
+  '2026-01-01': { badge: '休', name: '元旦' },
+  '2026-01-02': { badge: '休', name: '元旦' },
+  '2026-01-03': { badge: '休', name: '元旦' },
+  '2026-01-04': { badge: '班', name: '元旦补班' },
+  '2026-02-14': { badge: '班', name: '春节补班' },
+  '2026-02-16': { badge: '休', name: '除夕' },
+  '2026-02-17': { badge: '休', name: '春节' },
+  '2026-02-18': { badge: '休', name: '春节' },
+  '2026-02-19': { badge: '休', name: '春节' },
+  '2026-02-20': { badge: '休', name: '春节' },
+  '2026-02-21': { badge: '休', name: '春节' },
+  '2026-02-22': { badge: '休', name: '春节' },
+  '2026-02-23': { badge: '休', name: '春节' },
+  '2026-02-28': { badge: '班', name: '春节补班' },
+  '2026-04-04': { badge: '休', name: '清明节' },
+  '2026-04-05': { badge: '休', name: '清明节' },
+  '2026-04-06': { badge: '休', name: '清明节' },
+  '2026-04-26': { badge: '班', name: '五一补班' },
+  '2026-05-01': { badge: '休', name: '劳动节' },
+  '2026-05-02': { badge: '休', name: '劳动节' },
+  '2026-05-03': { badge: '休', name: '劳动节' },
+  '2026-05-04': { badge: '休', name: '劳动节' },
+  '2026-05-05': { badge: '休', name: '劳动节' },
+  '2026-05-09': { badge: '班', name: '五一补班' },
+  '2026-06-19': { badge: '休', name: '端午节' },
+  '2026-06-20': { badge: '休', name: '端午节' },
+  '2026-06-21': { badge: '休', name: '端午节' },
+  '2026-09-20': { badge: '班', name: '国庆补班' },
+  '2026-09-25': { badge: '休', name: '中秋节' },
+  '2026-09-26': { badge: '休', name: '中秋节' },
+  '2026-09-27': { badge: '休', name: '中秋节' },
+  '2026-10-01': { badge: '休', name: '国庆节' },
+  '2026-10-02': { badge: '休', name: '国庆节' },
+  '2026-10-03': { badge: '休', name: '国庆节' },
+  '2026-10-04': { badge: '休', name: '国庆节' },
+  '2026-10-05': { badge: '休', name: '国庆节' },
+  '2026-10-06': { badge: '休', name: '国庆节' },
+  '2026-10-07': { badge: '休', name: '国庆节' },
+  '2026-10-10': { badge: '班', name: '国庆补班' },
+
+  // 2027
+  '2027-01-01': { badge: '休', name: '元旦' },
+  '2027-01-02': { badge: '休', name: '元旦' },
+  '2027-01-03': { badge: '休', name: '元旦' },
+  '2027-02-05': { badge: '休', name: '除夕' },
+  '2027-02-06': { badge: '休', name: '春节' },
+  '2027-02-07': { badge: '休', name: '春节' },
+  '2027-02-08': { badge: '休', name: '春节' },
+  '2027-02-09': { badge: '休', name: '春节' },
+  '2027-02-10': { badge: '休', name: '春节' },
+  '2027-02-11': { badge: '休', name: '春节' },
+  '2027-02-12': { badge: '休', name: '春节' },
+  '2027-04-03': { badge: '休', name: '清明节' },
+  '2027-04-04': { badge: '休', name: '清明节' },
+  '2027-04-05': { badge: '休', name: '清明节' },
+  '2027-05-01': { badge: '休', name: '劳动节' },
+  '2027-05-02': { badge: '休', name: '劳动节' },
+  '2027-05-03': { badge: '休', name: '劳动节' },
+  '2027-05-04': { badge: '休', name: '劳动节' },
+  '2027-05-05': { badge: '休', name: '劳动节' },
+  '2027-06-09': { badge: '休', name: '端午节' },
+  '2027-06-10': { badge: '休', name: '端午节' },
+  '2027-06-11': { badge: '休', name: '端午节' },
+  '2027-09-15': { badge: '休', name: '中秋节' },
+  '2027-09-16': { badge: '休', name: '中秋节' },
+  '2027-09-17': { badge: '休', name: '中秋节' },
+  '2027-10-01': { badge: '休', name: '国庆节' },
+  '2027-10-02': { badge: '休', name: '国庆节' },
+  '2027-10-03': { badge: '休', name: '国庆节' },
+  '2027-10-04': { badge: '休', name: '国庆节' },
+  '2027-10-05': { badge: '休', name: '国庆节' },
+  '2027-10-06': { badge: '休', name: '国庆节' },
+  '2027-10-07': { badge: '休', name: '国庆节' }
+};
+
+function getLunarParts(date) {
+  if (!cnLunarFormatter) return { monthStr: '', dayNum: 0, dayStr: '' };
+  try {
+    const parts = cnLunarFormatter.formatToParts(date);
+    const monthStr = parts.find((p) => p.type === 'month')?.value || '';
+    const dayNum = Number(parts.find((p) => p.type === 'day')?.value || 0);
+    const dayStr = CN_LUNAR_DAY_NAMES[dayNum] || '';
+    return { monthStr, dayNum, dayStr };
+  } catch (_) {
+    return { monthStr: '', dayNum: 0, dayStr: '' };
+  }
+}
+
+function getSolarTermForDate(year, month, day) {
+  if (year < 2000 || year > 2099) return '';
+  const y = year % 100;
+  const mIdx = month - 1;
+  const d1 = Math.floor(y * 0.2422 + CN_SOLAR_TERM_C21[mIdx * 2]) - Math.floor((y - 1) / 4);
+  if (day === d1) return CN_SOLAR_TERM_NAMES[mIdx * 2];
+  const d2 = Math.floor(y * 0.2422 + CN_SOLAR_TERM_C21[mIdx * 2 + 1]) - Math.floor((y - 1) / 4);
+  if (day === d2) return CN_SOLAR_TERM_NAMES[mIdx * 2 + 1];
+  return '';
+}
+
+function getChineseCalendarDayInfo(dateInput) {
+  const date = dateInput instanceof Date ? dateInput : new Date(`${String(dateInput).slice(0, 10)}T00:00:00`);
+  if (isNaN(date.getTime())) {
+    return { badge: '', label: '', labelType: 'lunar', lunarFull: '', tooltip: '' };
+  }
+  const key = dateKey(date);
+  if (cnCalendarInfoCache.has(key)) {
+    return cnCalendarInfoCache.get(key);
+  }
+
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const mmdd = `${pad(month)}-${pad(day)}`;
+
+  const { monthStr: lunarMonth, dayNum: lunarDayNum, dayStr: lunarDay } = getLunarParts(date);
+  const lunarFull = lunarMonth && lunarDay ? `农历${lunarMonth}${lunarDay}` : '';
+
+  // 判断除夕（次日为正月初一）
+  let isLunarNewYearEve = false;
+  if (lunarMonth === '腊月' && lunarDayNum >= 29) {
+    const nextDate = new Date(year, month - 1, day + 1);
+    const nextLunar = getLunarParts(nextDate);
+    if (nextLunar.monthStr === '正月' && nextLunar.dayNum === 1) {
+      isLunarNewYearEve = true;
+    }
+  }
+
+  // 传统农历节日
+  let traditionalFestival = '';
+  if (isLunarNewYearEve) traditionalFestival = '除夕';
+  else if (lunarMonth === '正月' && lunarDayNum === 1) traditionalFestival = '春节';
+  else if (lunarMonth === '正月' && lunarDayNum === 15) traditionalFestival = '元宵节';
+  else if (lunarMonth === '二月' && lunarDayNum === 2) traditionalFestival = '龙抬头';
+  else if (lunarMonth === '五月' && lunarDayNum === 5) traditionalFestival = '端午节';
+  else if (lunarMonth === '七月' && lunarDayNum === 7) traditionalFestival = '七夕';
+  else if (lunarMonth === '七月' && lunarDayNum === 15) traditionalFestival = '中元节';
+  else if (lunarMonth === '八月' && lunarDayNum === 15) traditionalFestival = '中秋节';
+  else if (lunarMonth === '九月' && lunarDayNum === 9) traditionalFestival = '重阳节';
+  else if (lunarMonth === '腊月' && lunarDayNum === 8) traditionalFestival = '腊八节';
+  else if (lunarMonth === '腊月' && lunarDayNum === 23) traditionalFestival = '北方小年';
+  else if (lunarMonth === '腊月' && lunarDayNum === 24) traditionalFestival = '南方小年';
+
+  // 公历常见节日
+  let solarFestival = '';
+  if (mmdd === '01-01') solarFestival = '元旦';
+  else if (mmdd === '03-08') solarFestival = '妇女节';
+  else if (mmdd === '05-01') solarFestival = '劳动节';
+  else if (mmdd === '05-04') solarFestival = '青年节';
+  else if (mmdd === '06-01') solarFestival = '儿童节';
+  else if (mmdd === '09-10') solarFestival = '教师节';
+  else if (mmdd === '10-01') solarFestival = '国庆节';
+
+  // 二十四节气
+  const solarTerm = getSolarTermForDate(year, month, day);
+  if (solarTerm === '清明' && !solarFestival) {
+    solarFestival = '清明节';
+  }
+
+  // 法定放假与调休安排
+  let statutory = CN_STATUTORY_SCHEDULE[key] || null;
+  if (!statutory) {
+    // 未来年份通用法定假日兜底识别
+    if (mmdd === '01-01') statutory = { badge: '休', name: '元旦' };
+    else if (isLunarNewYearEve) statutory = { badge: '休', name: '除夕' };
+    else if (lunarMonth === '正月' && lunarDayNum >= 1 && lunarDayNum <= 6) statutory = { badge: '休', name: '春节' };
+    else if (solarTerm === '清明') statutory = { badge: '休', name: '清明节' };
+    else if (month === 5 && day >= 1 && day <= 5) statutory = { badge: '休', name: '劳动节' };
+    else if (lunarMonth === '五月' && lunarDayNum === 5) statutory = { badge: '休', name: '端午节' };
+    else if (lunarMonth === '八月' && lunarDayNum === 15) statutory = { badge: '休', name: '中秋节' };
+    else if (month === 10 && day >= 1 && day <= 7) statutory = { badge: '休', name: '国庆节' };
+  }
+
+  const badge = statutory?.badge || '';
+  let label = '';
+  let labelType = 'lunar';
+
+  if (traditionalFestival || solarFestival) {
+    label = traditionalFestival || solarFestival;
+    labelType = 'festival';
+  } else if (statutory?.badge === '休' && statutory?.name) {
+    label = statutory.name;
+    labelType = 'festival';
+  } else if (solarTerm) {
+    label = solarTerm;
+    labelType = 'term';
+  } else if (statutory?.badge === '班') {
+    label = '补班';
+    labelType = 'work';
+  } else if (lunarDayNum === 1 && lunarMonth) {
+    label = lunarMonth;
+    labelType = 'lunar-month';
+  } else {
+    label = lunarDay || '';
+    labelType = 'lunar';
+  }
+
+  const tooltipParts = [key];
+  if (lunarFull) tooltipParts.push(lunarFull);
+  if (traditionalFestival) tooltipParts.push(traditionalFestival);
+  if (solarFestival && solarFestival !== traditionalFestival) tooltipParts.push(solarFestival);
+  if (solarTerm && solarTerm !== '清明') tooltipParts.push(`节气：${solarTerm}`);
+  if (statutory?.badge === '休') tooltipParts.push(`${statutory.name}（法定休假）`);
+  else if (statutory?.badge === '班') tooltipParts.push(`${statutory.name}（调休上班）`);
+
+  const info = {
+    badge,
+    holidayName: statutory?.name || '',
+    festival: traditionalFestival || solarFestival || '',
+    solarTerm,
+    lunarMonth,
+    lunarDay,
+    lunarFull,
+    label,
+    labelType,
+    tooltip: tooltipParts.join(' · ')
+  };
+  cnCalendarInfoCache.set(key, info);
+  return info;
+}
+
 function createMonthCalendar(monthDate, index) {
   const visibleMemos = getVisibleMemos();
   const calendarMemos = getCalendarMemos();
@@ -6237,19 +6565,37 @@ function createMonthCalendar(monthDate, index) {
 
   for (let i = firstDay.getDay(); i > 0; i--) {
     const day = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1 - i);
-    cells.push(`<div class="calendar-day other-month">${day.getDate()}</div>`);
+    const otherInfo = getChineseCalendarDayInfo(day);
+    cells.push(`
+      <div class="calendar-day other-month" title="${escapeHtml(otherInfo.tooltip)}">
+        <div class="day-number">
+          <div class="day-number-left">
+            <span class="day-number-text">${day.getDate()}</span>
+            ${otherInfo.badge ? `<span class="cn-holiday-badge ${otherInfo.badge === '休' ? 'is-rest' : 'is-work'}">${otherInfo.badge}</span>` : ''}
+            ${otherInfo.label ? `<span class="cn-day-sub is-${otherInfo.labelType}">${escapeHtml(otherInfo.label)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `);
   }
 
   for (let i = 1; i <= lastDay.getDate(); i++) {
     const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), i);
     const key = dateKey(date);
+    const cnInfo = getChineseCalendarDayInfo(date);
     const dayMemos = sortCalendarDayMemos(calendarMemos.filter((memo) => memo.date === key));
     const classes = ['calendar-day'];
     if (key === today) classes.push('today');
+    if (cnInfo.badge === '休') classes.push('is-cn-rest');
+    else if (cnInfo.badge === '班') classes.push('is-cn-work');
     cells.push(`
       <div class="${classes.join(' ')}" data-date="${key}">
         <div class="day-number">
-          <span class="day-number-text" data-date="${key}" role="button" tabindex="0" aria-label="查看${key}的${dayMemos.length}条事项">${i}</span>
+          <div class="day-number-left" title="${escapeHtml(cnInfo.tooltip)}">
+            <span class="day-number-text" data-date="${key}" role="button" tabindex="0" aria-label="查看${key}的${dayMemos.length}条事项">${i}</span>
+            ${cnInfo.badge ? `<span class="cn-holiday-badge ${cnInfo.badge === '休' ? 'is-rest' : 'is-work'}">${cnInfo.badge}</span>` : ''}
+            ${cnInfo.label ? `<span class="cn-day-sub is-${cnInfo.labelType}">${escapeHtml(cnInfo.label)}</span>` : ''}
+          </div>
           <div class="day-number-actions">
             <button class="day-add" data-date="${key}" title="添加详细备忘录" aria-label="在${key}添加备忘录" type="button"><i class="fas fa-plus"></i></button>
             ${dayMemos.length ? `<button class="memo-count" title="查看当天全部事项" aria-label="查看${key}的${dayMemos.length}条事项" type="button">${dayMemos.length}</button>` : ''}
@@ -6287,7 +6633,19 @@ function createMonthCalendar(monthDate, index) {
   const targetCellCount = cells.length <= 35 ? 35 : 42;
   while (cells.length < targetCellCount) {
     const next = cells.length - (firstDay.getDay() + lastDay.getDate()) + 1;
-    cells.push(`<div class="calendar-day other-month">${next}</div>`);
+    const nextDate = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, next);
+    const nextInfo = getChineseCalendarDayInfo(nextDate);
+    cells.push(`
+      <div class="calendar-day other-month" title="${escapeHtml(nextInfo.tooltip)}">
+        <div class="day-number">
+          <div class="day-number-left">
+            <span class="day-number-text">${next}</span>
+            ${nextInfo.badge ? `<span class="cn-holiday-badge ${nextInfo.badge === '休' ? 'is-rest' : 'is-work'}">${nextInfo.badge}</span>` : ''}
+            ${nextInfo.label ? `<span class="cn-day-sub is-${nextInfo.labelType}">${escapeHtml(nextInfo.label)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `);
   }
 
   return `
@@ -8096,7 +8454,13 @@ function openDailyDetailModal(date) {
     return;
   }
 
-  const dateStr = `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月${targetDate.getDate()}日`;
+  const cnInfo = getChineseCalendarDayInfo(targetDate);
+  const cnSuffix = [
+    cnInfo.lunarFull,
+    cnInfo.festival || cnInfo.solarTerm || '',
+    cnInfo.badge === '休' ? `[休·${cnInfo.holidayName || '假期'}]` : (cnInfo.badge === '班' ? '[班·调休]' : '')
+  ].filter(Boolean).join(' ');
+  const dateStr = `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月${targetDate.getDate()}日${cnSuffix ? `（${cnSuffix}）` : ''}`;
   const dateTitle = $('dailyDetailDate');
   if (dateTitle) dateTitle.textContent = dateStr;
   loadDailyDetailMemos(targetDate);
@@ -8504,12 +8868,15 @@ function renderWeeklyPlanPage() {
           const dayDone = day.memos.filter(m => m.completed).length;
           const dayRate = dayTotal > 0 ? Math.round((dayDone / dayTotal) * 100) : 0;
           const isAllDone = dayTotal > 0 && dayDone === dayTotal;
+          const cnInfo = getChineseCalendarDayInfo(day.dateKey);
           return `
           <div class="wp-day-column ${day.isToday ? 'is-today' : ''} ${index === mobileDayIndex ? 'is-mobile-selected' : ''}" data-date-key="${day.dateKey}" ondragover="onWeeklyColDragOver(event)" ondragleave="onWeeklyColDragLeave(event)" ondrop="onWeeklyColDrop(event, '${day.dateKey}')">
             <div class="wp-day-col-header">
-              <div class="wp-day-date-box">
+              <div class="wp-day-date-box" title="${escapeHtml(cnInfo.tooltip)}">
                 <span class="wp-day-name">${day.dayName}</span>
                 <span class="wp-day-date">${day.dateLabel}</span>
+                ${cnInfo.badge ? `<span class="cn-holiday-badge ${cnInfo.badge === '休' ? 'is-rest' : 'is-work'}">${cnInfo.badge}</span>` : ''}
+                ${cnInfo.label ? `<span class="cn-day-sub is-${cnInfo.labelType}">${escapeHtml(cnInfo.label)}</span>` : ''}
               </div>
               ${day.isToday ? '<span class="wp-today-badge">今日</span>' : ''}
               <span class="wp-day-count-badge ${isAllDone ? 'all-done' : ''}" title="${dayTotal > 0 ? `已完成 ${dayDone}/${dayTotal} 项 (${dayRate}%)` : '当日暂无事项'}">${dayTotal > 0 ? `${dayDone}/${dayTotal}` : '0项'}</span>

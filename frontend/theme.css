@@ -10170,3 +10170,140 @@ html[data-theme='dark'] .tdm-chip.tdm-actual {
   color: #6ee7b7 !important;
 }
 
+/* ==========================================================================
+   中国法定节假日（休/班）、传统节日、二十四节气与农历展示样式
+   ========================================================================== */
+.calendar-day .day-number {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+.calendar-day .day-number-left {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.cn-holiday-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  user-select: none !important;
+}
+
+.cn-holiday-badge.is-rest {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.28) !important;
+}
+
+.cn-holiday-badge.is-work {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(51, 65, 85, 0.24) !important;
+}
+
+html[data-theme='dark'] .cn-holiday-badge.is-work {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;
+}
+
+.cn-day-sub {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  user-select: none !important;
+}
+
+.cn-day-sub.is-lunar {
+  color: var(--ui-muted, #94a3b8) !important;
+  font-weight: 500 !important;
+}
+
+.cn-day-sub.is-lunar-month {
+  color: var(--ui-accent, #2563eb) !important;
+  font-weight: 700 !important;
+}
+
+.cn-day-sub.is-festival {
+  color: #dc2626 !important;
+  font-weight: 700 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+}
+
+.cn-day-sub.is-term {
+  color: #059669 !important;
+  font-weight: 700 !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+}
+
+.cn-day-sub.is-work {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme='dark'] .cn-day-sub.is-festival {
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+
+html[data-theme='dark'] .cn-day-sub.is-term {
+  color: #6ee7b7 !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+}
+
+html[data-theme='dark'] .cn-day-sub.is-work {
+  color: #cbd5e1 !important;
+}
+
+/* 法定休假日历格温和底色与数字点缀 */
+.calendar-day.is-cn-rest:not(.today) .day-number-text {
+  color: #dc2626 !important;
+}
+
+html[data-theme='dark'] .calendar-day.is-cn-rest:not(.today) .day-number-text {
+  color: #f87171 !important;
+}
+
+.calendar-day.other-month .cn-holiday-badge,
+.calendar-day.other-month .cn-day-sub {
+  opacity: 0.52 !important;
+}
+
+/* 多月紧凑视图(>4个月)及移动端自动精简副标题防挤压 */
+.month-calendar.small .cn-day-sub.is-lunar {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .calendar-day .day-number-left {
+    justify-content: center !important;
+    gap: 2px !important;
+  }
+  .calendar-day .cn-day-sub {
+    display: none !important;
+  }
+  .calendar-day .cn-holiday-badge {
+    width: 13px !important;
+    height: 13px !important;
+    font-size: 8px !important;
+  }
+}
