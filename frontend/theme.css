@@ -391,6 +391,46 @@ html[data-theme] :is(#functionsModal, #memoModal, #dailyDetailModal, #reminderMo
   pointer-events: none !important;
 }
 
+
+/* 提醒中心 - 消息记录轻量按钮 */
+.notif-history-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ui-text-muted, #64748b);
+  background: transparent;
+  border: 1px solid var(--ui-border, rgba(0,0,0,0.1));
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  margin-right: 6px;
+}
+.notif-history-btn i {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+.notif-history-btn:hover {
+  color: var(--primary-color, #4361ee);
+  background: rgba(67, 97, 238, 0.07);
+  border-color: rgba(67, 97, 238, 0.25);
+}
+.notif-history-btn:active {
+  transform: scale(0.96);
+}
+html[data-theme='dark'] .notif-history-btn {
+  color: var(--ui-text-muted, #94a3b8);
+  border-color: rgba(255,255,255,0.1);
+}
+html[data-theme='dark'] .notif-history-btn:hover {
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
 html[data-theme] :is(#functionsModal, #memoModal) .form-group label {
   color: var(--ui-text-muted) !important;
 }
