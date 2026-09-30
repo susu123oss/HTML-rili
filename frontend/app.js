@@ -6073,7 +6073,7 @@ function remindSelectDeliverable() {
   const remindPill = $('memoDeliveryRemindPill');
   if (remindPill) {
     remindPill.hidden = false;
-    remindPill.textContent = '请先下拉选择！';
+    remindPill.textContent = '必选·请下拉选择！';
   }
   if (panel) {
     panel.classList.remove('is-attention');
@@ -6088,12 +6088,14 @@ function remindSelectDeliverable() {
 
 function syncMemoCompletedState() {
   const checkbox = $('memoCompleted');
-  const label = checkbox?.closest('.memo-title-completed');
+  const label = checkbox?.closest('.memo-toggle-chip, .memo-title-completed');
   const selectEl = $('memoActualDeliverable');
   const remindPill = $('memoDeliveryRemindPill');
   const panel = $('memoDeliveryPanel');
+  const saveBtn = $('saveMemo');
   const actualVal = String(selectEl?.value || '').trim();
   const isRoutine = isRoutineDeliverableChoice(actualVal);
+  const canEdit = !selectEl?.disabled;
 
   if (panel) {
     panel.classList.toggle('has-value', Boolean(actualVal));
@@ -6101,12 +6103,22 @@ function syncMemoCompletedState() {
   if (remindPill) {
     if (actualVal) {
       remindPill.hidden = true;
-    } else if (checkbox?.checked && !canManageWorkspace()) {
-      remindPill.hidden = false;
-      remindPill.textContent = '请先下拉选择！';
     } else {
-      remindPill.hidden = Boolean(selectEl?.disabled);
-      remindPill.textContent = '请下拉选择';
+      remindPill.hidden = !canEdit;
+      remindPill.textContent = '必选';
+    }
+  }
+
+  if (saveBtn && !state.memoSaveBusy) {
+    const isInterlocked = Boolean(canEdit && !actualVal);
+    saveBtn.classList.toggle('is-interlocked', isInterlocked);
+    saveBtn.dataset.interlocked = isInterlocked ? 'true' : 'false';
+    if (isInterlocked) {
+      saveBtn.title = '请先在工具栏右侧下拉选择「成果交付」状态，未选择不可保存备忘录';
+      saveBtn.innerHTML = '<i class="fas fa-lock"></i> 请先选成果交付后保存';
+    } else {
+      saveBtn.title = '保存备忘录';
+      saveBtn.innerHTML = '<i class="fas fa-check"></i> 保存备忘录';
     }
   }
 
@@ -6151,8 +6163,8 @@ function updateMemoDeliveryModalUI(memo = null, canEdit = true) {
     panel.classList.remove('is-attention');
   }
   if (remindPill) {
-    remindPill.hidden = Boolean(val || memo?.completed || !canEdit);
-    remindPill.textContent = '请下拉选择';
+    remindPill.hidden = Boolean(val || !canEdit);
+    remindPill.textContent = '必选';
   }
 
   const dStatus = memoDeliveryStatus(memo);
@@ -7633,9 +7645,10 @@ async function saveMemo() {
   const isChecked = Boolean($('memoCompleted')?.checked);
   const isAdmin = canManageWorkspace();
 
-  if (!isAdmin && isChecked && !actualDeliverable && !originalMemo?.completed) {
+  if (!actualDeliverable) {
     remindSelectDeliverable();
-    setOperationFeedback('memoSaveFeedback', '请先在上方【成果交付】下拉框选择交付状态（如：已经邮件交付审核 / 已经微信发送审核）');
+    showGlobalToast('🔒 已互锁：请先下拉选择【成果交付】状态，未选择不能提交保存备忘录！', 'error');
+    setOperationFeedback('memoSaveFeedback', '请先在工具栏右侧【成果交付】下拉框选择交付状态后再保存');
     return;
   }
 
@@ -7689,7 +7702,6 @@ async function saveMemo() {
   const isNewMemo = !state.selectedMemoId;
   const shouldClearQuickDraft = isNewMemo && state.detailDraftFromQuickAdd;
   const button = $('saveMemo');
-  const originalLabel = button.textContent;
   state.memoSaveBusy = true;
   button.disabled = true;
   button.textContent = '保存中…';
@@ -7713,7 +7725,7 @@ async function saveMemo() {
   } finally {
     state.memoSaveBusy = false;
     button.disabled = false;
-    button.textContent = originalLabel;
+    syncMemoCompletedState();
   }
   if (shouldClearQuickDraft && $('quickMemoTitle')) $('quickMemoTitle').value = '';
   closeMemoModal();
@@ -10255,11 +10267,17 @@ function initEventListeners() {
   $('memoTabEdit')?.addEventListener('click', () => switchMemoContentTab('edit'));
   $('memoTabPreview')?.addEventListener('click', () => switchMemoContentTab('preview'));
   $('quickDueChips')?.addEventListener('click', handleQuickDueChipClick);
+  $('memoForm')?.addEventListener('submit', (event) => {
+    event?.preventDefault();
+    saveMemo();
+  });
   $('memoCompleted')?.addEventListener('change', () => {
     const cb = $('memoCompleted');
     const actualVal = String($('memoActualDeliverable')?.value || '').trim();
-    if (cb?.checked && !actualVal && !canManageWorkspace()) {
+    if (cb?.checked && !actualVal) {
+      cb.checked = false;
       remindSelectDeliverable();
+      showGlobalToast('🔒 请先在下方工具栏右侧选择【成果交付】状态后再勾选完成！', 'error');
     }
     syncMemoCompletedState();
   });
@@ -10268,6 +10286,8 @@ function initEventListeners() {
     const cb = $('memoCompleted');
     if (actualVal && cb && !cb.checked) {
       cb.checked = true;
+    } else if (!actualVal && cb && cb.checked) {
+      cb.checked = false;
     }
     $('memoDeliveryPanel')?.classList.remove('is-attention');
     setOperationFeedback('memoSaveFeedback', '');

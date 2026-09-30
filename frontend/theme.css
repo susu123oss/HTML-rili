@@ -7954,8 +7954,19 @@ html[data-theme='dark'] .btn-quick-report:hover {
   flex-direction: column !important;
   border-bottom: 1px solid var(--ui-border, #e2e8f0) !important;
 }
-.memo-editor-topbar .memo-text-toolbar {
+.memo-editor-toolbar-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 4px 8px 4px 4px !important;
   border-bottom: 1px solid var(--ui-border, #f1f5f9) !important;
+  flex-wrap: wrap !important;
+}
+.memo-editor-topbar .memo-text-toolbar {
+  border-bottom: none !important;
+  padding: 2px 4px !important;
+  flex-shrink: 0 !important;
 }
 .memo-editor-topbar .memo-template-chips-bar {
   border: none !important;
@@ -7965,9 +7976,9 @@ html[data-theme='dark'] .btn-quick-report:hover {
   background: var(--ui-surface-soft, #f8fafc) !important;
 }
 #memoModal #memoContent {
-  min-height: 280px !important;
-  height: 300px !important;
-  max-height: 55vh !important;
+  min-height: 220px !important;
+  height: 240px !important;
+  max-height: 50vh !important;
   padding: 12px 14px !important;
   font-size: 0.94rem !important;
   line-height: 1.65 !important;
@@ -7979,8 +7990,8 @@ html[data-theme='dark'] .btn-quick-report:hover {
   background: transparent !important;
 }
 #memoModal .markdown-preview {
-  min-height: 280px !important;
-  max-height: 55vh !important;
+  min-height: 220px !important;
+  max-height: 50vh !important;
   padding: 12px 14px !important;
   border: none !important;
   border-radius: 0 !important;
@@ -8013,6 +8024,7 @@ html[data-theme='dark'] .memo-text-editor.full-featured {
 html[data-theme='dark'] .memo-editor-topbar {
   border-bottom-color: #23354d !important;
 }
+html[data-theme='dark'] .memo-editor-toolbar-row,
 html[data-theme='dark'] .memo-editor-topbar .memo-text-toolbar {
   border-bottom-color: #1e2c3d !important;
 }
@@ -9529,74 +9541,81 @@ html[data-theme='dark'] .memo-delivery-pill.is-target {
   border-left: 2.5px solid #ef4444 !important;
 }
 
-/* 2. 备忘录弹窗内：醒目单行「成果交付」下拉选择栏 (.memo-delivery-bar) */
+/* 2. 备忘录弹窗内：工具栏右侧内嵌「成果交付」下拉选择栏 (.memo-delivery-bar) 与保存互锁样式 */
 .memo-delivery-bar {
-  margin: 0 0 12px !important;
-  padding: 9px 12px !important;
-  border-radius: 10px !important;
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
-  border: 1.5px solid rgba(245, 158, 11, 0.38) !important;
+  margin: 0 !important;
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.42) !important;
+  flex: 1 1 340px !important;
   transition: all 0.2s ease !important;
 }
 
 .memo-delivery-bar.has-value {
-  background: linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
-  border-color: rgba(16, 185, 129, 0.42) !important;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.09) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
 }
 
 html[data-theme='dark'] .memo-delivery-bar {
-  background: rgba(245, 158, 11, 0.1) !important;
-  border-color: rgba(245, 158, 11, 0.38) !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.42) !important;
 }
 
 html[data-theme='dark'] .memo-delivery-bar.has-value {
-  background: rgba(16, 185, 129, 0.12) !important;
-  border-color: rgba(16, 185, 129, 0.42) !important;
+  background: rgba(16, 185, 129, 0.14) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
 }
 
 @keyframes deliveryBarAttentionPulse {
-  0%, 100% { transform: translateX(0); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-  20% { transform: translateX(-4px); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.28); }
+  0%, 100% { transform: translateX(0); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  20% { transform: translateX(-4px); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.28); }
   40% { transform: translateX(4px); }
-  60% { transform: translateX(-3px); box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.18); }
+  60% { transform: translateX(-3px); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.18); }
   80% { transform: translateX(2px); }
 }
 
 .memo-delivery-bar.is-attention {
-  border-color: #f59e0b !important;
-  background: rgba(245, 158, 11, 0.16) !important;
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.14) !important;
   animation: deliveryBarAttentionPulse 0.65s ease-in-out 2 !important;
 }
 
 .memo-delivery-bar-main {
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
+  gap: 8px !important;
   flex-wrap: wrap !important;
 }
 
 .memo-delivery-bar-label {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 5px !important;
   margin: 0 !important;
-  font-size: 0.85rem !important;
+  font-size: 0.8rem !important;
   font-weight: 700 !important;
   color: var(--ui-text, #0f172a) !important;
   white-space: nowrap !important;
   cursor: pointer !important;
 }
 
+.delivery-required-star {
+  color: #ef4444 !important;
+  font-style: normal !important;
+  margin-left: 2px !important;
+}
+
 .memo-delivery-bar-label .delivery-label-icon {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 24px !important;
-  height: 24px !important;
+  width: 22px !important;
+  height: 22px !important;
   border-radius: 6px !important;
-  background: rgba(245, 158, 11, 0.18) !important;
+  background: rgba(245, 158, 11, 0.2) !important;
   color: #d97706 !important;
-  font-size: 0.78rem !important;
+  font-size: 0.72rem !important;
 }
 
 .memo-delivery-bar.has-value .memo-delivery-bar-label .delivery-label-icon {
@@ -9615,14 +9634,14 @@ html[data-theme='dark'] .memo-delivery-bar.has-value .memo-delivery-bar-label .d
 .memo-delivery-remind-pill {
   display: inline-flex !important;
   align-items: center !important;
-  padding: 2px 8px !important;
+  padding: 1px 7px !important;
   border-radius: 999px !important;
-  font-size: 0.72rem !important;
+  font-size: 0.68rem !important;
   font-weight: 700 !important;
   background: #f59e0b !important;
   color: #ffffff !important;
   letter-spacing: 0.01em !important;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.28) !important;
+  box-shadow: 0 2px 5px rgba(245, 158, 11, 0.28) !important;
 }
 
 .memo-delivery-remind-pill[hidden] {
@@ -9630,37 +9649,37 @@ html[data-theme='dark'] .memo-delivery-bar.has-value .memo-delivery-bar-label .d
 }
 
 .memo-delivery-select-wrap {
-  flex: 1 1 240px !important;
-  min-width: 200px !important;
+  flex: 1 1 200px !important;
+  min-width: 180px !important;
 }
 
 .memo-delivery-select {
   width: 100% !important;
-  height: 36px !important;
-  padding: 0 32px 0 12px !important;
-  border-radius: 8px !important;
-  font-size: 0.86rem !important;
+  height: 30px !important;
+  padding: 0 28px 0 10px !important;
+  border-radius: 6px !important;
+  font-size: 0.81rem !important;
   font-weight: 600 !important;
   color: var(--ui-text, #0f172a) !important;
   background-color: var(--ui-surface, #ffffff) !important;
-  border: 1.5px solid rgba(245, 158, 11, 0.45) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.5) !important;
   cursor: pointer !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 .memo-delivery-bar.has-value .memo-delivery-select {
-  border-color: rgba(16, 185, 129, 0.5) !important;
+  border-color: rgba(16, 185, 129, 0.52) !important;
   color: #047857 !important;
 }
 
 html[data-theme='dark'] .memo-delivery-select {
   background-color: #0f172a !important;
   color: #f8fafc !important;
-  border-color: rgba(245, 158, 11, 0.45) !important;
+  border-color: rgba(245, 158, 11, 0.48) !important;
 }
 
 html[data-theme='dark'] .memo-delivery-bar.has-value .memo-delivery-select {
-  border-color: rgba(16, 185, 129, 0.5) !important;
+  border-color: rgba(16, 185, 129, 0.52) !important;
   color: #6ee7b7 !important;
 }
 
@@ -9673,9 +9692,9 @@ html[data-theme='dark'] .memo-delivery-bar.has-value .memo-delivery-select {
 .memo-delivery-status-badge {
   display: inline-flex !important;
   align-items: center !important;
-  padding: 4px 10px !important;
+  padding: 3px 8px !important;
   border-radius: 999px !important;
-  font-size: 0.75rem !important;
+  font-size: 0.72rem !important;
   font-weight: 700 !important;
   white-space: nowrap !important;
 }
@@ -9715,9 +9734,9 @@ html[data-theme='dark'] .memo-delivery-status-badge.status-confirmed {
   justify-content: space-between !important;
   gap: 10px !important;
   flex-wrap: wrap !important;
-  margin-top: 8px !important;
-  padding-top: 7px !important;
-  border-top: 1px dashed rgba(239, 68, 68, 0.35) !important;
+  padding: 6px 12px !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-bottom: 1px dashed rgba(239, 68, 68, 0.35) !important;
 }
 
 .memo-delivery-review-row[hidden] {
@@ -9725,7 +9744,7 @@ html[data-theme='dark'] .memo-delivery-status-badge.status-confirmed {
 }
 
 .memo-delivery-review-comment {
-  font-size: 0.79rem !important;
+  font-size: 0.78rem !important;
   color: #dc2626 !important;
   font-weight: 600 !important;
   line-height: 1.4 !important;
@@ -9738,11 +9757,26 @@ html[data-theme='dark'] .memo-delivery-review-comment {
 .memo-delivery-review-actions {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 5px !important;
 }
 
 .memo-delivery-review-actions[hidden] {
   display: none !important;
+}
+
+#saveMemo.is-interlocked {
+  background: #94a3b8 !important;
+  border-color: #94a3b8 !important;
+  color: #f8fafc !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  opacity: 0.88 !important;
+}
+
+html[data-theme='dark'] #saveMemo.is-interlocked {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #94a3b8 !important;
 }
 
 .btn-delivery-confirm,

@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260930_tooltip_fix_v33" defer></script>
+    <script src="./app.js?v=20260930_interlock_toolbar_v34" defer></script>
     <style>
         * {
             margin: 0;
@@ -3920,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_tooltip_fix_v33" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_interlock_toolbar_v34" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4394,35 +4394,6 @@
                         </div>
                     </div>
 
-                    <div class="memo-delivery-bar" id="memoDeliveryPanel">
-                        <div class="memo-delivery-bar-main">
-                            <label class="memo-delivery-bar-label" for="memoActualDeliverable">
-                                <span class="delivery-label-icon"><i class="fas fa-paper-plane"></i></span>
-                                <span>成果交付</span>
-                                <span class="memo-delivery-remind-pill" id="memoDeliveryRemindPill">请下拉选择</span>
-                            </label>
-                            <div class="memo-delivery-select-wrap">
-                                <select class="form-control memo-delivery-select" id="memoActualDeliverable">
-                                    <option value="">▼ 请点击下拉选择成果交付状态（未完成可暂不选）</option>
-                                    <option value="已经邮件交付审核">📧 已经邮件交付审核</option>
-                                    <option value="已经微信发送审核">💬 已经微信发送审核</option>
-                                    <option value="已上传共享盘/群文件审核">📂 已上传共享盘 / 群文件审核</option>
-                                    <option value="已提交图纸/模型/BOM审核">📐 已提交图纸 / 模型 / BOM审核</option>
-                                    <option value="已当面汇报/现场评审确认">🤝 已当面汇报 / 现场评审确认</option>
-                                    <option value="日常事务（无需交付物）">✔️ 日常事务（无需交付审核）</option>
-                                </select>
-                            </div>
-                            <span class="memo-delivery-status-badge" id="memoDeliveryStatusBadge" hidden></span>
-                            <div class="memo-delivery-review-actions" id="memoDeliveryReviewActions" hidden>
-                                <button type="button" class="btn btn-sm btn-delivery-confirm" id="btnModalConfirmDelivery"><i class="fas fa-check-circle"></i> 确认通过</button>
-                                <button type="button" class="btn btn-sm btn-delivery-return" id="btnModalReturnDelivery"><i class="fas fa-undo"></i> 退回修改</button>
-                            </div>
-                        </div>
-                        <div class="memo-delivery-review-row" id="memoDeliveryReviewRow" hidden>
-                            <div class="memo-delivery-review-comment" id="memoDeliveryReviewComment"></div>
-                        </div>
-                    </div>
-                    
                     <div class="memo-meta-grid">
                         <div class="memo-meta-col">
                             <label for="memoDate"><i class="far fa-calendar-alt"></i> 所属日期</label>
@@ -4509,17 +4480,47 @@
                         </div>
                         <div class="memo-text-editor full-featured">
                             <div class="memo-editor-topbar">
-                                <div class="memo-text-toolbar" id="memoTextToolbar" aria-label="文字处理工具栏">
-                                    <button class="memo-text-tool" type="button" data-format="h1" title="一级标题">H1</button>
-                                    <button class="memo-text-tool" type="button" data-format="h2" title="二级标题">H2</button>
-                                    <span class="memo-text-separator"></span>
-                                    <button class="memo-text-tool" type="button" data-format="bold" title="加粗">B</button>
-                                    <button class="memo-text-tool italic" type="button" data-format="italic" title="斜体">I</button>
-                                    <button class="memo-text-tool strike" type="button" data-format="strike" title="删除线">S</button>
-                                    <span class="memo-text-separator"></span>
-                                    <button class="memo-text-tool icon-only" type="button" data-format="ul" title="无序列表" aria-label="无序列表"><span class="memo-list-icon bulleted" aria-hidden="true"><span></span><span></span><span></span></span></button>
-                                    <button class="memo-text-tool icon-only" type="button" data-format="ol" title="有序列表" aria-label="有序列表"><span class="memo-list-icon ordered" aria-hidden="true"><span>1.</span><span>2.</span><span>3.</span></span></button>
-                                    <button class="memo-text-tool icon-only" type="button" data-format="task" title="任务项" aria-label="任务项"><span class="memo-list-icon task" aria-hidden="true"><span></span><span></span><span></span></span></button>
+                                <div class="memo-editor-toolbar-row">
+                                    <div class="memo-text-toolbar" id="memoTextToolbar" aria-label="文字处理工具栏">
+                                        <button class="memo-text-tool" type="button" data-format="h1" title="一级标题">H1</button>
+                                        <button class="memo-text-tool" type="button" data-format="h2" title="二级标题">H2</button>
+                                        <span class="memo-text-separator"></span>
+                                        <button class="memo-text-tool" type="button" data-format="bold" title="加粗">B</button>
+                                        <button class="memo-text-tool italic" type="button" data-format="italic" title="斜体">I</button>
+                                        <button class="memo-text-tool strike" type="button" data-format="strike" title="删除线">S</button>
+                                        <span class="memo-text-separator"></span>
+                                        <button class="memo-text-tool icon-only" type="button" data-format="ul" title="无序列表" aria-label="无序列表"><span class="memo-list-icon bulleted" aria-hidden="true"><span></span><span></span><span></span></span></button>
+                                        <button class="memo-text-tool icon-only" type="button" data-format="ol" title="有序列表" aria-label="有序列表"><span class="memo-list-icon ordered" aria-hidden="true"><span>1.</span><span>2.</span><span>3.</span></span></button>
+                                        <button class="memo-text-tool icon-only" type="button" data-format="task" title="任务项" aria-label="任务项"><span class="memo-list-icon task" aria-hidden="true"><span></span><span></span><span></span></span></button>
+                                    </div>
+                                    <div class="memo-delivery-bar is-inline-toolbar" id="memoDeliveryPanel">
+                                        <div class="memo-delivery-bar-main">
+                                            <label class="memo-delivery-bar-label" for="memoActualDeliverable">
+                                                <span class="delivery-label-icon"><i class="fas fa-paper-plane"></i></span>
+                                                <span>成果交付<em class="delivery-required-star">*</em></span>
+                                                <span class="memo-delivery-remind-pill" id="memoDeliveryRemindPill">必选</span>
+                                            </label>
+                                            <div class="memo-delivery-select-wrap">
+                                                <select class="form-control memo-delivery-select" id="memoActualDeliverable" required>
+                                                    <option value="">▼ 请下拉选择成果交付状态（必选·未选不可保存）</option>
+                                                    <option value="已经邮件交付审核">📧 已经邮件交付审核</option>
+                                                    <option value="已经微信发送审核">💬 已经微信发送审核</option>
+                                                    <option value="已上传共享盘/群文件审核">📂 已上传共享盘 / 群文件审核</option>
+                                                    <option value="已提交图纸/模型/BOM审核">📐 已提交图纸 / 模型 / BOM审核</option>
+                                                    <option value="已当面汇报/现场评审确认">🤝 已当面汇报 / 现场评审确认</option>
+                                                    <option value="日常事务（无需交付物）">✔️ 日常事务（无需交付审核）</option>
+                                                </select>
+                                            </div>
+                                            <span class="memo-delivery-status-badge" id="memoDeliveryStatusBadge" hidden></span>
+                                            <div class="memo-delivery-review-actions" id="memoDeliveryReviewActions" hidden>
+                                                <button type="button" class="btn btn-sm btn-delivery-confirm" id="btnModalConfirmDelivery"><i class="fas fa-check-circle"></i> 确认通过</button>
+                                                <button type="button" class="btn btn-sm btn-delivery-return" id="btnModalReturnDelivery"><i class="fas fa-undo"></i> 退回修改</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="memo-delivery-review-row" id="memoDeliveryReviewRow" hidden>
+                                    <div class="memo-delivery-review-comment" id="memoDeliveryReviewComment"></div>
                                 </div>
                                 <div class="memo-template-chips-bar" id="memoTemplateChipsBar">
                                     <span class="template-chips-label"><i class="fas fa-magic"></i> 快速模板:</span>
