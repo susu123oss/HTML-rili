@@ -49,7 +49,13 @@ export async function initDatabase() {
       ADD COLUMN IF NOT EXISTS rollover_to_id INTEGER REFERENCES memos(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS rollover_reason TEXT NOT NULL DEFAULT '',
       ADD COLUMN IF NOT EXISTS is_reviewed BOOLEAN NOT NULL DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS is_liked BOOLEAN NOT NULL DEFAULT FALSE
+      ADD COLUMN IF NOT EXISTS is_liked BOOLEAN NOT NULL DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS expected_deliverable TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS actual_deliverable TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS delivery_status TEXT NOT NULL DEFAULT 'in_progress',
+      ADD COLUMN IF NOT EXISTS review_comment TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ
   `);
   // Old quick-added plans carried their type only in the title.
   await query(`

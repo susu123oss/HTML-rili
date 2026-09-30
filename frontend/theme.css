@@ -5531,13 +5531,37 @@ html[data-theme='dark'] .wp-chip-name {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.wp-team-kind-tag {
+  flex: 0 0 auto;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  font-weight: 700;
+  text-decoration: none;
+}
+.wp-team-kind-plan {
+  background: rgba(67, 97, 238, 0.12);
+  color: #3651d4;
+}
+.wp-team-kind-calendar {
+  background: rgba(8, 145, 178, 0.12);
+  color: #0e7490;
+}
+.wp-team-pill-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .wp-team-pill-open {
   background: #eff6ff; color: #1d4ed8;
 }
 .wp-team-pill-done {
   background: #f0fdf4; color: #15803d;
-  text-decoration: line-through;
   opacity: 0.8;
+}
+.wp-team-pill-done .wp-team-pill-title {
+  text-decoration: line-through;
 }
 .wp-team-pill-overdue {
   background: #fef2f2; color: #b91c1c;
@@ -5917,7 +5941,7 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width 0.36s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.42s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-x: hidden;
   will-change: width;
   position: sticky;
@@ -6073,6 +6097,14 @@ html, body, .app-layout, .app-sidebar, .app-header, .app-main, .month-calendar, 
   transition: background-color 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s ease !important;
 }
 
+/* 侧栏宽度动画不能被上面的主题切换 transition 覆盖，否则折叠/展开会瞬间跳变。 */
+.app-sidebar {
+  transition: width 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.18s ease !important;
+}
+
 /* 保证鼠标悬停在日历格子上都能自然顺畅上下滚动整个网页 */
 .day-memos,
 .calendar-day,
@@ -6219,9 +6251,11 @@ html[data-theme='dark'] .user-avatar {
   opacity: 1;
   transform: translateX(0);
   max-width: 180px;
-  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s,
-              transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s,
-              max-width 0.36s cubic-bezier(0.16, 1, 0.3, 1);
+  visibility: visible;
+  transition: opacity 0.22s ease 0.14s,
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
+              max-width 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0s linear 0s;
   white-space: nowrap;
   overflow: hidden;
   display: inline-block;
@@ -6231,8 +6265,10 @@ html[data-theme='dark'] .user-avatar {
 .app-sidebar .sidebar-header,
 .app-sidebar .nav-item,
 .app-sidebar .user-card {
-  transition: padding 0.36s cubic-bezier(0.16, 1, 0.3, 1),
-              margin 0.36s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: padding 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+              margin 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+              gap 0.28s ease,
               background-color 0.2s ease,
               color 0.18s ease;
 }
@@ -6245,13 +6281,29 @@ html[data-theme='dark'] .user-avatar {
 .app-sidebar.collapsed .logo-text,
 .app-sidebar.collapsed .logo-badge,
 .app-sidebar.collapsed .nav-label,
-.app-sidebar.collapsed .nav-group-title,
 .app-sidebar.collapsed .user-info,
 .app-sidebar.collapsed .sidebar-logout-btn {
-  display: none !important;
   opacity: 0 !important;
+  transform: translateX(-8px) !important;
   max-width: 0 !important;
+  visibility: hidden !important;
   pointer-events: none !important;
+  transition: opacity 0.15s ease 0s,
+              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+              max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+              visibility 0s linear 0.18s !important;
+}
+
+/* 分组标题折叠后不保留垂直占位。 */
+.app-sidebar.collapsed .nav-group-title {
+  display: none !important;
+}
+
+.app-sidebar.collapsed .sidebar-logout-btn {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 /* 顶部 Logo 完美居中 */
@@ -6315,7 +6367,7 @@ html[data-theme='dark'] .user-avatar {
   border-radius: 11px !important;
   position: relative !important;
   box-sizing: border-box !important;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: all 0.32s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .app-sidebar.collapsed .nav-item[hidden],
@@ -6336,7 +6388,7 @@ html[data-theme='dark'] .user-avatar {
   line-height: 1 !important;
   text-align: center !important;
   color: var(--text-muted) !important;
-  transition: all 0.18s ease !important;
+  transition: all 0.32s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .app-sidebar.collapsed .nav-item:hover {
@@ -6419,7 +6471,7 @@ html[data-theme='dark'] .app-sidebar.collapsed .nav-item.active i {
   cursor: pointer !important;
   border-radius: 50% !important;
   box-shadow: none !important;
-  transition: all 0.18s ease !important;
+  transition: all 0.32s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .app-sidebar.collapsed .user-card:hover {
@@ -9390,3 +9442,440 @@ html[data-theme] #dashboardPage .dashboard-risk-meta {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ========================================================
+   研发成果交付与确认闭环 (Deliverable Closed-Loop UI)
+   ======================================================== */
+
+/* 1. 月历卡片与周计划卡片单行紧凑成果胶囊 (.memo-delivery-pill) */
+.memo-delivery-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  height: 16px !important;
+  padding: 0 5px !important;
+  margin-right: 3px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+
+.memo-delivery-pill.is-submitted {
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
+.memo-delivery-pill.is-returned {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
+.memo-delivery-pill.is-confirmed {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #059669 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+.memo-delivery-pill.is-target {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #2563eb !important;
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+}
+
+html[data-theme='dark'] .memo-delivery-pill.is-submitted {
+  background: rgba(245, 158, 11, 0.22) !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.42) !important;
+}
+
+html[data-theme='dark'] .memo-delivery-pill.is-returned {
+  background: rgba(239, 68, 68, 0.22) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.42) !important;
+}
+
+html[data-theme='dark'] .memo-delivery-pill.is-confirmed {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.38) !important;
+}
+
+html[data-theme='dark'] .memo-delivery-pill.is-target {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.38) !important;
+}
+
+/* 待确认与退回修改在月历行上的微边框提示（严格保持单行高度） */
+.day-memo-item.delivery-submitted {
+  border-left: 2.5px solid #f59e0b !important;
+}
+
+.day-memo-item.delivery-returned {
+  border-left: 2.5px solid #ef4444 !important;
+}
+
+/* 2. 备忘录弹窗内：研发交付与成果验收面板 (.memo-delivery-panel) */
+.memo-delivery-panel {
+  margin: 10px 0 12px !important;
+  padding: 12px 14px !important;
+  border-radius: 10px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+}
+
+.memo-delivery-panel-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 10px !important;
+}
+
+.memo-delivery-panel-title {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text, #0f172a) !important;
+}
+
+.memo-delivery-panel-title i {
+  color: var(--ui-accent, #2563eb) !important;
+}
+
+.memo-delivery-status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 2px 9px !important;
+  border-radius: 999px !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+}
+
+.memo-delivery-status-badge.status-none {
+  background: rgba(148, 163, 184, 0.14) !important;
+  color: var(--ui-text-muted, #64748b) !important;
+}
+
+.memo-delivery-status-badge.status-in-progress {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #2563eb !important;
+}
+
+.memo-delivery-status-badge.status-submitted {
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: #b45309 !important;
+}
+
+.memo-delivery-status-badge.status-returned {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #dc2626 !important;
+}
+
+.memo-delivery-status-badge.status-confirmed {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #059669 !important;
+}
+
+html[data-theme='dark'] .memo-delivery-status-badge.status-in-progress {
+  color: #93c5fd !important;
+}
+html[data-theme='dark'] .memo-delivery-status-badge.status-submitted {
+  color: #fcd34d !important;
+}
+html[data-theme='dark'] .memo-delivery-status-badge.status-returned {
+  color: #fca5a5 !important;
+}
+html[data-theme='dark'] .memo-delivery-status-badge.status-confirmed {
+  color: #6ee7b7 !important;
+}
+
+.memo-delivery-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+@media (max-width: 640px) {
+  .memo-delivery-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.memo-delivery-field label {
+  display: block !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  color: var(--ui-text-muted, #475569) !important;
+  margin-bottom: 4px !important;
+}
+
+.memo-delivery-field .form-control {
+  height: 36px !important;
+  font-size: 0.84rem !important;
+  padding: 6px 10px !important;
+}
+
+.memo-delivery-review-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-top: 10px !important;
+  padding-top: 9px !important;
+  border-top: 1px dashed var(--ui-border, #cbd5e1) !important;
+}
+
+.memo-delivery-review-row[hidden] {
+  display: none !important;
+}
+
+.memo-delivery-review-comment {
+  font-size: 0.79rem !important;
+  color: var(--ui-text-muted, #475569) !important;
+  line-height: 1.4 !important;
+}
+
+.memo-delivery-review-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.memo-delivery-review-actions[hidden] {
+  display: none !important;
+}
+
+.btn-delivery-confirm,
+.btn-delivery-return {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  height: 30px !important;
+  padding: 0 11px !important;
+  border-radius: 7px !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-delivery-confirm {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: 1px solid #059669 !important;
+}
+
+.btn-delivery-confirm:hover {
+  background: #059669 !important;
+}
+
+.btn-delivery-return {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.32) !important;
+}
+
+.btn-delivery-return:hover {
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+html[data-theme='dark'] .btn-delivery-return {
+  color: #fca5a5 !important;
+}
+
+/* 3. 悬浮预览卡片 (#memoHoverTooltip) 成果展示盒与一键确认/退回按钮 */
+.mht-badge.submitted {
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.32) !important;
+}
+
+.mht-badge.returned {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.32) !important;
+}
+
+html[data-theme='dark'] .mht-badge.submitted {
+  color: #fcd34d !important;
+}
+
+html[data-theme='dark'] .mht-badge.returned {
+  color: #fca5a5 !important;
+}
+
+.mht-delivery-box {
+  margin: 6px 0 8px !important;
+  padding: 7px 9px !important;
+  border-radius: 8px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.mht-delivery-row {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 6px !important;
+  font-size: 0.76rem !important;
+  line-height: 1.35 !important;
+}
+
+.mht-delivery-k {
+  flex-shrink: 0 !important;
+  font-weight: 700 !important;
+  color: var(--ui-text-muted, #64748b) !important;
+}
+
+.mht-delivery-v {
+  color: var(--ui-text, #0f172a) !important;
+  word-break: break-word !important;
+}
+
+.mht-delivery-v.is-filled {
+  font-weight: 600 !important;
+  color: #059669 !important;
+}
+
+html[data-theme='dark'] .mht-delivery-v.is-filled {
+  color: #6ee7b7 !important;
+}
+
+.mht-delivery-v.is-empty {
+  color: var(--ui-text-muted, #94a3b8) !important;
+  font-style: italic !important;
+}
+
+.mht-delivery-row.is-comment .mht-delivery-v {
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='dark'] .mht-delivery-row.is-comment .mht-delivery-v {
+  color: #fca5a5 !important;
+}
+
+.mht-btn-confirm,
+.mht-btn-return,
+.mht-btn-submit-delivery {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  height: 26px !important;
+  padding: 0 9px !important;
+  border-radius: 6px !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.mht-btn-confirm {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: 1px solid #059669 !important;
+}
+
+.mht-btn-confirm:hover {
+  background: #059669 !important;
+}
+
+.mht-btn-return {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.mht-btn-return:hover {
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+html[data-theme='dark'] .mht-btn-return {
+  color: #fca5a5 !important;
+}
+
+.mht-btn-submit-delivery {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
+.mht-btn-submit-delivery:hover {
+  background: rgba(245, 158, 11, 0.24) !important;
+}
+
+html[data-theme='dark'] .mht-btn-submit-delivery {
+  color: #fcd34d !important;
+}
+
+/* 4. 研发大屏与当日详情列表的成果状态胶囊 */
+html[data-theme] #dashboardPage .stat-pill.pill-submitted {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #b45309 !important;
+  border-color: rgba(245, 158, 11, 0.32) !important;
+}
+
+html[data-theme='dark'] #dashboardPage .stat-pill.pill-submitted {
+  color: #fcd34d !important;
+}
+
+html[data-theme] #dashboardPage .stat-pill.pill-returned {
+  background: rgba(239, 68, 68, 0.14) !important;
+  color: #dc2626 !important;
+  border-color: rgba(239, 68, 68, 0.32) !important;
+}
+
+html[data-theme='dark'] #dashboardPage .stat-pill.pill-returned {
+  color: #fca5a5 !important;
+}
+
+.task-status-pill.submitted {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #b45309 !important;
+}
+
+.task-status-pill.returned {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #dc2626 !important;
+}
+
+.task-delivery-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin: 4px 0 6px !important;
+}
+
+.tdm-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  background: var(--ui-surface-soft, #f1f5f9) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  color: var(--ui-text, #334155) !important;
+}
+
+.tdm-chip.tdm-actual {
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #059669 !important;
+}
+
+html[data-theme='dark'] .tdm-chip.tdm-actual {
+  color: #6ee7b7 !important;
+}
+
