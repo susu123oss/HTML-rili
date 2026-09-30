@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260930_single_day_publish_v56" defer></script>
+    <script src="./app.js?v=20260930_fn_modal_modern_v57" defer></script>
     <style>
         * {
             margin: 0;
@@ -3916,7 +3916,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_single_day_publish_v56" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_fn_modal_modern_v57" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4550,7 +4550,7 @@
     <div class="modal" id="functionsModal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">功能面板</div>
+                <div class="modal-title"><i class="fas fa-sliders-h"></i> 功能面板</div>
                 <button class="close-modal" id="closeFunctionsModal" title="关闭" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
             <div class="modal-body">
@@ -4564,19 +4564,30 @@
                 
                 <!-- 任务发布选项卡 -->
                 <div class="tab-content active" id="taskPublishTab">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-bullhorn"></i> 发布新任务</h3>
                     <div class="form-group">
-                        <label for="taskTitle">任务标题</label>
-                        <input type="text" class="form-control" id="taskTitle" autocomplete="off" placeholder="请输入任务标题">
+                        <label for="taskTitle"><i class="fas fa-heading"></i> 任务标题</label>
+                        <input type="text" class="form-control memo-title-input" id="taskTitle" autocomplete="off" placeholder="输入要下发的任务标题...">
                     </div>
                     
-                    <div class="form-group">
-                        <label for="taskDescription">任务描述（支持Markdown）</label>
-                        <textarea class="form-control" id="taskDescription" placeholder="请输入任务描述..." rows="4"></textarea>
+                    <div class="memo-meta-grid fn-publish-meta-grid">
+                        <div class="memo-meta-col">
+                            <label for="taskStartDate"><i class="far fa-calendar"></i> 任务日期</label>
+                            <input type="date" class="form-control custom-date-input" id="taskStartDate">
+                        </div>
+                        <div class="memo-meta-col">
+                            <label for="taskDueTime"><i class="far fa-clock"></i> 截止时间</label>
+                            <input type="time" class="form-control custom-date-input" id="taskDueTime" value="18:00">
+                        </div>
+                        <div class="memo-meta-col">
+                            <label for="taskColor"><i class="fas fa-palette"></i> 任务颜色</label>
+                            <div class="color-options compact" id="taskColorOptions">
+                                <!-- 颜色选项将通过JS生成 -->
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label>接收人</label>
+                        <label><i class="fas fa-user-check"></i> 接收人</label>
                         <div class="task-assignee-panel">
                             <div class="task-assignee-toolbar">
                                 <div class="task-assignee-modes" role="group" aria-label="接收人选择模式">
@@ -4593,55 +4604,65 @@
                         </div>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="taskStartDate">任务日期</label>
-                            <input type="date" class="form-control" id="taskStartDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="taskDueTime">截止时间</label>
-                            <input type="time" class="form-control" id="taskDueTime" value="18:00">
-                        </div>
-                    </div>
-                    
                     <div class="form-group">
-                        <label for="taskColor">任务颜色</label>
-                        <div class="color-options" id="taskColorOptions">
-                            <!-- 颜色选项将通过JS生成 -->
-                        </div>
+                        <label for="taskDescription"><i class="fas fa-align-left"></i> 任务描述（支持 Markdown）</label>
+                        <textarea class="form-control" id="taskDescription" placeholder="输入任务背景、要求或注意事项..." rows="3"></textarea>
                     </div>
                     
-                    <button class="btn btn-success btn-full" id="publishTask">
-                        <i class="fas fa-paper-plane"></i> 发布任务
-                    </button>
-                    
-                    <div class="task-publish-info">
-                        <h4><i class="fas fa-info-circle"></i> 功能说明</h4>
-                        <p style="margin-top: 8px; line-height: 1.5;">
-                            此功能将按所选日期与截止时间，向选定的接收人直接下发当日任务备忘录。
-                        </p>
+                    <div class="fn-action-bar">
+                        <div class="fn-inline-note">
+                            <i class="fas fa-info-circle"></i>
+                            <span>按所选日期与截止时间，向选定的接收人直接下发当日任务备忘录。</span>
+                        </div>
+                        <button class="btn btn-primary fn-primary-cta" id="publishTask" type="button">
+                            <i class="fas fa-paper-plane"></i> 发布任务
+                        </button>
                     </div>
                 </div>
 
                 
                 <!-- 数据管理选项卡 -->
                 <div class="tab-content" id="dataManagementTab">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-database"></i> 数据管理</h3>
-                    <p style="margin-bottom: 15px; color: #6c757d; line-height: 1.5;">
-                        所有数据存储在您的浏览器本地，建议定期导出备份以防数据丢失。
-                    </p>
+                    <div class="data-stats-card fn-stats-banner">
+                        <div class="fn-stats-grid">
+                            <div class="fn-stat-item">
+                                <span class="fn-stat-label">总备忘录</span>
+                                <strong class="fn-stat-value" id="totalMemosStat">0</strong>
+                            </div>
+                            <div class="fn-stat-item is-success">
+                                <span class="fn-stat-label">已完成</span>
+                                <strong class="fn-stat-value" id="completedMemosStat">0</strong>
+                            </div>
+                            <div class="fn-stat-item is-warning">
+                                <span class="fn-stat-label">待完成</span>
+                                <strong class="fn-stat-value" id="pendingMemosStat">0</strong>
+                            </div>
+                            <div class="fn-stat-item">
+                                <span class="fn-stat-label">最早记录</span>
+                                <strong class="fn-stat-value fn-stat-text" id="oldestMemoStat">无</strong>
+                            </div>
+                            <div class="fn-stat-item">
+                                <span class="fn-stat-label">最近更新</span>
+                                <strong class="fn-stat-value fn-stat-text" id="latestUpdateStat">无</strong>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="excel-export-panel" id="excelExportPanel" hidden>
-                        <h4><i class="fas fa-file-excel"></i> 管理员 Excel 导出</h4>
-                        <p>按当前日历卡片格式导出，单人导出一个工作表，多人导出到同一个 Excel 文件并按人员姓名命名工作表，保留每月完成进度和统计。</p>
+                        <div class="fn-card-head">
+                            <div>
+                                <h4><i class="fas fa-file-excel"></i> 管理员 Excel 报表导出</h4>
+                                <p>单人导出一个工作表，多人自动合并至同一 Excel 并按姓名分表，保留每月统计。</p>
+                            </div>
+                        </div>
                         <div class="excel-export-grid">
                             <label>
                                 <span>开始月份</span>
-                                <input type="month" id="excelStartMonth">
+                                <input type="month" class="form-control" id="excelStartMonth">
                             </label>
                             <label>
                                 <span>导出月份数</span>
-                                <select id="excelMonthCount">
+                                <select class="form-control" id="excelMonthCount">
                                     <option value="1">1个月</option>
                                     <option value="2">2个月</option>
                                     <option value="3">3个月</option>
@@ -4658,60 +4679,52 @@
                             </label>
                             <div class="excel-user-picker-field">
                                 <div class="excel-user-picker-heading">
-                                    <span>选择人员</span>
-                                    <span class="excel-selection-count" id="excelSelectionCount" aria-live="polite">已选择 0 人</span>
+                                    <span>选择导出人员</span>
+                                    <div class="fn-picker-quick">
+                                        <button class="btn-assignee-quick" id="excelSelectAllUsers" type="button">全选</button>
+                                        <button class="btn-assignee-quick" id="excelSelectCurrentUser" type="button">仅当前查看</button>
+                                        <button class="btn-assignee-quick" id="excelClearUserSelection" type="button">清空</button>
+                                        <span class="excel-selection-count" id="excelSelectionCount" aria-live="polite">已选择 0 人</span>
+                                    </div>
                                 </div>
                                 <div class="excel-user-picker" id="excelUserPicker" aria-label="选择导出人员"></div>
                             </div>
                         </div>
-                        <div class="excel-export-actions">
-                            <button class="btn btn-secondary" id="excelSelectAllUsers" type="button">
-                                <i class="fas fa-users"></i> 全选人员
-                            </button>
-                            <button class="btn btn-secondary" id="excelSelectCurrentUser" type="button">
-                                <i class="fas fa-user-check"></i> 只选当前查看人员
-                            </button>
-                            <button class="btn btn-secondary" id="excelClearUserSelection" type="button">
-                                <i class="fas fa-times"></i> 清空选择
-                            </button>
+                        <div class="excel-export-actions fn-right-actions">
                             <button class="btn btn-success" id="exportExcel" type="button">
-                                <i class="fas fa-download"></i> 导出 Excel
+                                <i class="fas fa-download"></i> 导出 Excel 报表
                             </button>
                         </div>
                     </div>
                     
-                    <div class="data-management-buttons">
-                        <input type="file" id="importFileInput" accept="application/json,.json">
-                        <button class="btn btn-primary" id="exportData">
-                            <i class="fas fa-file-export"></i> 导出数据
-                        </button>
-                        <button class="btn btn-secondary" id="importData">
-                            <i class="fas fa-file-import"></i> 导入数据
-                        </button>
-                        <button class="btn btn-danger" id="clearData">
-                            <i class="fas fa-trash-alt"></i> 清空所有数据
-                        </button>
-                        <button class="btn btn-secondary" id="viewStats">
-                            <i class="fas fa-chart-pie"></i> 查看统计
-                        </button>
-                    </div>
-                    
-                    <div class="data-stats-card">
-                        <h4><i class="fas fa-info-circle"></i> 统计信息</h4>
-                        <div style="margin-top: 10px;">
-                            <p>总备忘录数: <span id="totalMemosStat">0</span></p>
-                            <p>已完成: <span id="completedMemosStat">0</span></p>
-                            <p>未完成: <span id="pendingMemosStat">0</span></p>
-                            <p>最早备忘录: <span id="oldestMemoStat">无</span></p>
-                            <p>最近更新: <span id="latestUpdateStat">无</span></p>
+                    <div class="fn-section-card">
+                        <div class="fn-card-head">
+                            <div>
+                                <h4><i class="fas fa-database"></i> JSON 数据备份与恢复</h4>
+                                <p class="fn-subtext">服务器版数据实时保存在 PostgreSQL 中；JSON 导出可用于离线备份或迁移。</p>
+                            </div>
+                        </div>
+                        <div class="data-management-buttons">
+                            <input type="file" id="importFileInput" accept="application/json,.json">
+                            <button class="btn btn-primary" id="exportData" type="button">
+                                <i class="fas fa-file-export"></i> 导出 JSON
+                            </button>
+                            <button class="btn btn-secondary" id="importData" type="button">
+                                <i class="fas fa-file-import"></i> 导入 JSON
+                            </button>
+                            <button class="btn btn-secondary" id="viewStats" type="button">
+                                <i class="fas fa-sync-alt"></i> 刷新统计
+                            </button>
+                            <button class="btn btn-danger" id="clearData" type="button">
+                                <i class="fas fa-trash-alt"></i> 清空数据
+                            </button>
                         </div>
                     </div>
                 </div>
                 
                 <!-- 人员管理选项卡 -->
                 <div class="tab-content" id="userManagementTab">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-users-cog"></i> 人员管理</h3>
-                    <div class="task-list" id="userManagementList">
+                    <div class="task-list fn-user-grid" id="userManagementList">
                         <div class="empty-state">
                             <i class="fas fa-users"></i>
                             <p>暂无人员</p>
@@ -4721,10 +4734,10 @@
 
                 <!-- 运维监控选项卡 -->
                 <div class="tab-content" id="opsMonitorTab">
-                    <div class="ops-monitor-header">
+                    <div class="ops-monitor-header fn-ops-bar">
                         <div>
-                            <h3><i class="fas fa-server"></i> 运维监控</h3>
-                            <p>查看服务器运行状态、磁盘、内存、数据库和后端进程健康情况。</p>
+                            <h3><i class="fas fa-heartbeat"></i> 服务器健康与资源监控</h3>
+                            <p>实时查看容器运行状态、磁盘、内存、PostgreSQL 连接池与后端进程指标。</p>
                         </div>
                         <button class="btn btn-primary" id="refreshOpsStatus" type="button">
                             <i class="fas fa-sync-alt"></i> 刷新状态
@@ -4740,61 +4753,67 @@
 
                 <!-- 提醒设置选项卡 -->
                 <div class="tab-content" id="reminderSettingsTab">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-bell"></i> 提醒设置</h3>
-                    <div class="form-group">
-                        <label for="reminderCheckInterval">检查频率</label>
-                        <select class="form-control" id="reminderCheckInterval">
-                            <option value="1">每1分钟</option>
-							<option value="5">每5分钟</option>
-                            <option value="10">每10分钟</option>
-                            <option value="15">每15分钟</option>
-                            <option value="30">每30分钟</option>
-                            <option value="60">每小时</option>
-                        </select>
+                    <div class="fn-settings-grid">
+                        <div class="fn-field-card">
+                            <label for="reminderCheckInterval"><i class="fas fa-stopwatch"></i> 检查频率</label>
+                            <select class="form-control" id="reminderCheckInterval">
+                                <option value="1">每 1 分钟</option>
+                                <option value="5">每 5 分钟</option>
+                                <option value="10">每 10 分钟</option>
+                                <option value="15">每 15 分钟</option>
+                                <option value="30">每 30 分钟</option>
+                                <option value="60">每小时</option>
+                            </select>
+                            <span class="fn-field-hint">后台轮询检查未完成事项截止时间的间隔</span>
+                        </div>
+                        
+                        <div class="fn-field-card">
+                            <label for="reminderAdvanceTime"><i class="fas fa-hourglass-half"></i> 提前提醒时间</label>
+                            <select class="form-control" id="reminderAdvanceTime">
+                                <option value="0">到期时提醒</option>
+                                <option value="15">提前 15 分钟</option>
+                                <option value="30">提前 30 分钟</option>
+                                <option value="60">提前 1 小时</option>
+                                <option value="1440">提前 1 天</option>
+                            </select>
+                            <span class="fn-field-hint">在任务截止前多久首次弹出预警通知</span>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="reminderAdvanceTime">提前提醒时间</label>
-                        <select class="form-control" id="reminderAdvanceTime">
-                            <option value="0">到期时提醒</option>
-                            <option value="15">提前15分钟</option>
-                            <option value="30">提前30分钟</option>
-                            <option value="60">提前1小时</option>
-                            <option value="1440">提前1天</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="enableSoundReminder" checked> 启用声音提醒
+                    <div class="fn-switch-grid">
+                        <label class="fn-switch-card" for="enableSoundReminder">
+                            <div class="fn-switch-icon"><i class="fas fa-volume-up"></i></div>
+                            <div class="fn-switch-info">
+                                <strong>启用声音提醒</strong>
+                                <span>触发到期或催办提醒时同步播放提示音</span>
+                            </div>
+                            <input type="checkbox" id="enableSoundReminder" checked>
+                        </label>
+                        
+                        <label class="fn-switch-card" for="enableDesktopNotification">
+                            <div class="fn-switch-icon"><i class="fas fa-desktop"></i></div>
+                            <div class="fn-switch-info">
+                                <strong>启用系统桌面通知</strong>
+                                <span id="desktopNotificationStatus">支持时同步弹出操作系统级通知横幅</span>
+                            </div>
+                            <input type="checkbox" id="enableDesktopNotification">
                         </label>
                     </div>
                     
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="enableDesktopNotification"> 启用桌面通知（支持时使用系统通知）
-                        </label>
-                        <div id="desktopNotificationStatus" style="margin-top:6px;font-size:0.82rem;line-height:1.45;color:#64748b;"></div>
+                    <div class="export-info fn-notice-card">
+                        <div class="fn-notice-items">
+                            <span><i class="fas fa-check-circle"></i> 到达提前提醒时间后每项任务仅提醒一次</span>
+                            <span><i class="fas fa-check-circle"></i> 已完成事项自动跳过，点击系统通知可直接定位事项</span>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="reminderTest">测试提醒</label>
-                        <button class="btn btn-warning btn-full" id="testReminder">
+
+                    <div class="fn-action-bar">
+                        <button class="btn btn-secondary" id="testReminder" type="button">
                             <i class="fas fa-bell"></i> 发送测试提醒
                         </button>
-                    </div>
-                    
-                    <button class="btn btn-primary" id="saveReminderSettings">
-                        <i class="fas fa-save"></i> 保存提醒设置
-                    </button>
-                    
-                    <div class="export-info" style="margin-top: 20px;">
-                        <h4><i class="fas fa-info-circle"></i> 提醒说明</h4>
-                        <ul style="margin-top: 8px; padding-left: 18px; line-height: 1.5;">
-                            <li>系统按设置频率检查截止时间，到达提前提醒时间后只提醒一次</li>
-                            <li>系统通知不可用时会自动使用页面提醒 + 声音；支持时会同步弹出桌面通知</li>
-                            <li>已完成的备忘录不会触发提醒，点击系统通知可定位关联事项</li>
-                        </ul>
+                        <button class="btn btn-primary fn-primary-cta" id="saveReminderSettings" type="button">
+                            <i class="fas fa-save"></i> 保存提醒设置
+                        </button>
                     </div>
                 </div>
             </div>

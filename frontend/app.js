@@ -11842,7 +11842,7 @@ function initReminderSettings() {
 }
 
 function patchStaticText() {
-  const dataText = document.querySelector('#dataManagementTab p');
+  const dataText = document.querySelector('#dataManagementTab .fn-subtext, #dataManagementTab > p');
   if (dataText) dataText.textContent = '服务器版数据保存在 PostgreSQL 中，管理员可导出 Excel；JSON 导出仅用于备份当前可见记录。';
   initReminderSettings();
 }

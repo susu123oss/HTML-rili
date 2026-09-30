@@ -10468,3 +10468,516 @@ html[data-theme='dark'] .calendar-day.is-cn-rest:not(.today) .day-number-text {
     font-size: 8px !important;
   }
 }
+
+/* ==========================================================================
+   功能面板 (#functionsModal) 现代化重构：统一卡片网格、开关磁贴与紧凑操作栏
+   ========================================================================== */
+#functionsModal .modal-content {
+  width: min(840px, 94vw) !important;
+  max-width: 840px !important;
+  border-radius: 16px !important;
+}
+
+/* 顶部已有右上角关闭按钮，隐藏底部冗余空栏释放纵向空间 */
+#functionsModal > .modal-content > .modal-footer {
+  display: none !important;
+}
+
+#functionsModal .modal-header {
+  padding: 14px 20px !important;
+}
+
+#functionsModal .modal-title {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+}
+
+#functionsModal .modal-title i {
+  color: var(--ui-accent, #2563eb) !important;
+  font-size: 0.96rem !important;
+}
+
+#functionsModal .modal-body {
+  padding: 14px 20px 20px !important;
+}
+
+#functionsModal .tabs {
+  margin-bottom: 14px !important;
+  padding: 4px !important;
+  border-radius: 11px !important;
+  background: var(--ui-surface-soft, #f1f5f9) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+}
+
+#functionsModal .form-group {
+  margin-bottom: 12px !important;
+}
+
+#functionsModal .form-group > label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text-muted, #475569) !important;
+  margin-bottom: 6px !important;
+}
+
+#functionsModal .form-group > label i {
+  color: var(--ui-accent, #2563eb) !important;
+  font-size: 0.78rem !important;
+}
+
+/* 1. 任务发布：三列元数据卡 + 紧凑接收人面板 + 底部双栏操作条 */
+#functionsModal .fn-publish-meta-grid {
+  grid-template-columns: 1fr 1fr 1.15fr !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+  padding: 10px 14px !important;
+  border-radius: 11px !important;
+}
+
+#functionsModal .task-assignee-panel {
+  padding: 10px 12px !important;
+  border-radius: 11px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+}
+
+#functionsModal .task-assignee-toolbar {
+  margin-bottom: 8px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid var(--ui-border, #e2e8f0) !important;
+}
+
+#functionsModal #taskDescription {
+  min-height: 78px !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  font-size: 0.88rem !important;
+  line-height: 1.55 !important;
+  resize: vertical !important;
+}
+
+.fn-action-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-top: 14px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid var(--ui-border, #e2e8f0) !important;
+  flex-wrap: wrap !important;
+}
+
+.fn-inline-note {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.8rem !important;
+  color: var(--ui-text-muted, #64748b) !important;
+  flex: 1 1 240px !important;
+}
+
+.fn-inline-note i {
+  color: var(--ui-accent, #2563eb) !important;
+}
+
+.fn-primary-cta {
+  min-width: 148px !important;
+  height: 38px !important;
+  padding: 0 20px !important;
+  border-radius: 9px !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin-left: auto !important;
+}
+
+/* 2. 提醒设置：双列选择器卡片 + 双列交互开关磁贴 */
+.fn-settings-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.fn-field-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+}
+
+.fn-field-card > label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text, #0f172a) !important;
+}
+
+.fn-field-card > label i {
+  color: var(--ui-accent, #2563eb) !important;
+  font-size: 0.8rem !important;
+}
+
+.fn-field-card .form-control,
+.fn-field-card .form-select {
+  height: 36px !important;
+  padding: 0 10px !important;
+  border-radius: 8px !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+  background: var(--ui-surface, #ffffff) !important;
+}
+
+.fn-field-hint {
+  font-size: 0.74rem !important;
+  color: var(--ui-text-muted, #64748b) !important;
+  line-height: 1.35 !important;
+}
+
+.fn-switch-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.fn-switch-card {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 13px 15px !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1.5px solid var(--ui-border, #e2e8f0) !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  margin: 0 !important;
+  transition: all 0.16s ease !important;
+}
+
+.fn-switch-card:hover {
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  background: var(--ui-surface-hover, #f1f5f9) !important;
+}
+
+.fn-switch-card:has(input:checked) {
+  border-color: rgba(37, 99, 235, 0.55) !important;
+  background: rgba(37, 99, 235, 0.05) !important;
+}
+
+.fn-switch-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  background: rgba(37, 99, 235, 0.1) !important;
+  color: var(--ui-accent, #2563eb) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.95rem !important;
+  flex-shrink: 0 !important;
+}
+
+.fn-switch-card:has(input:checked) .fn-switch-icon {
+  background: var(--ui-accent, #2563eb) !important;
+  color: #ffffff !important;
+}
+
+.fn-switch-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.fn-switch-info strong {
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text, #0f172a) !important;
+  line-height: 1.3 !important;
+}
+
+.fn-switch-info span {
+  font-size: 0.75rem !important;
+  color: var(--ui-text-muted, #64748b) !important;
+  line-height: 1.35 !important;
+}
+
+.fn-switch-card input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  accent-color: var(--ui-accent, #2563eb) !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+}
+
+.fn-notice-card {
+  margin: 0 !important;
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px dashed var(--ui-border-strong, #cbd5e1) !important;
+}
+
+.fn-notice-items {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px 20px !important;
+  font-size: 0.78rem !important;
+  color: var(--ui-text-muted, #64748b) !important;
+}
+
+.fn-notice-items span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.fn-notice-items i {
+  color: #10b981 !important;
+}
+
+/* 3. 数据管理：5列 KPI 指标横幅 + 现代化卡片分区 */
+.fn-stats-banner {
+  margin: 0 0 12px 0 !important;
+  padding: 10px 12px !important;
+  border-radius: 12px !important;
+}
+
+.fn-stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.fn-stat-item {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  padding: 8px 10px !important;
+  border-radius: 9px !important;
+  background: var(--ui-surface, #ffffff) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  min-width: 0 !important;
+}
+
+.fn-stat-label {
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  color: var(--ui-text-muted, #64748b) !important;
+}
+
+.fn-stat-value {
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: var(--ui-text, #0f172a) !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.fn-stat-item.is-success .fn-stat-value {
+  color: #10b981 !important;
+}
+
+.fn-stat-item.is-warning .fn-stat-value {
+  color: #f59e0b !important;
+}
+
+.fn-stat-value.fn-stat-text {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+#functionsModal .excel-export-panel,
+#functionsModal .fn-section-card {
+  margin: 0 0 12px 0 !important;
+  padding: 14px 16px !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+}
+
+#functionsModal .fn-section-card:last-child {
+  margin-bottom: 0 !important;
+}
+
+.fn-card-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 10px !important;
+}
+
+.fn-card-head h4 {
+  margin: 0 0 3px 0 !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text, #0f172a) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.fn-card-head h4 i {
+  color: var(--ui-accent, #2563eb) !important;
+}
+
+.fn-card-head p {
+  margin: 0 !important;
+  font-size: 0.78rem !important;
+  color: var(--ui-text-muted, #64748b) !important;
+  line-height: 1.4 !important;
+}
+
+.fn-picker-quick {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+}
+
+.fn-right-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-top: 10px !important;
+}
+
+#functionsModal .data-management-buttons {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+#functionsModal .data-management-buttons .btn {
+  height: 36px !important;
+  font-size: 0.82rem !important;
+  border-radius: 8px !important;
+}
+
+/* 4. 人员管理：双列紧凑成员卡片网格 */
+#functionsModal #userManagementList.fn-user-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
+  gap: 10px !important;
+  max-height: 62vh !important;
+  overflow-y: auto !important;
+  padding-right: 4px !important;
+}
+
+#functionsModal .user-management-item {
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  border-left: 3px solid var(--ui-accent, #2563eb) !important;
+  box-shadow: none !important;
+}
+
+#functionsModal .user-management-header {
+  margin-bottom: 8px !important;
+}
+
+#functionsModal .user-management-meta {
+  gap: 4px 10px !important;
+  font-size: 0.75rem !important;
+}
+
+#functionsModal .user-edit-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 8px 0 10px !important;
+}
+
+#functionsModal .user-edit-grid label span {
+  font-size: 0.73rem !important;
+  font-weight: 600 !important;
+  color: var(--ui-text-muted, #64748b) !important;
+}
+
+#functionsModal .user-edit-grid :is(select, input) {
+  height: 32px !important;
+  padding: 0 8px !important;
+  font-size: 0.8rem !important;
+  border-radius: 7px !important;
+}
+
+/* 5. 运维监控：紧凑头部横幅 */
+#functionsModal .fn-ops-bar {
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  margin-bottom: 12px !important;
+}
+
+#functionsModal .fn-ops-bar h3 {
+  margin: 0 0 3px 0 !important;
+  font-size: 0.92rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+#functionsModal .fn-ops-bar p {
+  margin: 0 !important;
+  font-size: 0.78rem !important;
+}
+
+/* 深色模式适配 */
+html[data-theme='dark'] #functionsModal .tabs {
+  background: #0f172a !important;
+  border-color: #23354d !important;
+}
+
+html[data-theme='dark'] #functionsModal :is(.task-assignee-panel, .fn-field-card, .fn-switch-card, .fn-notice-card, .excel-export-panel, .fn-section-card, .user-management-item, .fn-ops-bar) {
+  background: #111a27 !important;
+  border-color: #23354d !important;
+}
+
+html[data-theme='dark'] #functionsModal .fn-switch-card:has(input:checked) {
+  background: rgba(37, 99, 235, 0.14) !important;
+  border-color: #3b82f6 !important;
+}
+
+html[data-theme='dark'] #functionsModal .fn-stat-item {
+  background: #151f2c !important;
+  border-color: #23354d !important;
+}
+
+/* 移动端响应式单列回退 */
+@media (max-width: 768px) {
+  #functionsModal .fn-publish-meta-grid,
+  .fn-settings-grid,
+  .fn-switch-grid,
+  #functionsModal #userManagementList.fn-user-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .fn-stats-grid,
+  #functionsModal .data-management-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
