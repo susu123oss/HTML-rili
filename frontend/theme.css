@@ -6856,10 +6856,10 @@ html[data-theme='dark'] .app-sidebar.collapsed .user-avatar {
 
 /* 主体内容区 (App Body) */
 .app-body {
-  padding: 10px 18px 14px;
+  padding: 8px 18px 12px !important;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 10px !important;
   width: 100%;
   min-width: 0;
   flex: 1;
