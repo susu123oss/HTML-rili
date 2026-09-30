@@ -8505,9 +8505,9 @@ html[data-theme='dark'] .calendar-day .day-memo-item.is-overdue {
 }
 
 html[data-theme='dark'] .calendar-day .day-memo-item.completed {
-  border-left: 3px solid rgba(52, 211, 153, 0.55) !important;
-  background: rgba(6, 78, 59, 0.22) !important;
-  opacity: 0.85 !important;
+  border-left: 3px solid rgba(100, 116, 139, 0.45) !important;
+  background: rgba(30, 41, 59, 0.45) !important;
+  opacity: 0.72 !important;
 }
 
 html[data-theme='dark'] .calendar-day .day-memo-item.completed .memo-title-text {

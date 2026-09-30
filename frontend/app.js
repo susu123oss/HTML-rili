@@ -6948,6 +6948,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   const dateValue = date instanceof Date ? dateKey(date) : String(date);
   const draftTitle = String(draft.title || '').trim();
   let memo = memoId ? state.memos.find((item) => String(item.id) === String(memoId)) : null;
+  let detailUnavailable = false;
 
   // 若本地缓存中已包含完整内容，则无需再次发起网络请求
   const hasFullContent = memo && Object.prototype.hasOwnProperty.call(memo, 'content') && memo.content !== undefined;
@@ -6965,12 +6966,13 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
         } else {
           state.memos.push(data.memo);
         }
-      }
+      } else { throw new Error('服务器未返回完整正文'); }
     } catch (error) {
       if (requestVersion !== state.memoDetailRequestVersion || String(state.selectedMemoId) !== String(memoId)) return;
       console.warn(`读取任务详情失败，使用本地缓存显示: ${error.message}`);
       // 容错降级：如果本地已有该任务基本信息，绝不阻断用户打开弹窗！
       if (memo) {
+        detailUnavailable = true;
         memo = { ...memo, content: memo.content || memo.contentPreview || '' };
       } else {
         showGlobalToast(`读取任务详情失败：${error.message}`, 'error');
@@ -6984,7 +6986,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
 
   // 权限控制：管理员或任务所有者可编辑，其他成员为只读查看
   const canEdit = (!memo || canManageWorkspace() || Number(memo.ownerId) === Number(state.user?.id))
-    && !memo?.rolloverToId;
+    && !memo?.rolloverToId && !detailUnavailable;
 
   // 动态更新模态窗标题与只读状态及审阅/点赞印章
   const modalTitle = $('memoModal')?.querySelector('.modal-title');
@@ -7040,7 +7042,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   }
 
   if (contentInput) {
-    contentInput.value = memo?.content || memo?.contentPreview || '';
+    contentInput.value = memo?.content ?? memo?.contentPreview ?? '';
     contentInput.readOnly = !canEdit;
   }
   updateMemoDeliveryModalUI(memo, canEdit);
@@ -7068,6 +7070,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
     c.style.pointerEvents = canEdit ? 'auto' : 'none';
   });
   updateMarkdownPreview();
+  if (detailUnavailable) setOperationFeedback('memoSaveFeedback', '正文读取失败，当前仅显示摘要。请重新打开事项后再编辑，避免覆盖完整内容。', 'error');
   showDialog('memoModal', canEdit ? 'memoTitle' : null);
 }
 
