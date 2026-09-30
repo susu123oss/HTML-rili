@@ -6407,6 +6407,89 @@ const CN_STATUTORY_SCHEDULE = {
   '2027-10-07': { badge: '休', name: '国庆节' }
 };
 
+const cnHolidaySyncedYears = new Set();
+const cnHolidayFetchingYears = new Set();
+
+// 启动时从本地缓存恢复已云端同步的国务院节假日安排
+(() => {
+  try {
+    const raw = localStorage.getItem('calendarCnHolidays_v1');
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.schedule === 'object') {
+      Object.assign(CN_STATUTORY_SCHEDULE, parsed.schedule);
+    }
+    const now = Date.now();
+    if (parsed && typeof parsed.syncedAtByYear === 'object') {
+      for (const [yr, ts] of Object.entries(parsed.syncedAtByYear)) {
+        // 缓存有效期 24 小时，过期自动后台静默刷新
+        if (now - Number(ts || 0) < 24 * 3600 * 1000) {
+          cnHolidaySyncedYears.add(Number(yr));
+        }
+      }
+    }
+  } catch (_) {}
+})();
+
+async function ensureYearHolidaysLoaded(year) {
+  const yr = Number(year);
+  if (!yr || yr < 2020 || yr > 2099) return;
+  if (cnHolidaySyncedYears.has(yr) || cnHolidayFetchingYears.has(yr)) return;
+  cnHolidayFetchingYears.add(yr);
+
+  const urls = [
+    `https://fastly.jsdelivr.net/gh/NateScarlet/holiday-cn@master/${yr}.json`,
+    `https://gcore.jsdelivr.net/gh/NateScarlet/holiday-cn@master/${yr}.json`,
+    `https://unpkg.com/holiday-cn/${yr}.json`
+  ];
+
+  for (const url of urls) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4500);
+      const res = await fetch(url, { signal: controller.signal, cache: 'no-cache' });
+      clearTimeout(timer);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data || !Array.isArray(data.days)) continue;
+
+      let changed = false;
+      data.days.forEach((item) => {
+        const dStr = String(item?.date || '').slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return;
+        const badge = item.isOffDay ? '休' : '班';
+        const baseName = String(item.name || '').trim() || (item.isOffDay ? '节假日' : '调休');
+        const name = item.isOffDay ? baseName : (baseName.endsWith('补班') ? baseName : `${baseName}补班`);
+        const prev = CN_STATUTORY_SCHEDULE[dStr];
+        if (!prev || prev.badge !== badge || prev.name !== name) {
+          CN_STATUTORY_SCHEDULE[dStr] = { badge, name };
+          cnCalendarInfoCache.delete(dStr);
+          changed = true;
+        }
+      });
+
+      cnHolidaySyncedYears.add(yr);
+      try {
+        const raw = localStorage.getItem('calendarCnHolidays_v1');
+        const parsed = raw ? JSON.parse(raw) : {};
+        const syncedAtByYear = { ...(parsed.syncedAtByYear || {}), [yr]: Date.now() };
+        localStorage.setItem('calendarCnHolidays_v1', JSON.stringify({
+          schedule: CN_STATUTORY_SCHEDULE,
+          syncedAtByYear
+        }));
+      } catch (_) {}
+
+      if (changed && typeof renderCalendar === 'function') {
+        renderCalendar();
+      }
+      break;
+    } catch (_) {
+      // 尝试下一个 CDN 节点，全部不可达时平滑使用本地内置表与算法兜底
+    }
+  }
+  cnHolidayFetchingYears.delete(yr);
+}
+
 function getLunarParts(date) {
   if (!cnLunarFormatter) return { monthStr: '', dayNum: 0, dayStr: '' };
   try {
@@ -6436,12 +6519,14 @@ function getChineseCalendarDayInfo(dateInput) {
   if (isNaN(date.getTime())) {
     return { badge: '', label: '', labelType: 'lunar', lunarFull: '', tooltip: '' };
   }
+  const year = date.getFullYear();
+  void ensureYearHolidaysLoaded(year);
+
   const key = dateKey(date);
   if (cnCalendarInfoCache.has(key)) {
     return cnCalendarInfoCache.get(key);
   }
 
-  const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
   const mmdd = `${pad(month)}-${pad(day)}`;
@@ -7410,19 +7495,12 @@ async function carryOverSingleMemoToNextDay(memoId, triggerBtn = null) {
   }
 
   try {
-    const newTitle = memo.title.startsWith('[结转]') ? memo.title : `[结转] ${memo.title}`;
-    const payload = {
-      ownerId: memo.ownerId || state.user?.id,
-      date: nextKey,
-      title: newTitle,
-      content: memo.content || memo.contentPreview || '',
-      color: memo.color || '#4361ee',
-      completed: false,
-      planKind: memo.planKind || 'memo',
-      dueTime: `${nextKey}T18:00:00`,
-      expectedDeliverable: memo.expectedDeliverable || ''
-    };
-    await request('/memos', { method: 'POST', body: JSON.stringify(payload) });
+    const result = await request(`/memos/${memo.id}/rollover`, {
+      method: 'POST',
+      body: JSON.stringify({ targetDate: nextKey, dueTime: rolloverDueTime(memo, nextKey), reason: '次日结转' })
+    });
+    syncMemosLocally([result.original, result.memo]);
+    await loadReminders();
 
     if (triggerBtn) {
       triggerBtn.classList.add('success');
@@ -9035,7 +9113,10 @@ async function toggleMemoCompleteFromBoard(memoId, isCompleted) {
       body: JSON.stringify({ completed: isCompleted })
     });
     if (res.memo) syncMemosLocally(res.memo);
-    showWeeklyFeedback(`事项已标记为 ${isCompleted ? '已完成' : '未完成'}`);
+    const status = memoDeliveryStatus(res.memo);
+    showWeeklyFeedback(status === 'submitted' ? '成果已提交，等待管理员确认'
+      : status === 'returned' ? '成果仍需修改后重新提交'
+      : `事项已标记为 ${res.memo?.completed ? '已完成' : '未完成'}`);
   } catch (err) {
     renderWeeklyPlanPage();
     alert(`更新状态失败：${err.message}`);
@@ -10231,7 +10312,8 @@ async function batchCompleteReminders() {
     const toast = document.createElement('div');
     toast.className = 'operation-feedback success';
     toast.style.margin = '10px 0 0';
-    toast.innerHTML = `<i class="fas fa-check-circle"></i> 成功完成 ${res.count || ids.length} 个事项！`;
+    const skipped = res.skippedIds?.length || 0;
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> 已完成 ${res.count ?? 0} 个事项${skipped ? `；跳过 ${skipped} 个（需选择交付状态、等待验收或无权限）` : ''}`;
     $('reminderList')?.prepend(toast);
     setTimeout(() => toast.remove(), 3500);
   } catch (error) {
