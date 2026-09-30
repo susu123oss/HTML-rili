@@ -10208,7 +10208,7 @@ function dispatchPendingDueReminders() {
         : due.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
       showSystemReminderNotification(
         '工作事项提醒',
-        memo.title + ownerText + '\\n' + dueText + (dueLabel ? ' · 截止 ' + dueLabel : ''),
+        memo.title + ownerText + '\n' + dueText + (dueLabel ? ' · 截止 ' + dueLabel : ''),
         () => navigateToAndHighlightMemos([memo.id])
       );
     }
