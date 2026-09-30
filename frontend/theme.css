@@ -10,6 +10,10 @@
 @import url('./vendor/radix-colors/red.css');
 @import url('./vendor/radix-colors/red-dark.css');
 
+#wpPageExportTeamReportBtn[hidden] {
+  display: none !important;
+}
+
 /* Semantic colors are shared by both themes and retain the legacy aliases. */
 :root {
   color-scheme: light dark;
@@ -8458,8 +8462,10 @@ html[data-theme='dark'] .calendar-day .day-memo-item.completed .memo-title-text 
 
 /* 2. 毛玻璃悬浮详情预览卡 (#memoHoverTooltip) 升级 */
 .memo-hover-tooltip {
-  width: 336px !important;
-  padding: 12px 14px !important;
+  width: 356px !important;
+  max-width: calc(100vw - 24px) !important;
+  box-sizing: border-box !important;
+  padding: 12px 13px !important;
   border-radius: 14px !important;
   border-top: 3px solid var(--mht-accent, #3b82f6) !important;
   background: rgba(255, 255, 255, 0.96) !important;
@@ -8562,17 +8568,19 @@ html[data-theme='dark'] .mht-edit-hint {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  flex-wrap: nowrap !important;
-  gap: 6px !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .mht-actions-left,
 .mht-react-bar {
   display: inline-flex !important;
   align-items: center !important;
-  flex-wrap: nowrap !important;
-  gap: 5px !important;
-  flex-shrink: 0 !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  max-width: 100% !important;
 }
 
 .mht-btn-complete,
@@ -8581,11 +8589,12 @@ html[data-theme='dark'] .mht-edit-hint {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px !important;
-  padding: 5px 8px !important;
+  gap: 3px !important;
+  height: 26px !important;
+  padding: 0 7px !important;
   font-size: 0.72rem !important;
   font-weight: 600 !important;
-  line-height: 1.15 !important;
+  line-height: 1 !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
   border-radius: 6px !important;
@@ -9854,12 +9863,13 @@ html[data-theme='dark'] .mht-delivery-row.is-comment .mht-delivery-v {
 .mht-btn-submit-delivery {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 3px !important;
   height: 26px !important;
-  padding: 0 9px !important;
+  padding: 0 7px !important;
   border-radius: 6px !important;
-  font-size: 0.74rem !important;
+  font-size: 0.72rem !important;
   font-weight: 700 !important;
+  white-space: nowrap !important;
   cursor: pointer !important;
   transition: all 0.15s ease !important;
 }
