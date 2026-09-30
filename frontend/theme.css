@@ -14,6 +14,43 @@
   display: none !important;
 }
 
+dialog.notification-history-dialog {
+  width: min(640px, calc(100vw - 24px));
+  max-width: none;
+  max-height: min(85dvh, 800px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow);
+}
+.notification-history-dialog::backdrop { background: rgba(15, 23, 42, .55); }
+.notification-history-header, .notification-history-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px;
+}
+.notification-history-header { border-bottom: 1px solid var(--ui-border); }
+.notification-history-header h3 { font-size: 1.05rem; }
+.notification-history-list { overflow-y: auto; max-height: calc(85dvh - 135px); padding: 14px 18px; }
+.notification-history-item { padding: 14px; margin-bottom: 12px; border: 1px solid var(--ui-border); border-radius: 10px; }
+.notification-history-item.unread { border-left: 3px solid var(--ui-accent); background: var(--ui-accent-soft); }
+.notification-history-meta { display: flex; justify-content: space-between; gap: 12px; }
+.notification-history-meta strong { overflow-wrap: anywhere; }
+.notification-history-meta span { flex-shrink: 0; color: var(--ui-text-muted); font-size: .8rem; }
+.notification-history-item p { margin: 8px 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.notification-history-item-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.notification-history-item-footer time, .notification-history-item-footer span, .notification-history-footer span { color: var(--ui-text-muted); font-size: .8rem; }
+.notification-history-item-footer > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.notification-history-footer { border-top: 1px solid var(--ui-border); }
+#notificationHistoryBtn { margin-left: auto; }
+#wpLoadFeedback { align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 480px) {
+  .notification-history-header, .notification-history-list, .notification-history-footer { padding: 12px; }
+  #notificationHistoryBtn { padding: 6px 9px; font-size: .8rem; }
+  .notification-history-item-footer .btn { padding: 6px 10px; font-size: .8rem; }
+}
+
 /* Semantic colors are shared by both themes and retain the legacy aliases. */
 :root {
   color-scheme: light dark;
@@ -1878,7 +1915,8 @@ html[data-theme='dark'] .calendar-day .day-memo-item.completed {
   opacity: 0.62 !important;
 }
 html[data-theme='dark'] .calendar-day .day-memo-item.completed .memo-title-text {
-  text-decoration-color: rgba(148, 163, 184, 0.45) !important;
+  color: #64748b !important;
+  text-decoration-color: rgba(100, 116, 139, 0.5) !important;
 }
 html[data-theme='dark'] :is(.calendar-day .day-memo-item.completed, .day-memo-item.completed) .memo-color-dot {
   background-color: #64748b !important;
@@ -1903,6 +1941,10 @@ html[data-theme='dark'] :is(.calendar-day .day-memo-item.completed, .day-memo-it
 html[data-theme='dark'] :is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-color {
   background-color: #64748b !important;
   opacity: 0.65 !important;
+}
+html[data-theme='dark'] :is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-title,
+html[data-theme='dark'] :is(#dailyDetailModal .task-item.completed, .task-item.completed) .task-title-text {
+  color: #64748b !important;
 }
 
 /* 3. 移动端日历格排版：手机端日期居中且绝对不折行、隐藏右上角加号与数量角标、备忘录展示为极简彩点 */
