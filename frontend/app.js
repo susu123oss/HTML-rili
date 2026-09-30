@@ -5306,36 +5306,41 @@ function renderMultiMonthCalendar() {
   container.innerHTML = months.map((monthDate, index) => createMonthCalendar(monthDate, index)).join('');
 }
 
-function hasMemoExpectedDeliverable(memo) {
-  return Boolean(String(memo?.expectedDeliverable || '').trim());
+function isRoutineDeliverableChoice(val) {
+  return String(val || '').trim() === '日常事务（无需交付物）';
+}
+
+function hasMemoActualDeliverable(memo) {
+  const val = String(memo?.actualDeliverable || '').trim();
+  return Boolean(val && !isRoutineDeliverableChoice(val));
+}
+
+function hasMemoExpectedDeliverable() {
+  return false;
 }
 
 function memoDeliveryStatus(memo) {
   if (!memo) return 'none';
   const raw = String(memo.deliveryStatus || '').trim();
-  const hasExpected = hasMemoExpectedDeliverable(memo);
-  const hasActual = Boolean(String(memo.actualDeliverable || '').trim());
+  const hasActual = hasMemoActualDeliverable(memo);
   if (memo.completed) {
-    return (hasExpected || hasActual || raw === 'confirmed') ? 'confirmed' : 'none';
+    return (hasActual || raw === 'confirmed') ? 'confirmed' : 'none';
   }
   if (raw === 'submitted' || raw === 'returned') return raw;
-  if (hasExpected) return 'in_progress';
+  if (hasActual) return 'submitted';
   return 'none';
 }
 
 function renderMemoDeliveryCellPill(memo) {
   const status = memoDeliveryStatus(memo);
   if (status === 'submitted') {
-    return '<span class="memo-delivery-pill is-submitted" title="已提交实际成果，等待管理员确认">📦待确认</span>';
+    return `<span class="memo-delivery-pill is-submitted" title="${escapeHtml(memo.actualDeliverable ? `已提交：${memo.actualDeliverable}（等待管理员确认）` : '已提交成果，等待管理员确认')}">📦待确认</span>`;
   }
   if (status === 'returned') {
     return `<span class="memo-delivery-pill is-returned" title="${escapeHtml(memo.reviewComment ? `退回修改：${memo.reviewComment}` : '成果已被退回修改')}">↩退回</span>`;
   }
   if (status === 'confirmed') {
-    return '<span class="memo-delivery-pill is-confirmed" title="成果已确认归档">✓已确认</span>';
-  }
-  if (status === 'in_progress') {
-    return `<span class="memo-delivery-pill is-target" title="需提交成果：${escapeHtml(memo.expectedDeliverable)}">🎯交付</span>`;
+    return `<span class="memo-delivery-pill is-confirmed" title="${escapeHtml(memo.actualDeliverable ? `成果已确认：${memo.actualDeliverable}` : '成果已确认归档')}">✓已确认</span>`;
   }
   return '';
 }
@@ -6062,74 +6067,125 @@ function renderColorOptions(activeColor = colors[0], target = 'memo') {
   box.innerHTML = colors.map((color) => `<div class="color-option ${color === activeColor ? 'selected' : ''}" data-color="${color}" data-target="${target}" style="background-color:${color}"></div>`).join('');
 }
 
+function remindSelectDeliverable() {
+  const panel = $('memoDeliveryPanel');
+  const selectEl = $('memoActualDeliverable');
+  const remindPill = $('memoDeliveryRemindPill');
+  if (remindPill) {
+    remindPill.hidden = false;
+    remindPill.textContent = '请先下拉选择！';
+  }
+  if (panel) {
+    panel.classList.remove('is-attention');
+    void panel.offsetWidth;
+    panel.classList.add('is-attention');
+    setTimeout(() => panel.classList.remove('is-attention'), 1800);
+  }
+  if (selectEl && !selectEl.disabled) {
+    selectEl.focus();
+  }
+}
+
 function syncMemoCompletedState() {
   const checkbox = $('memoCompleted');
   const label = checkbox?.closest('.memo-title-completed');
+  const selectEl = $('memoActualDeliverable');
+  const remindPill = $('memoDeliveryRemindPill');
+  const panel = $('memoDeliveryPanel');
+  const actualVal = String(selectEl?.value || '').trim();
+  const isRoutine = isRoutineDeliverableChoice(actualVal);
+
+  if (panel) {
+    panel.classList.toggle('has-value', Boolean(actualVal));
+  }
+  if (remindPill) {
+    if (actualVal) {
+      remindPill.hidden = true;
+    } else if (checkbox?.checked && !canManageWorkspace()) {
+      remindPill.hidden = false;
+      remindPill.textContent = '请先下拉选择！';
+    } else {
+      remindPill.hidden = Boolean(selectEl?.disabled);
+      remindPill.textContent = '请下拉选择';
+    }
+  }
+
   if (label && checkbox) {
     label.classList.toggle('is-completed', Boolean(checkbox.checked));
-    const expectedVal = String($('memoExpectedDeliverable')?.value || '').trim();
     const textSpan = label.querySelector('span');
     if (textSpan) {
-      if (expectedVal && !canManageWorkspace()) {
-        textSpan.textContent = checkbox.checked ? '📦 提交成果待确认' : '提交成果';
-      } else if (expectedVal && canManageWorkspace()) {
-        textSpan.textContent = checkbox.checked ? '✓ 确认完成' : '已完成';
+      if (actualVal && !isRoutine && !canManageWorkspace()) {
+        textSpan.innerHTML = `<i class="fas fa-paper-plane"></i> ${checkbox.checked ? '已提交待审' : '提交审核'}`;
       } else {
-        textSpan.textContent = '已完成';
+        textSpan.innerHTML = '<i class="fas fa-check-circle"></i> 已完成';
       }
     }
   }
 }
 
 function updateMemoDeliveryModalUI(memo = null, canEdit = true) {
-  const expectedInput = $('memoExpectedDeliverable');
-  const actualInput = $('memoActualDeliverable');
+  const selectEl = $('memoActualDeliverable');
+  const remindPill = $('memoDeliveryRemindPill');
   const statusBadge = $('memoDeliveryStatusBadge');
   const reviewRow = $('memoDeliveryReviewRow');
   const reviewCommentEl = $('memoDeliveryReviewComment');
   const reviewActions = $('memoDeliveryReviewActions');
+  const panel = $('memoDeliveryPanel');
 
-  if (expectedInput) {
-    expectedInput.value = memo?.expectedDeliverable || '';
-    expectedInput.readOnly = !canEdit;
+  const val = String(memo?.actualDeliverable || '').trim();
+  if (selectEl) {
+    selectEl.querySelectorAll('option[data-custom="true"]').forEach((opt) => opt.remove());
+    if (val && !Array.from(selectEl.options).some((opt) => opt.value === val)) {
+      const customOpt = document.createElement('option');
+      customOpt.value = val;
+      customOpt.dataset.custom = 'true';
+      customOpt.textContent = `📦 ${val}`;
+      selectEl.appendChild(customOpt);
+    }
+    selectEl.value = val;
+    selectEl.disabled = !canEdit;
   }
-  if (actualInput) {
-    actualInput.value = memo?.actualDeliverable || '';
-    actualInput.readOnly = !canEdit;
+
+  if (panel) {
+    panel.classList.toggle('has-value', Boolean(val));
+    panel.classList.remove('is-attention');
+  }
+  if (remindPill) {
+    remindPill.hidden = Boolean(val || memo?.completed || !canEdit);
+    remindPill.textContent = '请下拉选择';
   }
 
   const dStatus = memoDeliveryStatus(memo);
   if (statusBadge) {
     if (dStatus === 'submitted') {
+      statusBadge.hidden = false;
       statusBadge.className = 'memo-delivery-status-badge status-submitted';
-      statusBadge.textContent = '📦 已提交 · 待管理员确认';
+      statusBadge.textContent = '📦 待管理员确认';
     } else if (dStatus === 'confirmed') {
+      statusBadge.hidden = false;
       statusBadge.className = 'memo-delivery-status-badge status-confirmed';
-      statusBadge.textContent = '✓ 成果已确认归档';
+      statusBadge.textContent = '✓ 已确认归档';
     } else if (dStatus === 'returned') {
+      statusBadge.hidden = false;
       statusBadge.className = 'memo-delivery-status-badge status-returned';
       statusBadge.textContent = '↩ 已退回修改';
-    } else if (dStatus === 'in_progress') {
-      statusBadge.className = 'memo-delivery-status-badge status-in-progress';
-      statusBadge.textContent = '● 进行中 · 需提交实际成果';
     } else {
-      statusBadge.className = 'memo-delivery-status-badge status-none';
-      statusBadge.textContent = '普通事项（填写预期交付后开启验收闭环）';
+      statusBadge.hidden = true;
+      statusBadge.textContent = '';
     }
   }
 
+  const canAdminVerify = Boolean(memo?.id && canManageWorkspace() && (dStatus === 'submitted' || hasMemoActualDeliverable(memo)));
+  if (reviewActions) {
+    reviewActions.hidden = !canAdminVerify;
+  }
+
   const hasReviewComment = Boolean(String(memo?.reviewComment || '').trim());
-  const canAdminVerify = Boolean(memo?.id && canManageWorkspace() && (dStatus === 'submitted' || hasMemoExpectedDeliverable(memo) || String(memo?.actualDeliverable || '').trim()));
   if (reviewRow) {
-    if (hasReviewComment || canAdminVerify) {
+    if (hasReviewComment) {
       reviewRow.hidden = false;
       if (reviewCommentEl) {
-        reviewCommentEl.innerHTML = hasReviewComment
-          ? `<i class="fas fa-comment-dots"></i> <strong>验收意见：</strong>${escapeHtml(memo.reviewComment)}`
-          : `<i class="fas fa-clipboard-check"></i> <strong>管理员验收：</strong>核对实际成果后可直接确认归档或退回修改`;
-      }
-      if (reviewActions) {
-        reviewActions.hidden = !canAdminVerify;
+        reviewCommentEl.innerHTML = `<i class="fas fa-comment-dots"></i> <strong>退回/验收意见：</strong>${escapeHtml(memo.reviewComment)}`;
       }
     } else {
       reviewRow.hidden = true;
@@ -6818,7 +6874,6 @@ function initMemoHoverTooltip() {
 
     const isCompleted = Boolean(memo.completed || memo.status === 'completed');
     const dStatus = memoDeliveryStatus(memo);
-    const hasExpected = hasMemoExpectedDeliverable(memo);
     const hasActual = Boolean(String(memo.actualDeliverable || '').trim());
     const hasReviewComment = Boolean(String(memo.reviewComment || '').trim());
     const accentColor = memo.color || '#3b82f6';
@@ -6853,13 +6908,13 @@ function initMemoHoverTooltip() {
       badgeText = '✓ 成果已确认';
     }
 
-    const deliveryBoxHtml = (hasExpected || hasActual || hasReviewComment) ? `
-      <div class="mht-delivery-box" style="cursor:pointer;" title="点击打开详情填写或查看交付物">
-        ${hasExpected ? `<div class="mht-delivery-row"><span class="mht-delivery-k">🎯 预期交付</span><span class="mht-delivery-v">${escapeHtml(memo.expectedDeliverable)}</span></div>` : ''}
+    const deliveryBoxHtml = (hasActual || hasReviewComment) ? `
+      <div class="mht-delivery-box" style="cursor:pointer;" title="点击打开详情选择或查看成果交付">
+        ${hasActual ? `
         <div class="mht-delivery-row">
-          <span class="mht-delivery-k">📦 实际成果</span>
-          <span class="mht-delivery-v ${hasActual ? 'is-filled' : 'is-empty'}">${hasActual ? escapeHtml(memo.actualDeliverable) : '暂未填写实际产出'}</span>
-        </div>
+          <span class="mht-delivery-k">📦 成果交付</span>
+          <span class="mht-delivery-v is-filled">${escapeHtml(memo.actualDeliverable)}</span>
+        </div>` : ''}
         ${hasReviewComment ? `<div class="mht-delivery-row is-comment"><span class="mht-delivery-k">💬 验收意见</span><span class="mht-delivery-v">${escapeHtml(memo.reviewComment)}</span></div>` : ''}
       </div>
     ` : '';
@@ -6877,7 +6932,7 @@ function initMemoHoverTooltip() {
     ` : '';
 
     let primaryActionHtml = '';
-    if (isAdmin && (dStatus === 'submitted' || (hasExpected && !isCompleted && hasActual))) {
+    if (isAdmin && (dStatus === 'submitted' || (!isCompleted && hasMemoActualDeliverable(memo)))) {
       primaryActionHtml = `
         <button class="mht-btn-confirm" data-memo-id="${memo.id}" type="button" title="确认交付成果合格并归档完成">
           <i class="fas fa-check-circle"></i> 确认成果
@@ -6886,10 +6941,10 @@ function initMemoHoverTooltip() {
           <i class="fas fa-undo-alt"></i> 退回
         </button>
       `;
-    } else if (!isAdmin && hasExpected && !isCompleted) {
+    } else if (!isAdmin && !isCompleted) {
       primaryActionHtml = `
-        <button class="mht-btn-submit-delivery" data-memo-id="${memo.id}" type="button" title="打开详情填写实际交付物并提交管理员确认">
-          <i class="fas fa-box-open"></i> ${dStatus === 'submitted' ? '修改成果' : '提交成果'}
+        <button class="mht-btn-submit-delivery" data-memo-id="${memo.id}" type="button" title="打开详情下拉选择成果交付状态（邮件/微信发送审核等）">
+          <i class="fas fa-paper-plane"></i> ${dStatus === 'submitted' ? '修改交付' : '选择成果交付'}
         </button>
       `;
     } else {
@@ -7021,7 +7076,7 @@ function initMemoHoverTooltip() {
       const memoId = submitDeliveryBtn.dataset.memoId;
       hideMemoHoverTooltip();
       await openMemoModal(memoId);
-      setTimeout(() => $('memoActualDeliverable')?.focus(), 80);
+      setTimeout(() => remindSelectDeliverable(), 80);
       return;
     }
 
@@ -7032,11 +7087,11 @@ function initMemoHoverTooltip() {
       const targetMemo = state.memos?.find((m) => String(m.id) === String(memoId));
       const wasCompleted = completeBtn.dataset.completed === 'true';
       const nextCompleted = !wasCompleted;
-      if (nextCompleted && targetMemo && hasMemoExpectedDeliverable(targetMemo) && !canManageWorkspace()) {
+      if (nextCompleted && !canManageWorkspace() && !String(targetMemo?.actualDeliverable || '').trim()) {
         hideMemoHoverTooltip();
         await openMemoModal(memoId);
-        setTimeout(() => $('memoActualDeliverable')?.focus(), 80);
-        showGlobalToast('请填写【实际成果】后提交管理员确认', 'info');
+        setTimeout(() => remindSelectDeliverable(), 80);
+        showGlobalToast('请先在【成果交付】下拉框选择交付状态（如：已经邮件交付审核 / 已经微信发送审核）', 'info');
         return;
       }
       completeBtn.disabled = true;
@@ -7572,40 +7627,51 @@ async function saveMemo() {
     showMemoDuePickerPopup();
     return;
   }
-  const expectedDeliverable = $('memoExpectedDeliverable')?.value.trim() || '';
+  const originalMemo = state.memos.find(m => String(m.id) === String(state.selectedMemoId));
   const actualDeliverable = $('memoActualDeliverable')?.value.trim() || '';
+  const isRoutine = isRoutineDeliverableChoice(actualDeliverable);
   const isChecked = Boolean($('memoCompleted')?.checked);
   const isAdmin = canManageWorkspace();
 
-  if (expectedDeliverable && isChecked && !actualDeliverable && !isAdmin) {
-    setOperationFeedback('memoSaveFeedback', '请先填写「实际成果」（如模型版本、图纸编号或归档路径）后再提交确认');
-    $('memoActualDeliverable')?.focus();
+  if (!isAdmin && isChecked && !actualDeliverable && !originalMemo?.completed) {
+    remindSelectDeliverable();
+    setOperationFeedback('memoSaveFeedback', '请先在上方【成果交付】下拉框选择交付状态（如：已经邮件交付审核 / 已经微信发送审核）');
     return;
   }
 
   let nextCompleted = isChecked;
-  let nextDeliveryStatus = 'none';
-  if (expectedDeliverable || actualDeliverable) {
-    if (isAdmin) {
-      if (isChecked) {
-        nextCompleted = true;
-        nextDeliveryStatus = 'confirmed';
-      } else if (actualDeliverable) {
-        nextCompleted = false;
-        nextDeliveryStatus = 'submitted';
-      } else {
-        nextCompleted = false;
-        nextDeliveryStatus = 'in_progress';
-      }
+  let nextDeliveryStatus = 'in_progress';
+  if (isAdmin) {
+    if (isChecked) {
+      nextCompleted = true;
+      nextDeliveryStatus = 'confirmed';
+    } else if (actualDeliverable && !isRoutine) {
+      nextCompleted = false;
+      nextDeliveryStatus = 'submitted';
     } else {
-      if (isChecked || actualDeliverable) {
-        nextCompleted = false;
-        nextDeliveryStatus = 'submitted';
-      } else {
-        nextCompleted = false;
-        nextDeliveryStatus = 'in_progress';
-      }
+      nextCompleted = false;
+      nextDeliveryStatus = 'in_progress';
     }
+  } else {
+    if (actualDeliverable && !isRoutine) {
+      nextCompleted = false;
+      nextDeliveryStatus = 'submitted';
+    } else if (isRoutine) {
+      nextCompleted = isChecked;
+      nextDeliveryStatus = isChecked ? 'confirmed' : 'in_progress';
+    } else {
+      nextCompleted = false;
+      nextDeliveryStatus = 'in_progress';
+    }
+  }
+
+  const actualChanged = actualDeliverable !== String(originalMemo?.actualDeliverable || '').trim();
+  if (originalMemo && !actualChanged && isChecked === Boolean(originalMemo.completed)) {
+    nextCompleted = Boolean(originalMemo.completed);
+    nextDeliveryStatus = originalMemo.completed ? 'confirmed' : (originalMemo.deliveryStatus || 'in_progress');
+  } else if (originalMemo?.completed && !isChecked && !actualChanged) {
+    nextCompleted = false;
+    nextDeliveryStatus = 'in_progress';
   }
 
   const payload = {
@@ -7617,7 +7683,6 @@ async function saveMemo() {
     completed: nextCompleted,
     planKind: $('memoWeeklyPlan')?.checked ? 'plan' : 'memo',
     dueTime,
-    expectedDeliverable,
     actualDeliverable,
     deliveryStatus: nextDeliveryStatus
   };
@@ -8013,6 +8078,8 @@ function renderWeeklyPlanPage() {
   if (copyBtn) {
     copyBtn.style.display = (state.weeklyPlanView === 'team') ? 'none' : 'inline-flex';
   }
+  const exportBtn = $('wpPageExportTeamReportBtn');
+  if (exportBtn) exportBtn.hidden = !canManageWorkspace() || state.weeklyPlanView !== 'team';
 
   const workspaceBody = $('wpWorkspaceBody');
   const statsGroup = $('wpPageStatsGroup');
@@ -8278,10 +8345,10 @@ async function addPlanForSpecificDate(dateStr, inputElem) {
 async function toggleMemoCompleteFromBoard(memoId, isCompleted) {
   const memo = (state.weeklyMemos || []).find((m) => String(m.id) === String(memoId))
     || (state.memos || []).find((m) => String(m.id) === String(memoId));
-  if (isCompleted && memo && hasMemoExpectedDeliverable(memo) && !canManageWorkspace()) {
+  if (isCompleted && memo && !canManageWorkspace() && !String(memo.actualDeliverable || '').trim()) {
     await openMemoModal(memoId);
-    setTimeout(() => $('memoActualDeliverable')?.focus(), 80);
-    showGlobalToast('请填写【实际成果】后提交管理员确认', 'info');
+    setTimeout(() => remindSelectDeliverable(), 80);
+    showGlobalToast('请先在【成果交付】下拉框选择交付状态（如：已经邮件交付审核 / 已经微信发送审核）', 'info');
     return;
   }
   try {
@@ -8423,24 +8490,20 @@ function buildWeeklyReportMarkdown() {
   } else {
     completed.forEach((m, idx) => {
       const dStatus = memoDeliveryStatus(m);
-      const outputStr = m.actualDeliverable
-        ? ` → 产出：${m.actualDeliverable}`
-        : (m.expectedDeliverable ? ` → 交付：${m.expectedDeliverable}` : '');
+      const outputStr = m.actualDeliverable ? ` → 交付：${m.actualDeliverable}` : '';
       const confirmStr = dStatus === 'confirmed' ? ' 〔✓ 成果已确认〕' : '';
       report += `  ${idx + 1}. [已完成] ${m.title} (${m.date})${outputStr}${confirmStr}\n`;
     });
     pending.forEach((m, idx) => {
       const dStatus = memoDeliveryStatus(m);
       if (dStatus === 'submitted') {
-        const outputStr = m.actualDeliverable ? ` → 产出：${m.actualDeliverable}` : '';
+        const outputStr = m.actualDeliverable ? ` → 交付：${m.actualDeliverable}` : '';
         report += `  ${completed.length + idx + 1}. [已提交·待确认] ${m.title} (${m.date})${outputStr} 〔📦 待确认〕\n`;
       } else if (dStatus === 'returned') {
-        const targetStr = m.expectedDeliverable ? ` → 预期交付：${m.expectedDeliverable}` : '';
         const commentStr = m.reviewComment ? `（退回意见：${m.reviewComment}）` : '';
-        report += `  ${completed.length + idx + 1}. [退回修改] ${m.title} (${m.date})${targetStr}${commentStr}\n`;
+        report += `  ${completed.length + idx + 1}. [退回修改] ${m.title} (${m.date})${commentStr}\n`;
       } else {
-        const targetStr = m.expectedDeliverable ? ` → 预期交付：${m.expectedDeliverable}` : '';
-        report += `  ${completed.length + idx + 1}. [待办/未完] ${m.title} (${m.date})${targetStr}\n`;
+        report += `  ${completed.length + idx + 1}. [待办/未完] ${m.title} (${m.date})\n`;
       }
     });
     rolledOver.forEach((m, idx) => {
@@ -8457,8 +8520,7 @@ function buildWeeklyReportMarkdown() {
     report += `  - 暂未录入下周计划\n`;
   } else {
     nextWeekMemos.forEach((m, idx) => {
-      const targetStr = m.expectedDeliverable ? ` → 预期交付：${m.expectedDeliverable}` : '';
-      report += `  ${idx + 1}. [计划 ${m.date}] ${m.title}${targetStr}${m.contentPreview ? '（内容：' + m.contentPreview.replace(/\n/g, ' ') + (m.contentLength > m.contentPreview.length ? '…' : '') + '）' : ''}\n`;
+      report += `  ${idx + 1}. [计划 ${m.date}] ${m.title}${m.contentPreview ? '（内容：' + m.contentPreview.replace(/\n/g, ' ') + (m.contentLength > m.contentPreview.length ? '…' : '') + '）' : ''}\n`;
     });
   }
 
@@ -8784,10 +8846,9 @@ function createTaskItem(memo) {
     statusBadge = '<span class="task-status-pill completed"><i class="fas fa-check-circle"></i> 成果已确认</span>';
   }
 
-  const deliveryMetaHtml = (memo.expectedDeliverable || memo.actualDeliverable) ? `
+  const deliveryMetaHtml = memo.actualDeliverable ? `
     <div class="task-delivery-meta">
-      ${memo.expectedDeliverable ? `<span class="tdm-chip tdm-expected">🎯 预期交付：${escapeHtml(memo.expectedDeliverable)}</span>` : ''}
-      ${memo.actualDeliverable ? `<span class="tdm-chip tdm-actual">📦 实际成果：${escapeHtml(memo.actualDeliverable)}</span>` : ''}
+      <span class="tdm-chip tdm-actual">📦 成果交付：${escapeHtml(memo.actualDeliverable)}</span>
     </div>
   ` : '';
 
@@ -8825,7 +8886,7 @@ function createTaskItem(memo) {
       <div class="task-content">${escapeHtml(contentPreview)}</div>
       <div class="task-actions">
         <button class="task-btn task-btn-complete" data-id="${memo.id}">
-          ${memo.completed ? '<i class="fas fa-undo"></i> 标记为未完成' : (hasMemoExpectedDeliverable(memo) && !isAdmin ? '<i class="fas fa-box-open"></i> 提交成果' : '<i class="fas fa-check"></i> 标记为完成')}
+          ${memo.completed ? '<i class="fas fa-undo"></i> 标记为未完成' : (!isAdmin ? '<i class="fas fa-paper-plane"></i> 选择成果交付' : '<i class="fas fa-check"></i> 标记为完成')}
         </button>
         ${!memo.completed ? `
         <button class="task-btn task-btn-carryover" data-id="${memo.id}" title="复制结转此事项至下一天日历格子">
@@ -9938,6 +9999,32 @@ function clearExcelUserSelection() {
   renderExcelUserPicker();
 }
 
+async function exportTeamWeeklyReport() {
+  if (!canManageWorkspace()) return;
+  const button = $('wpPageExportTeamReportBtn');
+  if (button?.disabled) return;
+  const { monday } = getWeekRange(state.weeklyPlanDate);
+  const weekStart = dateKey(monday);
+  const originalHtml = button?.innerHTML;
+  if (button) { button.disabled = true; button.textContent = '导出中…'; }
+  try {
+    const response = await fetch(`${apiBase}/exports/weekly-report?${new URLSearchParams({ weekStart })}`, {
+      headers: { Authorization: `Bearer ${state.token}` }
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || '全员周报导出失败');
+    }
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement('a');
+    link.href = url; link.download = `全员周报-${weekStart}.xlsx`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showWeeklyFeedback('全员周报已导出');
+  } catch (error) { showWeeklyFeedback(error.message, 'error'); }
+  finally { if (button) { button.disabled = false; button.innerHTML = originalHtml; } }
+}
+
 async function exportExcelData() {
   if (state.user?.role !== 'admin') {
     alert('只有管理员可以导出 Excel');
@@ -10097,13 +10184,13 @@ async function completeAllMemosForMonth(month) {
 async function toggleMemoCompletion(memoId) {
   const memo = state.memos.find((item) => String(item.id) === String(memoId));
   if (!memo) return;
-  if (!memo.completed && hasMemoExpectedDeliverable(memo) && !canManageWorkspace()) {
+  if (!memo.completed && !canManageWorkspace() && !String(memo.actualDeliverable || '').trim()) {
     if ($('dailyDetailModal')?.classList.contains('active')) {
       closeDailyDetailModal();
     }
     await openMemoModal(memo.id);
-    setTimeout(() => $('memoActualDeliverable')?.focus(), 80);
-    showGlobalToast('请填写【实际成果】后提交管理员确认', 'info');
+    setTimeout(() => remindSelectDeliverable(), 80);
+    showGlobalToast('请先在【成果交付】下拉框选择交付状态（如：已经邮件交付审核 / 已经微信发送审核）', 'info');
     return;
   }
   const data = await request(`/memos/${memo.id}`, { method: 'PATCH', body: JSON.stringify({ completed: !memo.completed }) });
@@ -10168,8 +10255,22 @@ function initEventListeners() {
   $('memoTabEdit')?.addEventListener('click', () => switchMemoContentTab('edit'));
   $('memoTabPreview')?.addEventListener('click', () => switchMemoContentTab('preview'));
   $('quickDueChips')?.addEventListener('click', handleQuickDueChipClick);
-  $('memoCompleted')?.addEventListener('change', syncMemoCompletedState);
-  $('memoExpectedDeliverable')?.addEventListener('input', () => {
+  $('memoCompleted')?.addEventListener('change', () => {
+    const cb = $('memoCompleted');
+    const actualVal = String($('memoActualDeliverable')?.value || '').trim();
+    if (cb?.checked && !actualVal && !canManageWorkspace()) {
+      remindSelectDeliverable();
+    }
+    syncMemoCompletedState();
+  });
+  $('memoActualDeliverable')?.addEventListener('change', () => {
+    const actualVal = String($('memoActualDeliverable')?.value || '').trim();
+    const cb = $('memoCompleted');
+    if (actualVal && cb && !cb.checked) {
+      cb.checked = true;
+    }
+    $('memoDeliveryPanel')?.classList.remove('is-attention');
+    setOperationFeedback('memoSaveFeedback', '');
     syncMemoCompletedState();
   });
   $('btnModalConfirmDelivery')?.addEventListener('click', async () => {
@@ -10215,6 +10316,7 @@ function initEventListeners() {
   $('wpPageViewPersonalBtn')?.addEventListener('click', () => switchWeeklyPlanView('personal'));
   $('wpPageViewTeamBtn')?.addEventListener('click', () => switchWeeklyPlanView('team'));
   $('wpPageCopyReportBtn')?.addEventListener('click', copyWeeklyReportMarkdown);
+  $('wpPageExportTeamReportBtn')?.addEventListener('click', exportTeamWeeklyReport);
   $('wpPageRefreshBtn')?.addEventListener('click', async () => {
     await Promise.allSettled([loadMemos({ force: true }), loadWeeklyPlanData({ force: true })]);
   });

@@ -9520,74 +9520,176 @@ html[data-theme='dark'] .memo-delivery-pill.is-target {
   border-left: 2.5px solid #ef4444 !important;
 }
 
-/* 2. 备忘录弹窗内：研发交付与成果验收面板 (.memo-delivery-panel) */
-.memo-delivery-panel {
-  margin: 10px 0 12px !important;
-  padding: 12px 14px !important;
+/* 2. 备忘录弹窗内：醒目单行「成果交付」下拉选择栏 (.memo-delivery-bar) */
+.memo-delivery-bar {
+  margin: 0 0 12px !important;
+  padding: 9px 12px !important;
   border-radius: 10px !important;
-  background: var(--ui-surface-soft, #f8fafc) !important;
-  border: 1px solid var(--ui-border, #e2e8f0) !important;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.38) !important;
+  transition: all 0.2s ease !important;
 }
 
-.memo-delivery-panel-head {
+.memo-delivery-bar.has-value {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
+  border-color: rgba(16, 185, 129, 0.42) !important;
+}
+
+html[data-theme='dark'] .memo-delivery-bar {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.38) !important;
+}
+
+html[data-theme='dark'] .memo-delivery-bar.has-value {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.42) !important;
+}
+
+@keyframes deliveryBarAttentionPulse {
+  0%, 100% { transform: translateX(0); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  20% { transform: translateX(-4px); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.28); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.18); }
+  80% { transform: translateX(2px); }
+}
+
+.memo-delivery-bar.is-attention {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.16) !important;
+  animation: deliveryBarAttentionPulse 0.65s ease-in-out 2 !important;
+}
+
+.memo-delivery-bar-main {
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
-  gap: 8px !important;
+  gap: 10px !important;
   flex-wrap: wrap !important;
-  margin-bottom: 10px !important;
 }
 
-.memo-delivery-panel-title {
+.memo-delivery-bar-label {
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
-  font-size: 0.84rem !important;
+  margin: 0 !important;
+  font-size: 0.85rem !important;
   font-weight: 700 !important;
   color: var(--ui-text, #0f172a) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
 }
 
-.memo-delivery-panel-title i {
-  color: var(--ui-accent, #2563eb) !important;
+.memo-delivery-bar-label .delivery-label-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 6px !important;
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #d97706 !important;
+  font-size: 0.78rem !important;
+}
+
+.memo-delivery-bar.has-value .memo-delivery-bar-label .delivery-label-icon {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #059669 !important;
+}
+
+html[data-theme='dark'] .memo-delivery-bar-label .delivery-label-icon {
+  color: #fbbf24 !important;
+}
+
+html[data-theme='dark'] .memo-delivery-bar.has-value .memo-delivery-bar-label .delivery-label-icon {
+  color: #34d399 !important;
+}
+
+.memo-delivery-remind-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  letter-spacing: 0.01em !important;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.28) !important;
+}
+
+.memo-delivery-remind-pill[hidden] {
+  display: none !important;
+}
+
+.memo-delivery-select-wrap {
+  flex: 1 1 240px !important;
+  min-width: 200px !important;
+}
+
+.memo-delivery-select {
+  width: 100% !important;
+  height: 36px !important;
+  padding: 0 32px 0 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+  color: var(--ui-text, #0f172a) !important;
+  background-color: var(--ui-surface, #ffffff) !important;
+  border: 1.5px solid rgba(245, 158, 11, 0.45) !important;
+  cursor: pointer !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.memo-delivery-bar.has-value .memo-delivery-select {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #047857 !important;
+}
+
+html[data-theme='dark'] .memo-delivery-select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+html[data-theme='dark'] .memo-delivery-bar.has-value .memo-delivery-select {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #6ee7b7 !important;
+}
+
+.memo-delivery-select:focus {
+  outline: none !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
 }
 
 .memo-delivery-status-badge {
   display: inline-flex !important;
   align-items: center !important;
-  padding: 2px 9px !important;
+  padding: 4px 10px !important;
   border-radius: 999px !important;
-  font-size: 0.74rem !important;
+  font-size: 0.75rem !important;
   font-weight: 700 !important;
+  white-space: nowrap !important;
 }
 
-.memo-delivery-status-badge.status-none {
-  background: rgba(148, 163, 184, 0.14) !important;
-  color: var(--ui-text-muted, #64748b) !important;
-}
-
-.memo-delivery-status-badge.status-in-progress {
-  background: rgba(59, 130, 246, 0.12) !important;
-  color: #2563eb !important;
+.memo-delivery-status-badge[hidden] {
+  display: none !important;
 }
 
 .memo-delivery-status-badge.status-submitted {
-  background: rgba(245, 158, 11, 0.16) !important;
+  background: rgba(245, 158, 11, 0.18) !important;
   color: #b45309 !important;
 }
 
 .memo-delivery-status-badge.status-returned {
-  background: rgba(239, 68, 68, 0.15) !important;
+  background: rgba(239, 68, 68, 0.16) !important;
   color: #dc2626 !important;
 }
 
 .memo-delivery-status-badge.status-confirmed {
-  background: rgba(16, 185, 129, 0.15) !important;
+  background: rgba(16, 185, 129, 0.16) !important;
   color: #059669 !important;
 }
 
-html[data-theme='dark'] .memo-delivery-status-badge.status-in-progress {
-  color: #93c5fd !important;
-}
 html[data-theme='dark'] .memo-delivery-status-badge.status-submitted {
   color: #fcd34d !important;
 }
@@ -9598,41 +9700,15 @@ html[data-theme='dark'] .memo-delivery-status-badge.status-confirmed {
   color: #6ee7b7 !important;
 }
 
-.memo-delivery-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 10px !important;
-}
-
-@media (max-width: 640px) {
-  .memo-delivery-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-.memo-delivery-field label {
-  display: block !important;
-  font-size: 0.76rem !important;
-  font-weight: 600 !important;
-  color: var(--ui-text-muted, #475569) !important;
-  margin-bottom: 4px !important;
-}
-
-.memo-delivery-field .form-control {
-  height: 36px !important;
-  font-size: 0.84rem !important;
-  padding: 6px 10px !important;
-}
-
 .memo-delivery-review-row {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 10px !important;
   flex-wrap: wrap !important;
-  margin-top: 10px !important;
-  padding-top: 9px !important;
-  border-top: 1px dashed var(--ui-border, #cbd5e1) !important;
+  margin-top: 8px !important;
+  padding-top: 7px !important;
+  border-top: 1px dashed rgba(239, 68, 68, 0.35) !important;
 }
 
 .memo-delivery-review-row[hidden] {
@@ -9641,8 +9717,13 @@ html[data-theme='dark'] .memo-delivery-status-badge.status-confirmed {
 
 .memo-delivery-review-comment {
   font-size: 0.79rem !important;
-  color: var(--ui-text-muted, #475569) !important;
+  color: #dc2626 !important;
+  font-weight: 600 !important;
   line-height: 1.4 !important;
+}
+
+html[data-theme='dark'] .memo-delivery-review-comment {
+  color: #fca5a5 !important;
 }
 
 .memo-delivery-review-actions {
@@ -9660,12 +9741,13 @@ html[data-theme='dark'] .memo-delivery-status-badge.status-confirmed {
   display: inline-flex !important;
   align-items: center !important;
   gap: 5px !important;
-  height: 30px !important;
+  height: 32px !important;
   padding: 0 11px !important;
   border-radius: 7px !important;
   font-size: 0.78rem !important;
   font-weight: 700 !important;
   cursor: pointer !important;
+  white-space: nowrap !important;
   transition: all 0.15s ease !important;
 }
 

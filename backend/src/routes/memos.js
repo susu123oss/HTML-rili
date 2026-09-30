@@ -529,7 +529,7 @@ memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
         );
       }
     } else if (action === 'confirm-delivery') {
-      const comment = String(req.body?.comment ?? memo.reviewComment ?? '').trim().slice(0, 1000);
+      const comment = String(req.body?.reviewComment ?? req.body?.comment ?? memo.reviewComment ?? '').trim().slice(0, 1000);
       newReviewed = true;
       await query(
         `UPDATE memos
@@ -557,7 +557,7 @@ memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
         );
       }
     } else if (action === 'return-delivery') {
-      const comment = String(req.body?.comment || '请补充完善实际交付成果后重新提交').trim().slice(0, 1000);
+      const comment = String(req.body?.reviewComment ?? req.body?.comment ?? '').trim().slice(0, 1000) || '请补充完善实际交付成果后重新提交';
       await query(
         `UPDATE memos
          SET completed = FALSE,
@@ -717,20 +717,33 @@ memosRouter.post('/', authRequired, async (req, res, next) => {
 
     const cleanExpected = String(expectedDeliverable || '').trim().slice(0, 1000);
     const cleanActual = String(actualDeliverable || '').trim().slice(0, 2000);
+    const isRoutine = cleanActual === '日常事务（无需交付物）';
+    if (req.user.role !== 'admin' && cleanExpected && isRoutine) {
+      return res.status(400).json({ message: '此任务设有预期交付，不能选择无需交付审核' });
+    }
     let finalCompleted = Boolean(completed);
     let finalDeliveryStatus = finalCompleted ? 'confirmed' : 'in_progress';
 
-    if (cleanExpected) {
-      if (req.user.role === 'admin' && finalCompleted) {
+    if (req.user.role === 'admin') {
+      if (finalCompleted) {
         finalCompleted = true;
         finalDeliveryStatus = 'confirmed';
-      } else if (cleanActual && finalCompleted) {
+      } else if (cleanActual && !isRoutine) {
         finalCompleted = false;
         finalDeliveryStatus = 'submitted';
       } else {
         finalCompleted = false;
         finalDeliveryStatus = 'in_progress';
       }
+    } else if (cleanActual && !isRoutine) {
+      finalCompleted = false;
+      finalDeliveryStatus = 'submitted';
+    } else if (isRoutine) {
+      finalCompleted = Boolean(completed);
+      finalDeliveryStatus = finalCompleted ? 'confirmed' : 'in_progress';
+    } else {
+      finalCompleted = false;
+      finalDeliveryStatus = 'in_progress';
     }
 
     const result = await query(
@@ -748,8 +761,28 @@ memosRouter.post('/', authRequired, async (req, res, next) => {
       [owner.id, date, title, content, color, finalCompleted, normalizedDueTime, planKind, cleanExpected, cleanActual, finalDeliveryStatus]
     );
 
-    const memo = await findMemoById(result.rows[0].id);
-    return res.status(201).json({ id: result.rows[0].id, memo });
+    const newId = result.rows[0].id;
+    if (finalDeliveryStatus === 'submitted' && req.user.role !== 'admin') {
+      const adminsRes = await query(`SELECT id FROM users WHERE role = 'admin'`);
+      const ownerLabel = req.user.displayName || req.user.username || '成员';
+      for (const admin of adminsRes.rows) {
+        await query(
+          `INSERT INTO notifications(user_id, memo_id, type, title, content, sender_id, sender_name)
+           VALUES($1, $2, 'submit', $3, $4, $5, $6)`,
+          [
+            admin.id,
+            newId,
+            '📦 交付成果待确认',
+            `【${ownerLabel}】提交了事项【${title}】的交付审核：${cleanActual.slice(0, 120)}`,
+            req.user.id,
+            ownerLabel
+          ]
+        );
+      }
+    }
+
+    const memo = await findMemoById(newId);
+    return res.status(201).json({ id: newId, memo });
   } catch (error) {
     return next(error);
   }
@@ -830,56 +863,75 @@ async function handleUpdateMemo(req, res, next) {
       ? String(reviewComment || '').trim().slice(0, 1000)
       : String(memo.reviewComment || '').trim();
 
+    if (req.user.role !== 'admin') {
+      if (memo.expectedDeliverable && nextExpected !== String(memo.expectedDeliverable).trim()) {
+        return res.status(403).json({ message: '已有的预期交付要求仅管理员可修改' });
+      }
+      if (nextComment !== String(memo.reviewComment || '').trim()) {
+        return res.status(403).json({ message: '验收意见仅管理员可修改' });
+      }
+      if (nextExpected && nextActual === '日常事务（无需交付物）') {
+        return res.status(400).json({ message: '此任务设有预期交付，不能选择无需交付审核' });
+      }
+    }
+
+    const isRoutine = nextActual === '日常事务（无需交付物）';
     let nextCompleted = typeof completed === 'boolean' ? completed : Boolean(memo.completed);
     let nextDeliveryStatus = memo.deliveryStatus || (memo.completed ? 'confirmed' : 'in_progress');
     let markSubmittedNow = false;
     let markConfirmedNow = false;
 
-    if (nextExpected) {
-      // 有预期交付的任务：走「进行中 → 已提交·待确认 → 成果已确认 / 退回修改」状态流
-      if (req.user.role !== 'admin') {
-        const wantsSubmit = deliveryStatus === 'submitted' || completed === true;
-        const wantsReopen = deliveryStatus === 'in_progress' || (completed === false && deliveryStatus === undefined && memo.deliveryStatus === 'submitted');
-        if (wantsSubmit) {
-          if (!nextActual) {
-            return res.status(400).json({ message: '此事项设有预期交付，请先填写「实际成果」后再提交确认' });
-          }
-          nextDeliveryStatus = 'submitted';
-          nextCompleted = false;
-          markSubmittedNow = memo.deliveryStatus !== 'submitted';
-        } else if (wantsReopen) {
-          nextDeliveryStatus = 'in_progress';
-          nextCompleted = false;
-        } else if (actualDeliverable !== undefined && nextActual && memo.deliveryStatus === 'returned') {
-          nextDeliveryStatus = 'submitted';
-          nextCompleted = false;
-          markSubmittedNow = true;
-        } else {
-          nextCompleted = Boolean(memo.completed);
-        }
-      } else {
-        // 管理员操作
-        if (deliveryStatus === 'confirmed' || (completed === true && deliveryStatus !== 'submitted' && deliveryStatus !== 'returned')) {
-          nextDeliveryStatus = 'confirmed';
-          nextCompleted = true;
-          markConfirmedNow = memo.deliveryStatus !== 'confirmed' || !memo.completed;
-        } else if (deliveryStatus === 'returned') {
-          nextDeliveryStatus = 'returned';
-          nextCompleted = false;
-        } else if (deliveryStatus === 'submitted') {
-          nextDeliveryStatus = 'submitted';
-          nextCompleted = false;
-          markSubmittedNow = memo.deliveryStatus !== 'submitted';
-        } else if (completed === false || deliveryStatus === 'in_progress') {
-          nextDeliveryStatus = 'in_progress';
-          nextCompleted = false;
-        }
+    if (req.user.role === 'admin') {
+      if (deliveryStatus === 'confirmed' || (completed === true && deliveryStatus !== 'submitted' && deliveryStatus !== 'returned')) {
+        nextDeliveryStatus = 'confirmed';
+        nextCompleted = true;
+        markConfirmedNow = memo.deliveryStatus !== 'confirmed' || !memo.completed;
+      } else if (deliveryStatus === 'returned') {
+        nextDeliveryStatus = 'returned';
+        nextCompleted = false;
+      } else if (deliveryStatus === 'submitted' || (actualDeliverable !== undefined && nextActual && !isRoutine && !nextCompleted)) {
+        nextDeliveryStatus = 'submitted';
+        nextCompleted = false;
+        markSubmittedNow = memo.deliveryStatus !== 'submitted';
+      } else if (completed === false || deliveryStatus === 'in_progress') {
+        nextDeliveryStatus = 'in_progress';
+        nextCompleted = false;
       }
     } else {
-      // 无预期交付的日常事项：允许直接勾选完成
-      nextCompleted = typeof completed === 'boolean' ? completed : Boolean(memo.completed);
-      nextDeliveryStatus = nextCompleted ? 'confirmed' : 'in_progress';
-      if (nextCompleted && !memo.completed) markConfirmedNow = true;
+      // 员工操作：根据「成果交付」下拉框选择决定状态流转
+      const actualChanged = nextActual !== String(memo.actualDeliverable || '').trim();
+      const wantsReopen = deliveryStatus === 'in_progress' || (completed === false && deliveryStatus === undefined && memo.completed);
+      if (!actualChanged && memo.completed && completed !== false && deliveryStatus !== 'submitted' && deliveryStatus !== 'in_progress') {
+        nextCompleted = true;
+        nextDeliveryStatus = 'confirmed';
+      } else if (!actualChanged && deliveryStatus === undefined && completed === undefined) {
+        nextCompleted = Boolean(memo.completed);
+      } else if (!actualChanged && memo.deliveryStatus === 'returned' && deliveryStatus === 'returned') {
+        nextDeliveryStatus = 'returned';
+        nextCompleted = false;
+      } else if (wantsReopen) {
+        nextDeliveryStatus = 'in_progress';
+        nextCompleted = false;
+      } else if (nextActual && !isRoutine) {
+        if (!actualChanged && memo.completed && completed !== false && deliveryStatus !== 'submitted') {
+          nextDeliveryStatus = 'confirmed';
+          nextCompleted = true;
+        } else {
+          nextDeliveryStatus = 'submitted';
+          nextCompleted = false;
+          markSubmittedNow = memo.deliveryStatus !== 'submitted' || nextActual !== String(memo.actualDeliverable || '').trim();
+        }
+      } else if (isRoutine) {
+        nextCompleted = typeof completed === 'boolean' ? completed : Boolean(memo.completed);
+        nextDeliveryStatus = nextCompleted ? 'confirmed' : 'in_progress';
+        if (nextCompleted && !memo.completed) markConfirmedNow = true;
+      } else {
+        if (completed === true || deliveryStatus === 'submitted') {
+          return res.status(400).json({ message: '请先在【成果交付】下拉框选择交付状态（如：已经邮件交付审核 / 已经微信发送审核）' });
+        }
+        nextCompleted = false;
+        nextDeliveryStatus = 'in_progress';
+      }
     }
 
     await query(
@@ -897,8 +949,8 @@ async function handleUpdateMemo(req, res, next) {
           delivery_status = $12,
           review_comment = $13,
           submitted_at = CASE WHEN $14 THEN NOW() ELSE submitted_at END,
-          confirmed_at = CASE WHEN $15 THEN NOW() ELSE confirmed_at END,
-          is_reviewed = CASE WHEN $15 THEN TRUE ELSE is_reviewed END,
+          confirmed_at = CASE WHEN $15 THEN NOW() WHEN NOT $6 THEN NULL ELSE confirmed_at END,
+          is_reviewed = CASE WHEN $15 THEN TRUE WHEN $14 THEN FALSE ELSE is_reviewed END,
           updated_at = NOW()
       WHERE id = $1
       `,

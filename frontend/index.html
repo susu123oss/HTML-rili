@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260930_delivery_loop_v30" defer></script>
+    <script src="./app.js?v=20260930_delivery_select_v31" defer></script>
     <style>
         * {
             margin: 0;
@@ -3920,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_delivery_loop_v30" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_delivery_select_v31" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4209,6 +4209,9 @@
                     <button type="button" class="btn btn-primary" id="wpPageCopyReportBtn">
                         <i class="far fa-copy"></i> <span id="wpPageCopyReportText">预览周报</span>
                     </button>
+                    <button type="button" class="btn btn-primary" id="wpPageExportTeamReportBtn" hidden>
+                        <i class="fas fa-file-excel"></i> <span>导出全员周报</span>
+                    </button>
                     <button type="button" class="btn btn-secondary" id="wpPageRefreshBtn" title="刷新数据">
                         <i class="fas fa-sync-alt"></i>
                     </button>
@@ -4390,6 +4393,35 @@
                             </label>
                         </div>
                     </div>
+
+                    <div class="memo-delivery-bar" id="memoDeliveryPanel">
+                        <div class="memo-delivery-bar-main">
+                            <label class="memo-delivery-bar-label" for="memoActualDeliverable">
+                                <span class="delivery-label-icon"><i class="fas fa-paper-plane"></i></span>
+                                <span>成果交付</span>
+                                <span class="memo-delivery-remind-pill" id="memoDeliveryRemindPill">请下拉选择</span>
+                            </label>
+                            <div class="memo-delivery-select-wrap">
+                                <select class="form-control memo-delivery-select" id="memoActualDeliverable">
+                                    <option value="">▼ 请点击下拉选择成果交付状态（未完成可暂不选）</option>
+                                    <option value="已经邮件交付审核">📧 已经邮件交付审核</option>
+                                    <option value="已经微信发送审核">💬 已经微信发送审核</option>
+                                    <option value="已上传共享盘/群文件审核">📂 已上传共享盘 / 群文件审核</option>
+                                    <option value="已提交图纸/模型/BOM审核">📐 已提交图纸 / 模型 / BOM审核</option>
+                                    <option value="已当面汇报/现场评审确认">🤝 已当面汇报 / 现场评审确认</option>
+                                    <option value="日常事务（无需交付物）">✔️ 日常事务（无需交付审核）</option>
+                                </select>
+                            </div>
+                            <span class="memo-delivery-status-badge" id="memoDeliveryStatusBadge" hidden></span>
+                            <div class="memo-delivery-review-actions" id="memoDeliveryReviewActions" hidden>
+                                <button type="button" class="btn btn-sm btn-delivery-confirm" id="btnModalConfirmDelivery"><i class="fas fa-check-circle"></i> 确认通过</button>
+                                <button type="button" class="btn btn-sm btn-delivery-return" id="btnModalReturnDelivery"><i class="fas fa-undo"></i> 退回修改</button>
+                            </div>
+                        </div>
+                        <div class="memo-delivery-review-row" id="memoDeliveryReviewRow" hidden>
+                            <div class="memo-delivery-review-comment" id="memoDeliveryReviewComment"></div>
+                        </div>
+                    </div>
                     
                     <div class="memo-meta-grid">
                         <div class="memo-meta-col">
@@ -4466,30 +4498,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="memo-delivery-panel" id="memoDeliveryPanel">
-                        <div class="memo-delivery-header">
-                            <span class="memo-delivery-title"><i class="fas fa-box-open"></i> 交付成果与验收 <small>（填「预期交付」即启用提交待确认闭环）</small></span>
-                            <span class="memo-delivery-badge" id="memoDeliveryStatusBadge" hidden></span>
-                        </div>
-                        <div class="memo-delivery-grid">
-                            <div class="memo-delivery-col">
-                                <label for="memoExpectedDeliverable">🎯 预期交付 <small>（选填，如：3D模型V3 / 图纸A版 / BOM表）</small></label>
-                                <input type="text" class="form-control" id="memoExpectedDeliverable" placeholder="不填则为普通日常记录；填写后需提交实际成果并经管理员确认" autocomplete="off">
-                            </div>
-                            <div class="memo-delivery-col">
-                                <label for="memoActualDeliverable">📦 实际成果 <small>（产出物名称、版本号、编号或存放路径）</small></label>
-                                <input type="text" class="form-control" id="memoActualDeliverable" placeholder="例如：高压箱3D模型V3 + BOM初版（已上传共享盘）" autocomplete="off">
-                            </div>
-                        </div>
-                        <div class="memo-delivery-review-row" id="memoDeliveryReviewRow" hidden>
-                            <div class="memo-delivery-review-note" id="memoDeliveryReviewNote"></div>
-                            <div class="memo-delivery-review-actions" id="memoDeliveryReviewActions" hidden>
-                                <button type="button" class="btn btn-sm btn-delivery-confirm" id="btnModalConfirmDelivery"><i class="fas fa-check-circle"></i> 确认成果通过</button>
-                                <button type="button" class="btn btn-sm btn-delivery-return" id="btnModalReturnDelivery"><i class="fas fa-undo"></i> 退回修改</button>
-                            </div>
-                        </div>
-                    </div>
                     
                     <div class="form-group memo-editor-group">
                         <div class="memo-content-header">
@@ -4563,11 +4571,6 @@
                     <div class="form-group">
                         <label for="taskTitle">任务标题</label>
                         <input type="text" class="form-control" id="taskTitle" autocomplete="off" placeholder="请输入任务标题">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="taskExpectedDeliverable">预期交付物（选填，设置后员工需提交实际成果并经管理员确认）</label>
-                        <input type="text" class="form-control" id="taskExpectedDeliverable" autocomplete="off" placeholder="例如：3D模型V3 / 2D图纸A版 / BOM表 / 测试报告">
                     </div>
                     
                     <div class="form-group">
