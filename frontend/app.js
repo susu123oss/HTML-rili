@@ -7614,6 +7614,7 @@ function initMemoHoverTooltip() {
 
     tooltip.dataset.memoId = String(memo.id);
 
+    const isAdmin = canManageWorkspace();
     const isCompleted = Boolean(memo.completed || memo.status === 'completed');
     const dStatus = memoDeliveryStatus(memo);
     const hasActual = hasMemoActualDeliverable(memo);
@@ -7632,7 +7633,7 @@ function initMemoHoverTooltip() {
     const stampsHtml = (isReviewed ? '<span class="mht-stamp read" title="管理员已审阅"><i class="fas fa-check-double"></i> 已阅</span>' : '') +
                        (isLiked ? '<span class="mht-stamp like" title="管理员点赞"><i class="fas fa-thumbs-up"></i> +1</span>' : '');
 
-    const ownerHtml = memo.ownerName
+    const ownerHtml = (isAdmin && memo.ownerName)
       ? `<span class="mht-owner-tag" title="${escapeHtml(memo.ownerName)}"><i class="fas fa-user"></i><span class="mht-owner-name">${escapeHtml(memo.ownerName)}</span></span>`
       : '';
     const kindHtml = `<span class="mht-kind-tag ${memo.planKind === 'plan' ? 'is-plan' : 'is-memo'}">${memo.planKind === 'plan' ? '周计划' : '日历备忘'}</span>`;
@@ -7661,7 +7662,6 @@ function initMemoHoverTooltip() {
       </div>
     ` : '';
 
-    const isAdmin = canManageWorkspace();
     const adminReactHtml = isAdmin ? `
       <div class="mht-react-bar">
         <button class="mht-btn-react ${isReviewed ? 'active' : ''}" data-action="toggle-read" data-id="${memo.id}" title="管理员审阅并盖章，将通知员工">
@@ -10462,8 +10462,7 @@ function showEngineerUrgeBanner(notifications) {
   banner.onclick = async (e) => {
     if (e.target.closest('.close-banner')) {
       e.stopPropagation();
-      await markNotificationsRead(notifications);
-      dismissEngineerUrgeBanner();
+      if (await markNotificationsRead(notifications)) dismissEngineerUrgeBanner();
       return;
     }
 
@@ -10509,7 +10508,7 @@ async function navigateToAndHighlightMemos(memoIds) {
   const memoIdStrs = memoIds.map(String);
   executeMemosHighlight(memoIdStrs);
   await openMemoModal(memo.id);
-  return true;
+  return $('memoModal')?.classList.contains('active') && String(state.selectedMemoId) === String(memo.id);
   } catch (error) {
     showGlobalToast(`未能打开事项：${error.message}。提醒已保留，可稍后重试。`, 'error');
     return false;
@@ -10614,7 +10613,7 @@ function executeMemosHighlight(memoIdStrs) {
 }
 
 async function markNotificationsRead(notifications) {
-  if (!state.token) return;
+  if (!state.token) return false;
   const ids = Array.isArray(notifications) ? notifications.map(n => n.id).filter(Boolean) : [];
   try {
     if (ids.length) {
@@ -10626,9 +10625,76 @@ async function markNotificationsRead(notifications) {
     state.engineerNotifications = ids.length ? state.engineerNotifications.filter((notice) => !readIds.has(String(notice.id))) : [];
     return true;
   } catch (error) {
-    showGlobalToast('消息已打开，但已读状态保存失败，请稍后重试', 'info');
+    showGlobalToast('已读状态保存失败，提醒已保留，请稍后重试', 'info');
     return false;
   }
+}
+
+async function openNotificationHistory() {
+  if (!state.token) return;
+  closeReminderModal();
+  let dialog = $('notificationHistoryDialog');
+  if (!dialog) {
+    dialog = document.createElement('dialog');
+    dialog.id = 'notificationHistoryDialog';
+    dialog.className = 'notification-history-dialog';
+    dialog.setAttribute('aria-labelledby', 'notificationHistoryTitle');
+    dialog.innerHTML = `<header class="notification-history-header"><h3 id="notificationHistoryTitle"><i class="fas fa-history"></i> 消息记录</h3><button type="button" class="btn btn-secondary" data-history-close aria-label="关闭消息记录">关闭</button></header><div class="notification-history-list" role="list" aria-live="polite"></div><footer class="notification-history-footer"><button type="button" class="btn btn-secondary" data-history-more>加载更多</button><span>已读消息也会保留在这里</span></footer>`;
+    document.body.appendChild(dialog);
+    dialog.querySelector('[data-history-close]').onclick = () => dialog.close();
+    setupDialogBackdropClose(dialog.id);
+  }
+  if (!dialog.open) dialog.showModal();
+  const token = state.token;
+  let notices = [], nextCursor = null, busy = false;
+  const list = dialog.querySelector('.notification-history-list');
+  const more = dialog.querySelector('[data-history-more]');
+
+  function render() {
+    list.innerHTML = notices.length ? notices.map((notice) => `<article class="notification-history-item ${notice.isRead ? '' : 'unread'}" role="listitem" data-notice-id="${Number(notice.id)}"><div class="notification-history-meta"><strong>${escapeHtml(notice.title)}</strong><span>${notice.isRead ? '已读' : '未读'}</span></div><p>${escapeHtml(notice.content)}</p><div class="notification-history-item-footer"><time>${escapeHtml(new Date(notice.createdAt).toLocaleString('zh-CN', { hour12: false }))}</time><div>${notice.memoId ? '<button type="button" class="btn btn-primary" data-history-view>查看事项</button>' : '<span>关联事项已删除</span>'}${!notice.isRead ? '<button type="button" class="btn btn-secondary" data-history-read>标为已读</button>' : ''}</div></div></article>`).join('') : '<div class="empty-state">暂无消息记录</div>';
+    more.hidden = !nextCursor;
+    more.disabled = busy;
+  }
+
+  async function load(append = false) {
+    if (busy) return;
+    busy = true; more.disabled = true;
+    if (!append) list.innerHTML = '<div class="empty-state">正在读取消息…</div>';
+    try {
+      const result = await request(`/notifications/history${append && nextCursor ? `?before=${nextCursor}` : ''}`);
+      if (state.token !== token || !dialog.open) return;
+      notices = append ? [...notices, ...result.notifications] : result.notifications;
+      nextCursor = result.nextCursor;
+      render();
+    } catch (error) {
+      if (state.token !== token || !dialog.open) return;
+      if (!append) list.innerHTML = `<div class="operation-feedback error" role="alert">消息读取失败：${escapeHtml(error.message)}</div>`;
+      else showGlobalToast(`消息读取失败：${error.message}`, 'error');
+      more.hidden = false;
+      more.textContent = '重新加载';
+    } finally { busy = false; more.disabled = false; }
+  }
+
+  list.onclick = async (event) => {
+    const view = event.target.closest('[data-history-view]');
+    const read = event.target.closest('[data-history-read]');
+    if ((!view && !read) || busy || state.token !== token) return;
+    const row = event.target.closest('[data-notice-id]');
+    const notice = notices.find((item) => String(item.id) === row?.dataset.noticeId);
+    if (!notice) return;
+    busy = true;
+    try {
+      if (view && !await navigateToAndHighlightMemos([notice.memoId])) return;
+      if (!notice.isRead && await markNotificationsRead([notice])) notice.isRead = true;
+      render();
+      await checkEngineerNotifications();
+      if (view) dialog.close();
+    } finally { busy = false; }
+  };
+  more.textContent = '加载更多';
+  more.hidden = true;
+  more.onclick = () => load(Boolean(nextCursor));
+  await load();
 }
 
 function dismissEngineerUrgeBanner() {
@@ -10841,21 +10907,26 @@ async function exportExcelData() {
   URL.revokeObjectURL(url);
 }
 
-function exportData() {
+async function exportData() {
   if (!canManageWorkspace()) return;
-  const payload = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    scope: state.selectedUserId,
-    memos: getVisibleMemos()
-  };
+  const button = $('exportData');
+  if (button?.disabled) return;
+  if (button) button.disabled = true;
+  try {
+  const payload = await request('/backups/export', {
+    method: 'POST', body: JSON.stringify({ scope: state.selectedUserId, memoIds: getVisibleMemos().map((memo) => memo.id) })
+  });
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = `work-calendar-${dateKey(new Date())}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showGlobalToast(`已备份 ${payload.memos.length} 条完整事项${payload.memos.length > payload.selectedCount ? '（含关联结转记录）' : ''}及 ${payload.weeklySummaries.length} 份周总结`, 'success');
+  } catch (error) {
+    showGlobalToast(`备份失败：${error.message}`, 'error');
+  } finally { if (button) button.disabled = false; }
 }
 
 function importData() {
@@ -10869,19 +10940,11 @@ function parseImportMemos(payload) {
   throw new Error('导入文件格式不正确，未找到 memos 数据');
 }
 
-function resolveImportedOwnerId(memo) {
-  const byId = state.users.find((user) => Number(user.id) === Number(memo.ownerId));
-  if (byId) return Number(byId.id);
-  const byName = state.users.find((user) => user.displayName === memo.ownerName || user.username === memo.ownerName);
-  if (byName) return Number(byName.id);
-  if (state.selectedUserId !== 'all') return Number(state.selectedUserId);
-  return Number(state.user.id);
-}
-
 async function handleImportFile(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
-  if (!file) return;
+  if (!file || !canManageWorkspace() || state.backupImportBusy) return;
+  state.backupImportBusy = true;
 
   try {
     const payload = JSON.parse(await file.text());
@@ -10890,47 +10953,13 @@ async function handleImportFile(event) {
       alert('导入文件里没有可导入记录');
       return;
     }
-    const valid = memos.filter((memo) => String(memo.title || '').trim() && /^\d{4}-\d{2}-\d{2}$/.test(String(memo.date || '').slice(0, 10)));
-    const skipped = memos.length - valid.length;
-    if (!valid.length) {
-      alert(`没有可导入的记录，${skipped} 条缺少标题或有效日期`);
-      return;
-    }
-    if (!confirm(`文件共 ${memos.length} 条；可尝试导入 ${valid.length} 条，跳过 ${skipped} 条。导入会新增记录，不会覆盖或去重。确认继续？`)) return;
-
-    const importedMemos = [];
-    const failures = [];
-    for (const memo of valid) {
-      const title = String(memo.title || '').trim();
-      const date = String(memo.date || '').slice(0, 10);
-      try {
-        const data = await request('/memos', {
-          method: 'POST',
-          body: JSON.stringify({
-            ownerId: resolveImportedOwnerId(memo),
-            date,
-            title,
-            content: memo.content || '',
-            color: memo.color || randomMemoColor(latestMemoColor()),
-            completed: Boolean(memo.completed),
-            dueTime: memo.dueTime || null
-          })
-        });
-        if (data.memo) importedMemos.push(data.memo);
-      } catch (error) {
-        failures.push(`${date} ${title}：${error.message}`);
-      }
-    }
-
-    if (importedMemos.length) syncMemosLocally(importedMemos);
-    await loadReminders();
-    const summary = `导入完成：成功 ${importedMemos.length} 条，跳过 ${skipped} 条，失败 ${failures.length} 条。`;
-    alert(failures.length
-      ? `${summary}\n已成功的记录不会自动回滚，请勿直接重试整个文件。\n失败项：\n${failures.slice(0, 10).join('\n')}${failures.length > 10 ? '\n…' : ''}`
-      : summary);
+    if (!confirm(`恢复 ${memos.length} 条事项及相关周总结？首次恢复会新增事项并保留完整正文、交付审核与结转关系，同一备份重复导入不会重复新增。账号按用户名匹配；任何错误会撤销整次导入。`)) return;
+    const result = await request('/backups/import', { method: 'POST', body: JSON.stringify(payload) });
+    await syncMemoMutationOrReload({});
+    alert(`${result.reused ? '此备份已恢复，未重复新增' : '恢复成功'}：${result.count} 条事项，新增 ${result.summaryCount} 份周总结。${result.warnings?.length ? `\n${result.warnings.join('\n')}` : ''}`);
   } catch (error) {
     alert(`导入失败：${error.message}`);
-  }
+  } finally { state.backupImportBusy = false; }
 }
 
 function clearAllData() {
@@ -11198,6 +11227,7 @@ function initEventListeners() {
     toggleSelectAllReminders(event.target.checked);
   });
   $('reminderBatchCompleteBtn')?.addEventListener('click', batchCompleteReminders);
+  $('notificationHistoryBtn')?.addEventListener('click', openNotificationHistory);
   $('reminderUrgeBtn')?.addEventListener('click', batchUrgeReminders);
   $('searchInput').addEventListener('input', () => { $('clearSearch').style.display = $('searchInput').value.trim() ? 'block' : 'none'; renderMultiMonthCalendar(); renderMobileAgenda(); });
   $('clearSearch').addEventListener('click', () => { $('searchInput').value = ''; $('clearSearch').style.display = 'none'; renderMultiMonthCalendar(); renderMobileAgenda(); });
