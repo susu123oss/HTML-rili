@@ -4915,12 +4915,19 @@ function applyTheme(preference, originEl) {
     Math.max(y, window.innerHeight - y)
   ));
 
-  document.documentElement.style.setProperty('--theme-x', `${x}px`);
-  document.documentElement.style.setProperty('--theme-y', `${y}px`);
-  document.documentElement.style.setProperty('--theme-r', `${maxRadius}px`);
+  const root = document.documentElement;
+  root.style.setProperty('--theme-x', `${x}px`);
+  root.style.setProperty('--theme-y', `${y}px`);
+  root.style.setProperty('--theme-r', `${maxRadius}px`);
+
+  // 标记切换方向，供 CSS ::view-transition 选择器区分扩散/收缩
+  root.classList.remove('to-dark', 'to-light');
+  root.classList.add(isDark ? 'to-dark' : 'to-light');
 
   const transition = document.startViewTransition(commitTheme);
-  transition.ready.catch(() => {});  // suppress unhandled rejection if interrupted
+  transition.finished.then(() => {
+    root.classList.remove('to-dark', 'to-light');
+  }).catch(() => {});
 }
 
 

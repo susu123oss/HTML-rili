@@ -100,38 +100,34 @@ dialog.notification-history-dialog {
 
 /* ── 主题切换动画（View Transitions API 圆形扩散）── */
 
-/* 禁用浏览器默认的淡入淡出，改用自定义圆形扩散 */
+/* 禁用浏览器默认淡入淡出 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
 
-/* 切换到深色：新主题从点击位置向外扩散 */
-html[data-theme='dark']::view-transition-new(root) {
-  animation: theme-reveal-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%));
+/* 切换到深色：新主题从按钮位置向外圆形扩散 */
+html.to-dark::view-transition-new(root) {
+  animation: theme-circle-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-html[data-theme='dark']::view-transition-old(root) {
+/* 切换到浅色：旧深色主题从按钮位置向内收缩 */
+html.to-light::view-transition-old(root) {
+  animation: theme-circle-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  z-index: 1;
+}
+html.to-light::view-transition-new(root) {
   animation: none;
+  z-index: 0;
 }
 
-/* 切换到浅色：旧主题向外退出 */
-html[data-theme='light']::view-transition-old(root) {
-  animation: theme-reveal-out 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  clip-path: circle(var(--theme-r, 150%) at var(--theme-x, 50%) var(--theme-y, 50%));
+@keyframes theme-circle-in {
+  from { clip-path: circle(0px at var(--theme-x, 50%) var(--theme-y, 50%)); }
+  to   { clip-path: circle(var(--theme-r, 2000px) at var(--theme-x, 50%) var(--theme-y, 50%)); }
 }
-html[data-theme='light']::view-transition-new(root) {
-  animation: none;
-}
-
-@keyframes theme-reveal-in {
-  from { clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%)); }
-  to   { clip-path: circle(var(--theme-r, 150%) at var(--theme-x, 50%) var(--theme-y, 50%)); }
-}
-@keyframes theme-reveal-out {
-  from { clip-path: circle(var(--theme-r, 150%) at var(--theme-x, 50%) var(--theme-y, 50%)); }
-  to   { clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%)); }
+@keyframes theme-circle-out {
+  from { clip-path: circle(var(--theme-r, 2000px) at var(--theme-x, 50%) var(--theme-y, 50%)); }
+  to   { clip-path: circle(0px at var(--theme-x, 50%) var(--theme-y, 50%)); }
 }
 
 /* 旧浏览器降级：无 View Transitions API 时的 CSS 过渡兜底 */
