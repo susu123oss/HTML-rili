@@ -5561,7 +5561,8 @@ function renderMultiMonthCalendar() {
 }
 
 function isRoutineDeliverableChoice(val) {
-  return String(val || '').trim() === '日常事务（无需交付物）';
+  const s = String(val || '').trim();
+  return s === '日常事务（无需交付物）' || s === '日常事务（无需交付审核）' || s.includes('无需交付');
 }
 
 function hasMemoActualDeliverable(memo) {
@@ -5577,6 +5578,9 @@ function memoDeliveryStatus(memo) {
   if (!memo) return 'none';
   const raw = String(memo.deliveryStatus || '').trim();
   const hasActual = hasMemoActualDeliverable(memo);
+  if (!hasActual && isRoutineDeliverableChoice(memo.actualDeliverable)) {
+    return 'none';
+  }
   if (memo.completed) {
     return (hasActual || raw === 'confirmed') ? 'confirmed' : 'none';
   }
@@ -6868,13 +6872,9 @@ function updateMemoDeliveryModalUI(memo = null, canEdit = true) {
   const saveBtn = $('saveMemo');
 
   let rememberedVal = String(memo?.actualDeliverable || '').trim();
-  if (!rememberedVal) {
+  if (!rememberedVal && memo?.id) {
     try {
-      if (memo?.id) {
-        rememberedVal = String(localStorage.getItem(`calendarMemoDeliverable_${memo.id}`) || '').trim();
-      } else {
-        rememberedVal = String(localStorage.getItem('calendarDraftDeliverable') || '').trim();
-      }
+      rememberedVal = String(localStorage.getItem(`calendarMemoDeliverable_${memo.id}`) || '').trim();
     } catch (_) {}
   }
   const val = rememberedVal;
@@ -7615,7 +7615,7 @@ function initMemoHoverTooltip() {
 
     const isCompleted = Boolean(memo.completed || memo.status === 'completed');
     const dStatus = memoDeliveryStatus(memo);
-    const hasActual = Boolean(String(memo.actualDeliverable || '').trim());
+    const hasActual = hasMemoActualDeliverable(memo);
     const hasReviewComment = Boolean(String(memo.reviewComment || '').trim());
     const accentColor = memo.color || '#3b82f6';
     const dotColor = isCompleted
@@ -8600,11 +8600,13 @@ function weeklyDataRequest() {
 async function loadWeeklyPlanData({ force = false } = {}) {
   if (state.activeView !== 'weeklyPlan') return;
   const { monday, startMonth, months, userId, key } = weeklyDataRequest();
-  if (!force && (state.weeklyDataRangeKey === key || state.weeklyDataLoadingKey === key)) return;
+    if (!force && (state.weeklyDataRangeKey === key || state.weeklyDataLoadingKey === key || state.weeklyDataErrorKey === key)) return;
   const version = ++state.weeklyRequestVersion;
   state.weeklyRequestController?.abort();
   const controller = new AbortController();
   state.weeklyRequestController = controller;
+  let timedOut = false;
+  const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 20000);
   state.weeklyDataLoadingKey = key;
   state.weeklyDataErrorKey = '';
   state.weeklyDataError = '';
@@ -8627,10 +8629,11 @@ async function loadWeeklyPlanData({ force = false } = {}) {
     state.weeklySummaries = summaryData.summaries;
     state.weeklyDataRangeKey = key;
   } catch (error) {
-    if (error.name === 'AbortError' || version !== state.weeklyRequestVersion) return;
+    if ((error.name === 'AbortError' && !timedOut) || version !== state.weeklyRequestVersion) return;
     state.weeklyDataErrorKey = key;
-    state.weeklyDataError = error.message || '加载失败';
+    state.weeklyDataError = timedOut ? '请求超时，请检查网络后重试' : (error.message || '加载失败');
   } finally {
+    window.clearTimeout(timeout);
     if (version === state.weeklyRequestVersion) {
       state.weeklyDataLoadingKey = '';
       state.weeklyRequestController = null;
@@ -8838,8 +8841,27 @@ function renderWeeklyPlanPage() {
   const statsGroup = $('wpPageStatsGroup');
   if (!workspaceBody) return;
   const requestKey = weeklyDataRequest().key;
-  if (state.weeklyDataRangeKey !== requestKey && state.weeklyDataLoadingKey !== requestKey) {
+  if (state.weeklyDataRangeKey !== requestKey && state.weeklyDataLoadingKey !== requestKey && state.weeklyDataErrorKey !== requestKey) {
     void loadWeeklyPlanData();
+  }
+  let loadFeedback = $('wpLoadFeedback');
+  if (!loadFeedback) {
+    loadFeedback = document.createElement('div');
+    loadFeedback.id = 'wpLoadFeedback';
+    loadFeedback.className = 'operation-feedback warning';
+    loadFeedback.setAttribute('role', 'alert');
+    workspaceBody.before(loadFeedback);
+  }
+  const hasLoadError = state.weeklyDataErrorKey === requestKey;
+  loadFeedback.style.display = hasLoadError ? 'flex' : 'none';
+  if (hasLoadError) {
+    loadFeedback.innerHTML = `<span>周计划加载失败：${escapeHtml(state.weeklyDataError)}</span><button type="button" class="btn btn-secondary btn-sm">重新加载</button>`;
+    loadFeedback.querySelector('button').onclick = () => loadWeeklyPlanData({ force: true });
+  }
+  if (state.weeklyDataRangeKey !== requestKey) {
+    if (statsGroup) statsGroup.innerHTML = '';
+    workspaceBody.innerHTML = `<div class="empty-state"><p>${hasLoadError ? '本周数据尚未加载，请点击重新加载' : '正在加载本周事项与复盘…'}</p></div>`;
+    return;
   }
 
   // Ensure weeklyMemos is seeded from cached state.memos so rendering is 0ms instant
@@ -9249,14 +9271,14 @@ function buildWeeklyReportMarkdown() {
   } else {
     completed.forEach((m, idx) => {
       const dStatus = memoDeliveryStatus(m);
-      const outputStr = m.actualDeliverable ? ` → 交付：${m.actualDeliverable}` : '';
+      const outputStr = hasMemoActualDeliverable(m) ? ` → 交付：${m.actualDeliverable}` : '';
       const confirmStr = dStatus === 'confirmed' ? ' 〔✓ 成果已确认〕' : '';
       report += `  ${idx + 1}. [已完成] ${m.title} (${m.date})${outputStr}${confirmStr}\n`;
     });
     pending.forEach((m, idx) => {
       const dStatus = memoDeliveryStatus(m);
       if (dStatus === 'submitted') {
-        const outputStr = m.actualDeliverable ? ` → 交付：${m.actualDeliverable}` : '';
+        const outputStr = hasMemoActualDeliverable(m) ? ` → 交付：${m.actualDeliverable}` : '';
         report += `  ${completed.length + idx + 1}. [已提交·待确认] ${m.title} (${m.date})${outputStr} 〔📦 待确认〕\n`;
       } else if (dStatus === 'returned') {
         const commentStr = m.reviewComment ? `（退回意见：${m.reviewComment}）` : '';
@@ -9605,7 +9627,7 @@ function createTaskItem(memo) {
     statusBadge = '<span class="task-status-pill completed"><i class="fas fa-check-circle"></i> 成果已确认</span>';
   }
 
-  const deliveryMetaHtml = memo.actualDeliverable ? `
+  const deliveryMetaHtml = hasMemoActualDeliverable(memo) ? `
     <div class="task-delivery-meta">
       <span class="tdm-chip tdm-actual">📦 成果交付：${escapeHtml(memo.actualDeliverable)}</span>
     </div>
@@ -10444,20 +10466,25 @@ function showEngineerUrgeBanner(notifications) {
       return;
     }
 
-    const memoIds = [...new Set(notifications.map(n => n.memoId).filter(Boolean))];
-    await markNotificationsRead(notifications);
-    dismissEngineerUrgeBanner();
-
-    if (memoIds.length) {
-      await navigateToAndHighlightMemos(memoIds);
-    } else if (hasUrge) {
-      showReminderModal();
+    const target = notifications.find((notice) => notice.memoId);
+    if (target) {
+      const opened = await navigateToAndHighlightMemos([target.memoId]);
+      if (opened) {
+        await markNotificationsRead(notifications.filter((notice) => notice.memoId === target.memoId));
+        await checkEngineerNotifications();
+      }
+    } else {
+      await openNotificationHistory();
     }
   };
 }
 
 async function navigateToAndHighlightMemos(memoIds) {
-  if (!Array.isArray(memoIds) || !memoIds.length) return;
+  if (!Array.isArray(memoIds) || !memoIds.length) return false;
+  try {
+  const target = await request(`/memos/${memoIds[0]}`);
+  const memo = target.memo;
+  if (!memo?.date) throw new Error('事项不存在，请到消息记录中查看原提醒');
 
   // 1. 关闭可能遮挡日历的浮层与弹窗
   hideMemoHoverTooltip();
@@ -10471,34 +10498,21 @@ async function navigateToAndHighlightMemos(memoIds) {
     closeWeeklyPlanPage();
   }
 
+  const [year, month] = memo.date.split('-').map(Number);
+  state.currentDate = new Date(year, month - 1, 1);
+  state.selectedUserId = String(memo.ownerId);
+  state.calendarStatusFilter = 'all';
+  if ($('searchInput')) $('searchInput').value = '';
+  await loadMemos({ force: true });
+  syncMemosLocally(memo);
   const memoIdStrs = memoIds.map(String);
-  let selector = memoIdStrs.map(id => `.day-memo-item[data-memo-id="${id}"]`).join(',');
-  let existingBtns = selector ? document.querySelectorAll(selector) : [];
-
-  // 3. 如果元素不在当前 DOM 中，定位目标月份并重新拉取事项
-  if (!existingBtns.length) {
-    let targetMemos = (state.memos || []).filter(m => memoIdStrs.includes(String(m.id)));
-    let targetDate = targetMemos[0]?.date;
-    if (!targetDate) {
-      try {
-        const res = await request(`/memos/${memoIds[0]}`);
-        if (res?.memo) targetDate = res.memo.date;
-      } catch (_) {}
-    }
-
-    if (targetDate) {
-      const targetMonthKey = targetDate.slice(0, 7);
-      const isVisible = visibleMonths().some(d => monthKey(d) === targetMonthKey);
-      if (!isVisible) {
-        const [y, m] = targetDate.split('-').map(Number);
-        state.currentDate = new Date(y, m - 1, 1);
-      }
-    }
-    await loadMemos({ force: true });
-  }
-
-  // 4. 执行高亮闪烁与平滑滚动
   executeMemosHighlight(memoIdStrs);
+  await openMemoModal(memo.id);
+  return true;
+  } catch (error) {
+    showGlobalToast(`未能打开事项：${error.message}。提醒已保留，可稍后重试。`, 'error');
+    return false;
+  }
 }
 
 function executeMemosHighlight(memoIdStrs) {
@@ -10601,14 +10615,19 @@ function executeMemosHighlight(memoIdStrs) {
 async function markNotificationsRead(notifications) {
   if (!state.token) return;
   const ids = Array.isArray(notifications) ? notifications.map(n => n.id).filter(Boolean) : [];
-  state.engineerNotifications = [];
   try {
     if (ids.length) {
       await request('/notifications/read', { method: 'POST', body: JSON.stringify({ ids }) });
     } else {
       await request('/notifications/read', { method: 'POST', body: JSON.stringify({ all: true }) });
     }
-  } catch (_) {}
+    const readIds = new Set(ids.map(String));
+    state.engineerNotifications = ids.length ? state.engineerNotifications.filter((notice) => !readIds.has(String(notice.id))) : [];
+    return true;
+  } catch (error) {
+    showGlobalToast('消息已打开，但已读状态保存失败，请稍后重试', 'info');
+    return false;
+  }
 }
 
 function dismissEngineerUrgeBanner() {
@@ -10919,26 +10938,21 @@ function clearAllData() {
 }
 
 async function completeAllMemosForMonth(month) {
-  const allUncompleted = getVisibleMemos().filter((memo) => memo.date.startsWith(month) && !memo.completed);
+  const allUncompleted = getVisibleMemos().filter((memo) => memo.date.startsWith(month) && !memo.completed && !memo.rolloverToId);
   if (!allUncompleted.length) return;
-  const isAdmin = canManageWorkspace();
-  const targets = isAdmin
-    ? allUncompleted
-    : allUncompleted.filter((memo) => !hasMemoExpectedDeliverable(memo));
-  const skippedCount = allUncompleted.length - targets.length;
-  if (!targets.length) {
-    alert(`本月剩余 ${skippedCount} 项任务均包含【预期交付】要求，请点开任务填写「实际成果」后提交管理员确认。`);
-    return;
+  if (!confirm(canManageWorkspace()
+    ? `确认验收 ${month} 的事项？只有已选择成果交付的任务会完成，其余保留待办。`
+    : `确认完成 ${month} 的日常事务？交付任务仍需管理员验收，其他事项会跳过。`)) return;
+  try {
+    const result = await request('/memos/batch-complete', {
+      method: 'POST', body: JSON.stringify({ memoIds: allUncompleted.map((memo) => memo.id) })
+    });
+    await syncMemoMutationOrReload({});
+    const skipped = result.skippedIds?.length || 0;
+    showGlobalToast(`已完成 ${result.count ?? 0} 项${skipped ? `；跳过 ${skipped} 项，请补选交付状态或等待验收` : ''}`, skipped ? 'info' : 'success');
+  } catch (error) {
+    showGlobalToast(`批量完成失败：${error.message}`, 'error');
   }
-  const confirmMsg = skippedCount > 0
-    ? `确认将 ${month} 的 ${targets.length} 条普通事项标记为完成？（另有 ${skippedCount} 条需交付成果的任务需单独填写实际成果提交确认）`
-    : `确认将 ${month} 的 ${targets.length} 条备忘录标记为完成？`;
-  if (!confirm(confirmMsg)) return;
-  const results = await runWithConcurrency(targets, 4, (memo) => request(`/memos/${memo.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ completed: true })
-  }));
-  await syncMemoMutationOrReload({ memos: results.map((result) => result.memo).filter(Boolean) });
 }
 
 async function toggleMemoCompletion(memoId) {
