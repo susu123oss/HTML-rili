@@ -937,12 +937,12 @@ function renderCustomDeliveryOptions() {
   const currentVal = String(nativeSelect.value || '').trim();
   const options = Array.from(nativeSelect.options).filter((opt) => String(opt.value || '').trim() !== '');
   const selectedOpt = options.find((opt) => opt.value === currentVal);
-  const displayLabel = selectedOpt ? selectedOpt.textContent.trim() : (currentVal ? `📦 ${currentVal}` : '请选择交付方式');
+  const displayLabel = selectedOpt ? selectedOpt.textContent.trim() : (currentVal ? `📦 ${currentVal}` : '⚠️ 请下拉选择交付方式');
 
   deliveryText.textContent = displayLabel;
   if (deliveryBtn) {
     deliveryBtn.disabled = Boolean(nativeSelect.disabled);
-    deliveryBtn.title = currentVal ? `当前成果交付：${displayLabel}` : '点击下拉选择成果交付方式';
+    deliveryBtn.title = currentVal ? `当前成果交付：${displayLabel}` : '必选项：请点击下拉选择成果交付方式';
   }
 
   const items = options.map((opt) => {
@@ -6328,26 +6328,39 @@ function remindSelectDeliverable() {
   const selectEl = $('memoActualDeliverable');
   const customBtn = $('customDeliveryBtn');
   const customMenu = $('customDeliveryMenu');
+  const alertTip = $('memoDeliveryAlertTip');
+  const saveBtn = $('saveMemo');
+
+  if (alertTip) {
+    alertTip.hidden = false;
+  }
   if (panel) {
     clearTimeout(memoDeliveryAttentionTimer);
     panel.classList.remove('is-attention');
     void panel.offsetWidth;
     panel.classList.add('is-attention');
     panel.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    memoDeliveryAttentionTimer = setTimeout(() => panel.classList.remove('is-attention'), 1800);
+  }
+  if (saveBtn && !state.memoSaveBusy) {
+    saveBtn.classList.remove('is-interlock-alert');
+    void saveBtn.offsetWidth;
+    saveBtn.classList.add('is-interlocked', 'is-interlock-alert');
+    saveBtn.innerHTML = '<i class="fas fa-hand-point-up"></i> 请先选上方【成果交付】';
   }
   if (selectEl && !selectEl.disabled) {
     selectEl.setAttribute('aria-invalid', 'true');
   }
   if (customBtn && !customBtn.disabled) {
     renderCustomDeliveryOptions();
-    if (customMenu && customMenu.hidden) {
-      closeAllCustomDropdowns();
-      customMenu.hidden = false;
-      customBtn.classList.add('active');
-      customBtn.setAttribute('aria-expanded', 'true');
-    }
-    customBtn.focus({ preventScroll: true });
+    setTimeout(() => {
+      if (customMenu) {
+        closeAllCustomDropdowns();
+        customMenu.hidden = false;
+        customBtn.classList.add('active');
+        customBtn.setAttribute('aria-expanded', 'true');
+      }
+      customBtn.focus({ preventScroll: true });
+    }, 20);
   }
 }
 
@@ -6356,6 +6369,7 @@ function syncMemoCompletedState() {
   const label = checkbox?.closest('.memo-toggle-chip, .memo-title-completed');
   const selectEl = $('memoActualDeliverable');
   const panel = $('memoDeliveryPanel');
+  const alertTip = $('memoDeliveryAlertTip');
   const saveBtn = $('saveMemo');
   const actualVal = String(selectEl?.value || '').trim();
   const isRoutine = isRoutineDeliverableChoice(actualVal);
@@ -6367,14 +6381,24 @@ function syncMemoCompletedState() {
       clearTimeout(memoDeliveryAttentionTimer);
       panel.classList.remove('is-attention');
       selectEl?.removeAttribute('aria-invalid');
+      if (alertTip) alertTip.hidden = true;
     }
   }
   renderCustomDeliveryOptions();
 
   if (saveBtn && !state.memoSaveBusy) {
     saveBtn.disabled = false;
-    saveBtn.title = '保存备忘录';
-    saveBtn.innerHTML = '<i class="fas fa-check"></i> 保存备忘录';
+    if (actualVal || !canEdit) {
+      saveBtn.classList.remove('is-interlocked', 'is-interlock-alert');
+      saveBtn.title = '保存备忘录';
+      saveBtn.innerHTML = '<i class="fas fa-check"></i> 保存备忘录';
+    } else {
+      saveBtn.classList.add('is-interlocked');
+      saveBtn.title = '未选择成果交付方式，请先在上方【成果交付】下拉框选择后再保存';
+      if (!saveBtn.classList.contains('is-interlock-alert')) {
+        saveBtn.innerHTML = '<i class="fas fa-lock"></i> 请先选成果交付后保存';
+      }
+    }
   }
 
   if (label && checkbox) {
@@ -6397,6 +6421,8 @@ function updateMemoDeliveryModalUI(memo = null, canEdit = true) {
   const reviewCommentEl = $('memoDeliveryReviewComment');
   const reviewActions = $('memoDeliveryReviewActions');
   const panel = $('memoDeliveryPanel');
+  const alertTip = $('memoDeliveryAlertTip');
+  const saveBtn = $('saveMemo');
 
   let rememberedVal = String(memo?.actualDeliverable || '').trim();
   if (!rememberedVal) {
@@ -6410,6 +6436,8 @@ function updateMemoDeliveryModalUI(memo = null, canEdit = true) {
   }
   const val = rememberedVal;
   clearTimeout(memoDeliveryAttentionTimer);
+  if (alertTip) alertTip.hidden = true;
+  if (saveBtn) saveBtn.classList.remove('is-interlock-alert');
   if (selectEl) {
     selectEl.removeAttribute('aria-invalid');
     selectEl.querySelectorAll('option[data-custom="true"]').forEach((opt) => opt.remove());
@@ -10516,6 +10544,7 @@ function initEventListeners() {
   });
   $('saveMemo').addEventListener('click', (event) => {
     event?.preventDefault();
+    event?.stopPropagation();
     saveMemo();
   });
   $('deleteMemo').addEventListener('click', (event) => {
