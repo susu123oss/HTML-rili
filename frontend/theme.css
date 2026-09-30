@@ -98,6 +98,26 @@ dialog.notification-history-dialog {
   cursor: pointer;
 }
 
+/* ── 主题切换丝滑过渡 ── */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition:
+    background-color 0.3s ease,
+    background 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    opacity 0.3s ease !important;
+}
+html.theme-transitioning img,
+html.theme-transitioning video,
+html.theme-transitioning canvas,
+html.theme-transitioning svg {
+  transition: none !important;
+}
+
 html[data-theme='dark'],
 html.dark,
 :root[data-theme='dark'],

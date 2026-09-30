@@ -4857,17 +4857,26 @@ function applyTheme(preference) {
   const effectiveTheme = resolveEffectiveTheme(pref);
   state.themeMode = effectiveTheme;
   localStorage.setItem('appThemeMode', effectiveTheme);
-  document.documentElement.setAttribute('data-theme', effectiveTheme);
-  document.documentElement.setAttribute('data-bs-theme', effectiveTheme);
-  document.documentElement.setAttribute('data-theme-preference', pref);
-  document.documentElement.classList.toggle('dark', effectiveTheme === 'dark');
-  document.documentElement.classList.toggle('light', effectiveTheme === 'light');
-  document.documentElement.style.colorScheme = effectiveTheme;
+
+  // 丝滑过渡：切换前注入过渡 class，动画结束后自动移除
+  const root = document.documentElement;
+  root.classList.add('theme-transitioning');
+
+  root.setAttribute('data-theme', effectiveTheme);
+  root.setAttribute('data-bs-theme', effectiveTheme);
+  root.setAttribute('data-theme-preference', pref);
+  root.classList.toggle('dark', effectiveTheme === 'dark');
+  root.classList.toggle('light', effectiveTheme === 'light');
+  root.style.colorScheme = effectiveTheme;
   if (document.body) document.body.style.colorScheme = effectiveTheme;
   const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
   if (colorSchemeMeta) colorSchemeMeta.content = effectiveTheme;
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
   if (metaThemeColor) metaThemeColor.content = effectiveTheme === 'dark' ? '#182433' : '#ffffff';
+
+  // 300ms 后移除过渡 class（与 CSS transition 时长同步）
+  clearTimeout(root._themeTransitionTimer);
+  root._themeTransitionTimer = setTimeout(() => root.classList.remove('theme-transitioning'), 350);
 
   const isDark = effectiveTheme === 'dark';
   const iconClass = themeToggleIconClass(pref, effectiveTheme);
@@ -10426,7 +10435,8 @@ function showEngineerUrgeBanner(notifications) {
   const urgeList = notifications.filter(n => n.type === 'urge');
   const reviewList = notifications.filter(n => n.type === 'review');
   const likeList = notifications.filter(n => n.type === 'like');
-  const hasUrge = urgeList.length > 0;
+  const deliveryList = notifications.filter(n => !['urge', 'review', 'like'].includes(n.type));
+  const hasUrge = urgeList.length > 0 || notifications.some(n => n.type === 'return');
 
   banner.classList.toggle('banner-praise', !hasUrge);
 
@@ -10438,13 +10448,14 @@ function showEngineerUrgeBanner(notifications) {
     } else if (single.type === 'review') {
       contentHtml = `<i class="fas fa-check-circle" style="color:#a7f3d0;"></i> <span><strong>${escapeHtml(single.senderName || '管理员')}</strong> 已审阅：${escapeHtml(single.content || single.title)} <span style="font-size:0.8rem;opacity:0.88;margin-left:4px;">(点击日历定位)</span></span>`;
     } else {
-      contentHtml = `<i class="fas fa-bullhorn" style="color:#fecaca;"></i> <span><strong>催办提醒：</strong>${escapeHtml(single.content || single.title)} <span style="font-size:0.8rem;opacity:0.88;margin-left:4px;">(点击日历定位)</span></span>`;
+      contentHtml = `<i class="fas fa-bell" style="color:#fecaca;"></i> <span><strong>${escapeHtml(single.type === 'urge' ? '催办提醒' : single.title)}：</strong>${escapeHtml(single.content || single.title)} <span style="font-size:0.8rem;opacity:0.88;margin-left:4px;">(点击查看事项)</span></span>`;
     }
   } else {
     const parts = [];
     if (urgeList.length) parts.push(`<i class="fas fa-bullhorn"></i> <strong>${urgeList.length}</strong> 个任务被催办`);
     if (reviewList.length) parts.push(`<i class="fas fa-check-double"></i> <strong>${reviewList.length}</strong> 条事项已审阅`);
     if (likeList.length) parts.push(`<i class="fas fa-thumbs-up"></i> <strong>${likeList.length}</strong> 个事项获点赞`);
+    if (deliveryList.length) parts.push(`<i class="fas fa-bell"></i> <strong>${deliveryList.length}</strong> 条交付审核消息`);
     contentHtml = `<span>${parts.join('，')} <span style="font-size:0.8rem;opacity:0.88;margin-left:4px;">(点击日历定位)</span></span>`;
   }
 
@@ -10653,6 +10664,7 @@ async function openNotificationHistory() {
     list.innerHTML = notices.length ? notices.map((notice) => `<article class="notification-history-item ${notice.isRead ? '' : 'unread'}" role="listitem" data-notice-id="${Number(notice.id)}"><div class="notification-history-meta"><strong>${escapeHtml(notice.title)}</strong><span>${notice.isRead ? '已读' : '未读'}</span></div><p>${escapeHtml(notice.content)}</p><div class="notification-history-item-footer"><time>${escapeHtml(new Date(notice.createdAt).toLocaleString('zh-CN', { hour12: false }))}</time><div>${notice.memoId ? '<button type="button" class="btn btn-primary" data-history-view>查看事项</button>' : '<span>关联事项已删除</span>'}${!notice.isRead ? '<button type="button" class="btn btn-secondary" data-history-read>标为已读</button>' : ''}</div></div></article>`).join('') : '<div class="empty-state">暂无消息记录</div>';
     more.hidden = !nextCursor;
     more.disabled = busy;
+    more.textContent = '加载更多';
   }
 
   async function load(append = false) {
@@ -10916,6 +10928,7 @@ async function exportData() {
     method: 'POST', body: JSON.stringify({ scope: state.selectedUserId, memoIds: getVisibleMemos().map((memo) => memo.id) })
   });
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  if (blob.size > 20 * 1024 * 1024) throw new Error('备份超过 20MB，请缩小月份或人员范围后分批导出');
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -10946,6 +10959,7 @@ async function handleImportFile(event) {
   state.backupImportBusy = true;
 
   try {
+    if (file.size > 20 * 1024 * 1024) throw new Error('备份文件超过 20MB，请使用分批导出的备份');
     const payload = JSON.parse(await file.text());
     const memos = parseImportMemos(payload);
     if (!memos.length) {
