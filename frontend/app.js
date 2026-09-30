@@ -4847,7 +4847,7 @@ function themeToggleLabelText(pref) {
   return '跟随系统';
 }
 
-function applyTheme(preference) {
+function applyTheme(preference, originEl) {
   const pref = (preference === 'system' || preference === 'dark' || preference === 'light')
     ? preference
     : (localStorage.getItem('appThemePreference') || 'system');
@@ -4858,52 +4858,74 @@ function applyTheme(preference) {
   state.themeMode = effectiveTheme;
   localStorage.setItem('appThemeMode', effectiveTheme);
 
-  // 丝滑过渡：切换前注入过渡 class，动画结束后自动移除
-  const root = document.documentElement;
-  root.classList.add('theme-transitioning');
-
-  root.setAttribute('data-theme', effectiveTheme);
-  root.setAttribute('data-bs-theme', effectiveTheme);
-  root.setAttribute('data-theme-preference', pref);
-  root.classList.toggle('dark', effectiveTheme === 'dark');
-  root.classList.toggle('light', effectiveTheme === 'light');
-  root.style.colorScheme = effectiveTheme;
-  if (document.body) document.body.style.colorScheme = effectiveTheme;
-  const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
-  if (colorSchemeMeta) colorSchemeMeta.content = effectiveTheme;
-  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-  if (metaThemeColor) metaThemeColor.content = effectiveTheme === 'dark' ? '#182433' : '#ffffff';
-
-  // 300ms 后移除过渡 class（与 CSS transition 时长同步）
-  clearTimeout(root._themeTransitionTimer);
-  root._themeTransitionTimer = setTimeout(() => root.classList.remove('theme-transitioning'), 350);
-
   const isDark = effectiveTheme === 'dark';
   const iconClass = themeToggleIconClass(pref, effectiveTheme);
   const labelText = themeToggleLabelText(pref);
-
   let titleText = `当前：跟随系统 [${isDark ? '深色' : '浅色'}] (点击切换为浅色)`;
-  if (pref === 'light') {
-    titleText = '当前：浅色模式 (点击切换为深色)';
-  } else if (pref === 'dark') {
-    titleText = '当前：深色模式 (点击切换为跟随系统)';
+  if (pref === 'light') titleText = '当前：浅色模式 (点击切换为深色)';
+  else if (pref === 'dark') titleText = '当前：深色模式 (点击切换为跟随系统)';
+
+  // 实际更新 DOM 属性
+  function commitTheme() {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', effectiveTheme);
+    root.setAttribute('data-bs-theme', effectiveTheme);
+    root.setAttribute('data-theme-preference', pref);
+    root.classList.toggle('dark', isDark);
+    root.classList.toggle('light', !isDark);
+    root.style.colorScheme = effectiveTheme;
+    if (document.body) document.body.style.colorScheme = effectiveTheme;
+    const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+    if (colorSchemeMeta) colorSchemeMeta.content = effectiveTheme;
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) metaThemeColor.content = isDark ? '#182433' : '#ffffff';
+
+    const topbarBtn = $('themeToggleBtn');
+    if (topbarBtn) {
+      topbarBtn.innerHTML = `<i class="${iconClass}"></i><span class="nav-label">${labelText}</span>`;
+      topbarBtn.title = titleText;
+      topbarBtn.blur();
+    }
+    const loginBtn = $('loginThemeToggle');
+    if (loginBtn) {
+      loginBtn.innerHTML = `<i class="${iconClass}"></i> <span class="login-theme-label">${labelText}</span>`;
+      loginBtn.title = titleText;
+    }
   }
 
-  const topbarBtn = $('themeToggleBtn');
-  if (topbarBtn) {
-    topbarBtn.innerHTML = `<i class="${iconClass}"></i><span class="nav-label">${labelText}</span>`;
-    topbarBtn.title = titleText;
-    topbarBtn.blur();
-  }
-  const loginBtn = $('loginThemeToggle');
-  if (loginBtn) {
-    loginBtn.innerHTML = `<i class="${iconClass}"></i> <span class="login-theme-label">${labelText}</span>`;
-    loginBtn.title = titleText;
+  // 尊重用户减弱动画设置，或浏览器不支持 View Transitions API
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!document.startViewTransition || prefersReduced) {
+    commitTheme();
+    return;
   }
 
+  // 计算动画起点（从触发按钮中心 or 页面中心）
+  let x = window.innerWidth / 2;
+  let y = window.innerHeight / 2;
+  const btn = originEl || $('themeToggleBtn');
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    x = Math.round(rect.left + rect.width / 2);
+    y = Math.round(rect.top + rect.height / 2);
+  }
+  // 圆形半径需覆盖页面最远角
+  const maxRadius = Math.ceil(Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y)
+  ));
+
+  document.documentElement.style.setProperty('--theme-x', `${x}px`);
+  document.documentElement.style.setProperty('--theme-y', `${y}px`);
+  document.documentElement.style.setProperty('--theme-r', `${maxRadius}px`);
+
+  const transition = document.startViewTransition(commitTheme);
+  transition.ready.catch(() => {});  // suppress unhandled rejection if interrupted
 }
 
-function toggleTheme() {
+
+
+function toggleTheme(originEl) {
   let nextPref = 'dark';
   if (state.themePreference === 'dark') {
     nextPref = 'system';
@@ -4912,7 +4934,7 @@ function toggleTheme() {
   } else {
     nextPref = 'dark';
   }
-  applyTheme(nextPref);
+  applyTheme(nextPref, originEl);
 }
 
 function resetMemoSnapshot() {
@@ -11268,7 +11290,7 @@ function initEventListeners() {
   $('themeToggleBtn')?.addEventListener('click', (event) => {
     event.stopPropagation();
     event.preventDefault();
-    toggleTheme();
+    toggleTheme(event.currentTarget);
     $('themeToggleBtn')?.blur();
   });
 
@@ -11278,7 +11300,7 @@ function initEventListeners() {
     const themeToggle = event.target.closest('#loginThemeToggle');
     if (themeToggle) {
       event.stopPropagation();
-      toggleTheme();
+      toggleTheme(themeToggle);
       return;
     }
     const color = event.target.closest('.color-option');
