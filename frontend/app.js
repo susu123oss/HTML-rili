@@ -6444,7 +6444,8 @@ async function ensureYearHolidaysLoaded(year) {
   const urls = [
     `https://fastly.jsdelivr.net/gh/NateScarlet/holiday-cn@master/${yr}.json`,
     `https://gcore.jsdelivr.net/gh/NateScarlet/holiday-cn@master/${yr}.json`,
-    `https://unpkg.com/holiday-cn/${yr}.json`
+    `https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/${yr}.json`,
+    `https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/${yr}.json`
   ];
 
   for (const url of urls) {
