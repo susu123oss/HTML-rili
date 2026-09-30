@@ -6856,10 +6856,10 @@ html[data-theme='dark'] .app-sidebar.collapsed .user-avatar {
 
 /* 主体内容区 (App Body) */
 .app-body {
-  padding: 20px 24px;
+  padding: 10px 18px 14px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
   width: 100%;
   min-width: 0;
   flex: 1;
@@ -6870,7 +6870,13 @@ html[data-theme='dark'] .app-sidebar.collapsed .user-avatar {
 .calendar-container {
   width: 100% !important;
   max-width: 100% !important;
-  margin: 0 0 20px 0 !important;
+  margin: 0 !important;
+}
+.team-leaderboard {
+  padding: 13px 16px !important;
+}
+.leaderboard-header {
+  margin-bottom: 10px !important;
 }
 
 /* 隐藏旧版多余浮动按钮，因侧栏已整合 */
@@ -7815,7 +7821,7 @@ html[data-theme='dark'] .leaderboard-card.rank-3 {
 .leaderboard-toggle-wrap {
   display: flex;
   justify-content: center;
-  margin-top: 14px;
+  margin-top: 8px;
 }
 .leaderboard-toggle-btn {
   display: inline-flex;
