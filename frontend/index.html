@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260930_business_loops_v50" defer></script>
+    <script src="./app.js?v=20260930_history_clear_v52" defer></script>
     <style>
         * {
             margin: 0;
@@ -3916,7 +3916,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_business_loops_v50" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_history_clear_v52" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4329,7 +4329,7 @@
                 <div class="reminder-title">
                     <i class="fas fa-bell"></i> 提醒中心
                 </div>
-                <button class="notif-history-btn" id="notificationHistoryBtn" type="button" title="查看历史消息记录"><i class="fas fa-history"></i> 消息记录</button>
+                <button class="notif-history-btn" id="notificationHistoryBtn" type="button" title="查看历史消息记录"><i class="fas fa-history"></i><span>消息记录</span></button>
                 <button class="close-reminder" id="closeReminderModal" title="关闭" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
             <div class="reminder-body">
@@ -4529,12 +4529,6 @@
                                 </div>
                                 <div class="memo-delivery-review-row" id="memoDeliveryReviewRow" hidden>
                                     <div class="memo-delivery-review-comment" id="memoDeliveryReviewComment"></div>
-                                </div>
-                                <div class="memo-template-chips-bar" id="memoTemplateChipsBar">
-                                    <span class="template-chips-label"><i class="fas fa-magic"></i> 快速模板:</span>
-                                    <button type="button" class="btn-template-chip" data-tpl="dev" title="插入标准研发工作日志模板">⚡ 研发日志</button>
-                                    <button type="button" class="btn-template-chip" data-tpl="meeting" title="插入会议纪要与行动项模板">📝 会议纪要</button>
-                                    <button type="button" class="btn-template-chip" data-tpl="qa" title="插入装配与品质检验模板">🔍 质检/测试</button>
                                 </div>
                             </div>
                             <textarea class="form-control" id="memoContent" placeholder="输入备忘录或工作日志内容，支持Markdown语法..."></textarea>
