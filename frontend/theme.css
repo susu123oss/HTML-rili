@@ -9764,16 +9764,19 @@ html[data-theme='dark'] .memo-delivery-review-comment {
   display: none !important;
 }
 
+html[data-theme] #memoModal #saveMemo.is-interlocked,
+html[data-theme] #memoModal #saveMemo:disabled,
 #saveMemo.is-interlocked {
   background: #94a3b8 !important;
   border-color: #94a3b8 !important;
   color: #f8fafc !important;
   cursor: not-allowed !important;
   box-shadow: none !important;
-  opacity: 0.88 !important;
+  opacity: 0.78 !important;
 }
 
-html[data-theme='dark'] #saveMemo.is-interlocked {
+html[data-theme='dark'] #memoModal #saveMemo.is-interlocked,
+html[data-theme='dark'] #memoModal #saveMemo:disabled {
   background: #334155 !important;
   border-color: #475569 !important;
   color: #94a3b8 !important;

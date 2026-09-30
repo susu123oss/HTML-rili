@@ -6073,7 +6073,7 @@ function remindSelectDeliverable() {
   const remindPill = $('memoDeliveryRemindPill');
   if (remindPill) {
     remindPill.hidden = false;
-    remindPill.textContent = '必选·请下拉选择！';
+    remindPill.textContent = '必选';
   }
   if (panel) {
     panel.classList.remove('is-attention');
@@ -6111,10 +6111,11 @@ function syncMemoCompletedState() {
 
   if (saveBtn && !state.memoSaveBusy) {
     const isInterlocked = Boolean(canEdit && !actualVal);
+    saveBtn.disabled = isInterlocked;
     saveBtn.classList.toggle('is-interlocked', isInterlocked);
     saveBtn.dataset.interlocked = isInterlocked ? 'true' : 'false';
     if (isInterlocked) {
-      saveBtn.title = '请先在工具栏右侧下拉选择「成果交付」状态，未选择不可保存备忘录';
+      saveBtn.title = '请先下拉选择成果交付状态';
       saveBtn.innerHTML = '<i class="fas fa-lock"></i> 请先选成果交付后保存';
     } else {
       saveBtn.title = '保存备忘录';
@@ -7647,8 +7648,6 @@ async function saveMemo() {
 
   if (!actualDeliverable) {
     remindSelectDeliverable();
-    showGlobalToast('🔒 已互锁：请先下拉选择【成果交付】状态，未选择不能提交保存备忘录！', 'error');
-    setOperationFeedback('memoSaveFeedback', '请先在工具栏右侧【成果交付】下拉框选择交付状态后再保存');
     return;
   }
 
@@ -10277,7 +10276,6 @@ function initEventListeners() {
     if (cb?.checked && !actualVal) {
       cb.checked = false;
       remindSelectDeliverable();
-      showGlobalToast('🔒 请先在下方工具栏右侧选择【成果交付】状态后再勾选完成！', 'error');
     }
     syncMemoCompletedState();
   });
