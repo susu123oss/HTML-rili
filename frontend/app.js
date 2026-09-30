@@ -12,6 +12,8 @@ const jobTitles = [
   '储备干部'
 ];
 const savedLoginKey = 'calendarSavedLogin';
+const loginHistoryKey = 'calendarLoginHistoryV1';
+const savedLoginAccountsKey = 'calendarSavedLoginAccountsV1';
 const reminderSettingsKey = 'calendarReminderSettingsV1';
 const reminderFiredKeyPrefix = 'calendarReminderFiredV1';
 
@@ -232,21 +234,141 @@ async function request(path, options = {}) {
 
 function readSavedLogin() {
   try {
-    return JSON.parse(localStorage.getItem(savedLoginKey) || '{}');
+    const saved = JSON.parse(localStorage.getItem(savedLoginKey) || '{}');
+    return saved && typeof saved.username === 'string' && typeof saved.password === 'string' ? saved : {};
   } catch (error) {
     return {};
   }
 }
 
-function updateSavedLogin(username, password) {
-  if ($('serverRememberLogin')?.checked) {
+function readSavedLoginAccounts() {
+  let accounts = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem(savedLoginAccountsKey) || '[]');
+    if (Array.isArray(stored)) accounts = stored;
+  } catch (error) { /* 兼容旧版单账号保存 */ }
+  const legacy = readSavedLogin();
+  if (legacy.username) accounts.push(legacy);
+  const names = new Set();
+  return accounts.filter((account) => {
+    if (!account || typeof account.username !== 'string' || !account.username.trim() || typeof account.password !== 'string' || names.has(account.username)) return false;
+    names.add(account.username);
+    return true;
+  }).map(({username, password}) => ({username, password})).slice(0, 10);
+}
+
+function forgetSavedLoginAccount(username) {
+  const accounts = readSavedLoginAccounts().filter((account) => account.username !== username);
+  localStorage.setItem(savedLoginAccountsKey, JSON.stringify(accounts));
+  if (readSavedLogin().username === username) localStorage.removeItem(savedLoginKey);
+}
+
+function updateSavedLogin(username, password, remember = Boolean($('serverRememberLogin')?.checked)) {
+  const accounts = readSavedLoginAccounts().filter((account) => account.username !== username);
+  if (remember) accounts.unshift({username, password});
+  localStorage.setItem(savedLoginAccountsKey, JSON.stringify(accounts.slice(0, 10)));
+  if (remember) {
     localStorage.setItem(savedLoginKey, JSON.stringify({ username, password }));
     return;
   }
   localStorage.removeItem(savedLoginKey);
 }
 
+function readLoginHistory() {
+  let history = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem(loginHistoryKey) || '[]');
+    if (Array.isArray(stored)) history = stored;
+  } catch (error) { /* 损坏的历史记录不影响登录 */ }
+  const savedUsername = readSavedLogin()?.username;
+  if (typeof savedUsername === 'string') history.push(savedUsername);
+  return [...new Set(history.filter((name) => typeof name === 'string').map((name) => name.trim()).filter(Boolean))].slice(0, 10);
+}
+
+function rememberLoginAccount(username) {
+  const history = [username, ...readLoginHistory().filter((name) => name !== username)].slice(0, 10);
+  try {
+    localStorage.setItem(loginHistoryKey, JSON.stringify(history));
+    const accounts = readSavedLoginAccounts().filter((account) => history.includes(account.username));
+    localStorage.setItem(savedLoginAccountsKey, JSON.stringify(accounts));
+  } catch (error) { /* 存储不可用时仍可登录 */ }
+}
+
+function renderLoginHistory() {
+  const list = $('serverLoginHistoryList');
+  if (!list) return;
+  const history = readLoginHistory();
+  list.innerHTML = history.length ? history.map((name, index) => `
+    <div class="server-history-row">
+      <button type="button" class="server-history-account" data-history-select="${index}" title="${escapeHtml(name)}"><i class="fas fa-user" aria-hidden="true"></i><span>${escapeHtml(name)}</span></button>
+      <button type="button" class="server-history-remove" data-history-remove="${index}" aria-label="删除历史账号 ${escapeHtml(name)}" title="删除这条历史记录"><i class="fas fa-times" aria-hidden="true"></i></button>
+    </div>`).join('') : '<div class="server-history-empty">暂无历史账号，登录成功后自动记录</div>';
+}
+
+function setupLoginHistory() {
+  const dropdown = $('serverLoginHistory');
+  const list = $('serverLoginHistoryList');
+  const toggle = dropdown.querySelector('summary');
+  toggle.addEventListener('click', (event) => {
+    if ($('serverLoginButton').disabled) event.preventDefault();
+    else renderLoginHistory();
+  });
+  list.addEventListener('click', (event) => {
+    const button = event.target.closest('button');
+    if (!button || button.disabled) return;
+    const history = readLoginHistory();
+    if (button.hasAttribute('data-history-select')) {
+      const username = history[Number(button.dataset.historySelect)];
+      if (!username) return;
+      const savedLogin = readSavedLoginAccounts().find((account) => account.username === username);
+      const hasSavedPassword = Boolean(savedLogin);
+      $('serverLoginUser').value = username;
+      $('serverLoginPass').value = hasSavedPassword ? savedLogin.password : '';
+      $('serverRememberLogin').checked = hasSavedPassword;
+      dropdown.open = false;
+      $('serverLoginPass').focus();
+    } else if (button.hasAttribute('data-history-remove')) {
+      const index = Number(button.dataset.historyRemove);
+      const username = history[index];
+      if (!username) return;
+      try {
+        forgetSavedLoginAccount(username);
+        localStorage.setItem(loginHistoryKey, JSON.stringify(history.filter((name) => name !== username)));
+      } catch (error) { return; }
+      if ($('serverLoginUser').value.trim() === username) {
+        $('serverLoginPass').value = '';
+        $('serverRememberLogin').checked = false;
+      }
+      renderLoginHistory();
+      const rows = list.querySelectorAll('.server-history-account');
+      (rows[Math.min(index, rows.length - 1)] || toggle).focus();
+    }
+  });
+  dropdown.addEventListener('keydown', (event) => {
+    if ($('serverLoginButton').disabled) return;
+    if (event.key === 'Escape') {
+      dropdown.open = false;
+      toggle.focus();
+      event.preventDefault();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!dropdown.open) { renderLoginHistory(); dropdown.open = true; }
+      const buttons = [...list.querySelectorAll('.server-history-account')];
+      const index = buttons.indexOf(document.activeElement);
+      const next = event.key === 'ArrowDown' ? (index + 1) % buttons.length : (index <= 0 ? buttons.length - 1 : index - 1);
+      buttons[next]?.focus();
+    }
+  });
+  document.addEventListener('click', (event) => {
+    if (!dropdown.contains(event.target)) dropdown.open = false;
+  });
+  document.addEventListener('focusin', (event) => {
+    if (!dropdown.contains(event.target)) dropdown.open = false;
+  });
+}
+
 function activateAuthPanel(panel) {
+  if ($('serverLoginHistory')) $('serverLoginHistory').open = false;
   const activePanel = panel === 'register' || panel === 'password' ? panel : 'login';
   $('serverLoginPanel')?.classList.toggle('active', activePanel === 'login');
   $('serverRegisterPanel')?.classList.toggle('active', activePanel === 'register');
@@ -369,10 +491,17 @@ function showLoginOverlay(message = '') {
             <!-- 1. 登录面板 -->
             <div class="server-auth-panel active" id="serverLoginPanel">
               <div class="server-form-field">
-                <label>用户名 / 真实姓名</label>
+                <label for="serverLoginUser">用户名 / 真实姓名</label>
                 <div class="server-input-box">
                   <span class="server-input-icon">👤</span>
                   <input id="serverLoginUser" value="${escapeHtml(savedLogin.username || '')}" autocomplete="username" placeholder="请输入您的姓名或工号">
+                  <details id="serverLoginHistory" class="server-login-history">
+                    <summary aria-label="历史登录账号" title="选择历史登录账号"><i class="fas fa-chevron-down" aria-hidden="true"></i></summary>
+                    <div class="server-history-menu" role="group" aria-label="历史登录账号">
+                      <div class="server-history-heading">最近登录</div>
+                      <div id="serverLoginHistoryList"></div>
+                    </div>
+                  </details>
                 </div>
               </div>
 
@@ -477,6 +606,7 @@ function showLoginOverlay(message = '') {
       </div>
     `;
     document.body.appendChild(overlay);
+    setupLoginHistory();
     $('serverLoginButton').addEventListener('click', login);
     $('serverRegisterButton').addEventListener('click', registerAccount);
     $('serverChangePasswordButton').addEventListener('click', changePasswordFromLogin);
@@ -497,6 +627,7 @@ function showLoginOverlay(message = '') {
     $('serverLoginError').style.display = message ? 'block' : 'none';
   }
   overlay.style.display = 'flex';
+  renderLoginHistory();
   const sessionOverlay = $('serverSessionOverlay');
   if (sessionOverlay) {
     sessionOverlay.style.display = 'none';
@@ -505,6 +636,7 @@ function showLoginOverlay(message = '') {
 }
 
 function hideLoginOverlay() {
+  if ($('serverLoginHistory')) $('serverLoginHistory').open = false;
   const overlay = $('serverLoginOverlay');
   if (overlay) overlay.style.display = 'none';
 }
@@ -795,10 +927,58 @@ function renderCustomMonthOptions() {
   });
 }
 
+function renderCustomDeliveryOptions() {
+  const deliveryList = $('customDeliveryList');
+  const deliveryText = $('customDeliveryText');
+  const deliveryBtn = $('customDeliveryBtn');
+  const nativeSelect = $('memoActualDeliverable');
+  if (!deliveryList || !deliveryText || !nativeSelect) return;
+
+  const currentVal = String(nativeSelect.value || '').trim();
+  const options = Array.from(nativeSelect.options).filter((opt) => String(opt.value || '').trim() !== '');
+  const selectedOpt = options.find((opt) => opt.value === currentVal);
+  const displayLabel = selectedOpt ? selectedOpt.textContent.trim() : (currentVal ? `📦 ${currentVal}` : '请选择交付方式');
+
+  deliveryText.textContent = displayLabel;
+  if (deliveryBtn) {
+    deliveryBtn.disabled = Boolean(nativeSelect.disabled);
+    deliveryBtn.title = currentVal ? `当前成果交付：${displayLabel}` : '点击下拉选择成果交付方式';
+  }
+
+  const items = options.map((opt) => {
+    const val = opt.value;
+    const isSelected = val === currentVal;
+    const label = opt.textContent.trim();
+    return `
+      <div class="custom-dropdown-item ${isSelected ? 'selected' : ''}" data-value="${escapeHtml(val)}" role="option" aria-selected="${isSelected}">
+        <div class="item-main">
+          <span class="item-name">${escapeHtml(label)}</span>
+        </div>
+        ${isSelected ? '<i class="fas fa-check item-check"></i>' : ''}
+      </div>
+    `;
+  });
+
+  deliveryList.innerHTML = items.join('');
+
+  deliveryList.querySelectorAll('.custom-dropdown-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (nativeSelect.disabled) return;
+      const val = item.dataset.value || '';
+      nativeSelect.value = val;
+      nativeSelect.dispatchEvent(new Event('change'));
+      renderCustomDeliveryOptions();
+      closeAllCustomDropdowns();
+    });
+  });
+}
+
 function initCustomDropdowns() {
   const dropdownConfigs = [
     { dropdownId: 'customMemberSelect', btnId: 'customMemberBtn', menuId: 'customMemberMenu' },
     { dropdownId: 'customMonthSelect', btnId: 'customMonthBtn', menuId: 'customMonthMenu' },
+    { dropdownId: 'customDeliverySelect', btnId: 'customDeliveryBtn', menuId: 'customDeliveryMenu' },
   ];
 
   dropdownConfigs.forEach(({ dropdownId, btnId, menuId }) => {
@@ -810,9 +990,13 @@ function initCustomDropdowns() {
     btn.dataset.bound = 'true';
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (btn.disabled) return;
       const isExpanded = btn.getAttribute('aria-expanded') === 'true';
       closeAllCustomDropdowns();
       if (!isExpanded) {
+        if (dropdownId === 'customDeliverySelect') {
+          renderCustomDeliveryOptions();
+        }
         menu.hidden = false;
         btn.classList.add('active');
         btn.setAttribute('aria-expanded', 'true');
@@ -832,6 +1016,11 @@ function initCustomDropdowns() {
   $('monthCountSelectorWrap')?.querySelector('label')?.addEventListener('click', (e) => {
     e.preventDefault();
     $('customMonthBtn')?.click();
+  });
+  $('memoDeliveryPanel')?.querySelector('.memo-delivery-bar-label')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    $('customDeliveryBtn')?.click();
   });
 
   if (!document.body.dataset.dropdownOutsideBound) {
@@ -855,6 +1044,7 @@ function initCustomDropdowns() {
 
   renderCustomMemberOptions();
   renderCustomMonthOptions();
+  renderCustomDeliveryOptions();
 }
 
 function injectServerCss() {
@@ -1350,6 +1540,63 @@ function injectServerCss() {
       outline: none;
       box-sizing: border-box;
     }
+
+    #serverLoginUser { min-width: 0; }
+
+    .server-login-history { flex-shrink: 0; }
+    .server-login-history summary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      min-height: 40px;
+      list-style: none;
+      cursor: pointer;
+      color: #64748b;
+      border-left: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 0 9px 9px 0;
+    }
+    .server-login-history summary::-webkit-details-marker { display: none; }
+    .server-login-history summary:hover,
+    .server-login-history summary:focus-visible { color: #6366f1; background: rgba(99, 102, 241, 0.08); }
+    .server-login-history[open] summary i { transform: rotate(180deg); }
+    .server-history-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 20;
+      padding: 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      color: #334155;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .server-history-heading { padding: 4px 8px 6px; font-size: 0.72rem; color: #64748b; }
+    .server-history-row { display: flex; align-items: center; gap: 4px; }
+    .server-history-account, .server-history-remove {
+      display: flex;
+      align-items: center;
+      min-height: 40px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
+    .server-history-account { flex: 1; min-width: 0; gap: 8px; padding: 8px; text-align: left; font-size: 0.85rem; }
+    .server-history-account i { color: #94a3b8; flex-shrink: 0; }
+    .server-history-account span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .server-history-remove { justify-content: center; width: 36px; flex-shrink: 0; color: #94a3b8; }
+    .server-history-account:hover, .server-history-account:focus-visible { background: rgba(99, 102, 241, 0.08); color: #4f46e5; }
+    .server-history-remove:hover, .server-history-remove:focus-visible { background: rgba(239, 68, 68, 0.08); color: #ef4444; }
+    .server-history-empty { padding: 12px 8px; color: #94a3b8; font-size: 0.78rem; }
+    html[data-theme="dark"] .server-history-menu { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+    html[data-theme="dark"] .server-history-account:hover,
+    html[data-theme="dark"] .server-history-account:focus-visible { color: #a5b4fc; background: rgba(129, 140, 248, 0.15); }
 
     .server-eye-btn {
       padding: 0 12px;
@@ -4700,6 +4947,7 @@ function isCurrentSession(sessionVersion) {
 }
 
 function setAuthBusy(busy, message = '') {
+  if (busy && $('serverLoginHistory')) $('serverLoginHistory').open = false;
   document.querySelectorAll('#serverLoginOverlay input, #serverLoginOverlay select, #serverLoginOverlay button').forEach((element) => {
     element.disabled = busy;
   });
@@ -4738,6 +4986,7 @@ async function login() {
     state.token = data.token;
     localStorage.setItem('calendarToken', state.token);
     updateSavedLogin(username, password);
+    rememberLoginAccount(username);
     hideLoginOverlay();
     resetSessionProgress();
     showSessionOverlay('正在加载日历…', { percent: 15 });
@@ -4768,7 +5017,8 @@ async function registerAccount() {
     });
     state.token = data.token;
     localStorage.setItem('calendarToken', state.token);
-    localStorage.setItem(savedLoginKey, JSON.stringify({ username, password }));
+    updateSavedLogin(username, password, true);
+    rememberLoginAccount(username);
     hideLoginOverlay();
     resetSessionProgress();
     showSessionOverlay('正在加载日历…', { percent: 15 });
@@ -4807,12 +5057,15 @@ async function changePasswordFromLogin() {
       body: JSON.stringify({ username, oldPassword, newPassword })
     });
     const savedLogin = readSavedLogin();
-    if (savedLogin.username === username) {
-      localStorage.setItem(savedLoginKey, JSON.stringify({ username, password: newPassword }));
-      if ($('serverRememberLogin')) $('serverRememberLogin').checked = true;
+    const hasSavedPassword = readSavedLoginAccounts().some((account) => account.username === username);
+    if (hasSavedPassword) {
+      const accounts = readSavedLoginAccounts().map((account) => account.username === username ? {username, password: newPassword} : account);
+      localStorage.setItem(savedLoginAccountsKey, JSON.stringify(accounts));
+      if (savedLogin.username === username) localStorage.setItem(savedLoginKey, JSON.stringify({username, password: newPassword}));
     }
+    if ($('serverRememberLogin')) $('serverRememberLogin').checked = hasSavedPassword;
     $('serverLoginUser').value = username;
-    $('serverLoginPass').value = savedLogin.username === username ? newPassword : '';
+    $('serverLoginPass').value = hasSavedPassword ? newPassword : '';
     $('serverOldPassword').value = '';
     $('serverNewPassword').value = '';
     $('serverConfirmPassword').value = '';
@@ -5159,6 +5412,7 @@ function summarizeMemo(memo) {
   const source = String(content ?? summary.contentPreview ?? '');
   return {
     ...summary,
+    ...(content !== undefined ? { content } : {}),
     contentPreview: String(summary.contentPreview ?? source.slice(0, 320)),
     contentLength: Number(summary.contentLength ?? source.length)
   };
@@ -6067,22 +6321,33 @@ function renderColorOptions(activeColor = colors[0], target = 'memo') {
   box.innerHTML = colors.map((color) => `<div class="color-option ${color === activeColor ? 'selected' : ''}" data-color="${color}" data-target="${target}" style="background-color:${color}"></div>`).join('');
 }
 
+let memoDeliveryAttentionTimer = null;
+
 function remindSelectDeliverable() {
   const panel = $('memoDeliveryPanel');
   const selectEl = $('memoActualDeliverable');
-  const remindPill = $('memoDeliveryRemindPill');
-  if (remindPill) {
-    remindPill.hidden = false;
-    remindPill.textContent = '必选';
-  }
+  const customBtn = $('customDeliveryBtn');
+  const customMenu = $('customDeliveryMenu');
   if (panel) {
+    clearTimeout(memoDeliveryAttentionTimer);
     panel.classList.remove('is-attention');
     void panel.offsetWidth;
     panel.classList.add('is-attention');
-    setTimeout(() => panel.classList.remove('is-attention'), 1800);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    memoDeliveryAttentionTimer = setTimeout(() => panel.classList.remove('is-attention'), 1800);
   }
   if (selectEl && !selectEl.disabled) {
-    selectEl.focus();
+    selectEl.setAttribute('aria-invalid', 'true');
+  }
+  if (customBtn && !customBtn.disabled) {
+    renderCustomDeliveryOptions();
+    if (customMenu && customMenu.hidden) {
+      closeAllCustomDropdowns();
+      customMenu.hidden = false;
+      customBtn.classList.add('active');
+      customBtn.setAttribute('aria-expanded', 'true');
+    }
+    customBtn.focus({ preventScroll: true });
   }
 }
 
@@ -6090,7 +6355,6 @@ function syncMemoCompletedState() {
   const checkbox = $('memoCompleted');
   const label = checkbox?.closest('.memo-toggle-chip, .memo-title-completed');
   const selectEl = $('memoActualDeliverable');
-  const remindPill = $('memoDeliveryRemindPill');
   const panel = $('memoDeliveryPanel');
   const saveBtn = $('saveMemo');
   const actualVal = String(selectEl?.value || '').trim();
@@ -6099,28 +6363,18 @@ function syncMemoCompletedState() {
 
   if (panel) {
     panel.classList.toggle('has-value', Boolean(actualVal));
-  }
-  if (remindPill) {
-    if (actualVal) {
-      remindPill.hidden = true;
-    } else {
-      remindPill.hidden = !canEdit;
-      remindPill.textContent = '必选';
+    if (actualVal || !canEdit) {
+      clearTimeout(memoDeliveryAttentionTimer);
+      panel.classList.remove('is-attention');
+      selectEl?.removeAttribute('aria-invalid');
     }
   }
+  renderCustomDeliveryOptions();
 
   if (saveBtn && !state.memoSaveBusy) {
-    const isInterlocked = Boolean(canEdit && !actualVal);
-    saveBtn.disabled = isInterlocked;
-    saveBtn.classList.toggle('is-interlocked', isInterlocked);
-    saveBtn.dataset.interlocked = isInterlocked ? 'true' : 'false';
-    if (isInterlocked) {
-      saveBtn.title = '请先下拉选择成果交付状态';
-      saveBtn.innerHTML = '<i class="fas fa-lock"></i> 请先选成果交付后保存';
-    } else {
-      saveBtn.title = '保存备忘录';
-      saveBtn.innerHTML = '<i class="fas fa-check"></i> 保存备忘录';
-    }
+    saveBtn.disabled = false;
+    saveBtn.title = '保存备忘录';
+    saveBtn.innerHTML = '<i class="fas fa-check"></i> 保存备忘录';
   }
 
   if (label && checkbox) {
@@ -6138,15 +6392,26 @@ function syncMemoCompletedState() {
 
 function updateMemoDeliveryModalUI(memo = null, canEdit = true) {
   const selectEl = $('memoActualDeliverable');
-  const remindPill = $('memoDeliveryRemindPill');
   const statusBadge = $('memoDeliveryStatusBadge');
   const reviewRow = $('memoDeliveryReviewRow');
   const reviewCommentEl = $('memoDeliveryReviewComment');
   const reviewActions = $('memoDeliveryReviewActions');
   const panel = $('memoDeliveryPanel');
 
-  const val = String(memo?.actualDeliverable || '').trim();
+  let rememberedVal = String(memo?.actualDeliverable || '').trim();
+  if (!rememberedVal) {
+    try {
+      if (memo?.id) {
+        rememberedVal = String(localStorage.getItem(`calendarMemoDeliverable_${memo.id}`) || '').trim();
+      } else {
+        rememberedVal = String(localStorage.getItem('calendarDraftDeliverable') || '').trim();
+      }
+    } catch (_) {}
+  }
+  const val = rememberedVal;
+  clearTimeout(memoDeliveryAttentionTimer);
   if (selectEl) {
+    selectEl.removeAttribute('aria-invalid');
     selectEl.querySelectorAll('option[data-custom="true"]').forEach((opt) => opt.remove());
     if (val && !Array.from(selectEl.options).some((opt) => opt.value === val)) {
       const customOpt = document.createElement('option');
@@ -6163,10 +6428,7 @@ function updateMemoDeliveryModalUI(memo = null, canEdit = true) {
     panel.classList.toggle('has-value', Boolean(val));
     panel.classList.remove('is-attention');
   }
-  if (remindPill) {
-    remindPill.hidden = Boolean(val || !canEdit);
-    remindPill.textContent = '必选';
-  }
+  renderCustomDeliveryOptions();
 
   const dStatus = memoDeliveryStatus(memo);
   if (statusBadge) {
@@ -6312,7 +6574,8 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   updateMemoDeliveryModalUI(memo, canEdit);
   if (completedCheckbox) {
     const dStatus = memoDeliveryStatus(memo);
-    completedCheckbox.checked = Boolean(memo?.completed || (!canManageWorkspace() && dStatus === 'submitted'));
+    const currentActualVal = String($('memoActualDeliverable')?.value || '').trim();
+    completedCheckbox.checked = Boolean(memo?.completed || (!canManageWorkspace() && dStatus === 'submitted') || (!memo && currentActualVal));
     completedCheckbox.disabled = !canEdit;
   }
   const weeklyPlanCheckbox = $('memoWeeklyPlan');
@@ -6338,6 +6601,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
 
 function closeMemoModal() {
   if (state.memoSaveBusy) return;
+  closeAllCustomDropdowns();
   hideMemoCalendarPopup();
   hideMemoCalendarDuePopup();
   state.memoDetailRequestVersion += 1;
@@ -6904,7 +7168,7 @@ function initMemoHoverTooltip() {
                        (isLiked ? '<span class="mht-stamp like" title="管理员点赞"><i class="fas fa-thumbs-up"></i> +1</span>' : '');
 
     const ownerHtml = memo.ownerName
-      ? `<span class="mht-owner-tag"><i class="fas fa-user"></i> ${escapeHtml(memo.ownerName)}</span>`
+      ? `<span class="mht-owner-tag" title="${escapeHtml(memo.ownerName)}"><i class="fas fa-user"></i><span class="mht-owner-name">${escapeHtml(memo.ownerName)}</span></span>`
       : '';
     const kindHtml = `<span class="mht-kind-tag ${memo.planKind === 'plan' ? 'is-plan' : 'is-memo'}">${memo.planKind === 'plan' ? '周计划' : '日历备忘'}</span>`;
 
@@ -7015,13 +7279,12 @@ function initMemoHoverTooltip() {
     if (!el || !el.isConnected) return;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return;
-    const ttWidth = 356;
+    const ttWidth = tooltip.offsetWidth;
     const spaceRight = window.innerWidth - rect.right;
     let left = spaceRight >= ttWidth + 14 ? rect.right + 8 : rect.left - ttWidth - 8;
-    if (left < 10) left = 10;
+    left = Math.max(12, Math.min(left, window.innerWidth - ttWidth - 12));
     let top = rect.top - 10;
-    if (top + 250 > window.innerHeight) top = window.innerHeight - 260;
-    if (top < 10) top = 10;
+    top = Math.max(12, Math.min(top, window.innerHeight - tooltip.offsetHeight - 12));
 
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
@@ -7727,6 +7990,15 @@ async function saveMemo() {
     syncMemoCompletedState();
   }
   if (shouldClearQuickDraft && $('quickMemoTitle')) $('quickMemoTitle').value = '';
+  try {
+    const savedId = data?.memo?.id || state.selectedMemoId;
+    if (savedId && actualDeliverable) {
+      localStorage.setItem(`calendarMemoDeliverable_${savedId}`, actualDeliverable);
+    }
+    if (isNewMemo) {
+      localStorage.removeItem('calendarDraftDeliverable');
+    }
+  } catch (_) {}
   closeMemoModal();
   if (!isAdmin && nextDeliveryStatus === 'submitted') {
     showGlobalToast('📦 实际成果已提交，等待管理员确认归档', 'success');
@@ -10279,7 +10551,7 @@ function initEventListeners() {
     }
     syncMemoCompletedState();
   });
-  $('memoActualDeliverable')?.addEventListener('change', () => {
+  $('memoActualDeliverable')?.addEventListener('change', async () => {
     const actualVal = String($('memoActualDeliverable')?.value || '').trim();
     const cb = $('memoCompleted');
     if (actualVal && cb && !cb.checked) {
@@ -10290,6 +10562,60 @@ function initEventListeners() {
     $('memoDeliveryPanel')?.classList.remove('is-attention');
     setOperationFeedback('memoSaveFeedback', '');
     syncMemoCompletedState();
+
+    try {
+      if (state.selectedMemoId) {
+        if (actualVal) {
+          localStorage.setItem(`calendarMemoDeliverable_${state.selectedMemoId}`, actualVal);
+        } else {
+          localStorage.removeItem(`calendarMemoDeliverable_${state.selectedMemoId}`);
+        }
+      } else {
+        if (actualVal) {
+          localStorage.setItem('calendarDraftDeliverable', actualVal);
+        } else {
+          localStorage.removeItem('calendarDraftDeliverable');
+        }
+      }
+      if (actualVal) {
+        localStorage.setItem('calendarLastDeliverable', actualVal);
+      }
+    } catch (_) {}
+
+    if (state.selectedMemoId && actualVal) {
+      const memoId = state.selectedMemoId;
+      const existing = state.memos.find((m) => String(m.id) === String(memoId));
+      if (existing) {
+        existing.actualDeliverable = actualVal;
+      }
+      const weeklyExisting = state.weeklyMemos.find((m) => String(m.id) === String(memoId));
+      if (weeklyExisting) {
+        weeklyExisting.actualDeliverable = actualVal;
+      }
+      const isRoutine = isRoutineDeliverableChoice(actualVal);
+      const isAdmin = canManageWorkspace();
+      const isChecked = Boolean(cb?.checked);
+      const nextCompleted = isAdmin ? isChecked : (isRoutine ? isChecked : false);
+      const nextDeliveryStatus = isAdmin
+        ? (isChecked ? 'confirmed' : (!isRoutine ? 'submitted' : 'in_progress'))
+        : (!isRoutine ? 'submitted' : (isChecked ? 'confirmed' : 'in_progress'));
+      try {
+        const res = await request(`/memos/${memoId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            actualDeliverable: actualVal,
+            completed: nextCompleted,
+            deliveryStatus: nextDeliveryStatus
+          })
+        });
+        if (res?.memo) {
+          syncMemosLocally(res.memo);
+          if (String(state.selectedMemoId) === String(memoId)) {
+            updateMemoDeliveryModalUI(res.memo, !$('memoActualDeliverable')?.disabled);
+          }
+        }
+      } catch (_) {}
+    }
   });
   $('btnModalConfirmDelivery')?.addEventListener('click', async () => {
     if (!state.selectedMemoId) return;

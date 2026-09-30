@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260930_interlock_clean_v35" defer></script>
+    <script src="./app.js?v=20260930_saved_accounts_v40" defer></script>
     <style>
         * {
             margin: 0;
@@ -3920,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_interlock_clean_v35" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_saved_accounts_v40" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4495,14 +4495,13 @@
                                     </div>
                                     <div class="memo-delivery-bar is-inline-toolbar" id="memoDeliveryPanel">
                                         <div class="memo-delivery-bar-main">
-                                            <label class="memo-delivery-bar-label" for="memoActualDeliverable">
+                                            <label class="memo-delivery-bar-label" for="customDeliveryBtn">
                                                 <span class="delivery-label-icon"><i class="fas fa-paper-plane"></i></span>
                                                 <span>成果交付<em class="delivery-required-star">*</em></span>
-                                                <span class="memo-delivery-remind-pill" id="memoDeliveryRemindPill">必选</span>
                                             </label>
                                             <div class="memo-delivery-select-wrap">
-                                                <select class="form-control memo-delivery-select" id="memoActualDeliverable" required>
-                                                    <option value="">▼ 请下拉选择成果交付状态</option>
+                                                <select class="form-control memo-delivery-select" id="memoActualDeliverable" required style="display: none;">
+                                                    <option value="">请选择交付方式</option>
                                                     <option value="已经邮件交付审核">📧 已经邮件交付审核</option>
                                                     <option value="已经微信发送审核">💬 已经微信发送审核</option>
                                                     <option value="已上传共享盘/群文件审核">📂 已上传共享盘 / 群文件审核</option>
@@ -4510,6 +4509,15 @@
                                                     <option value="已当面汇报/现场评审确认">🤝 已当面汇报 / 现场评审确认</option>
                                                     <option value="日常事务（无需交付物）">✔️ 日常事务（无需交付审核）</option>
                                                 </select>
+                                                <div class="custom-dropdown custom-delivery-dropdown" id="customDeliverySelect">
+                                                    <button type="button" class="custom-dropdown-btn custom-delivery-btn" id="customDeliveryBtn" aria-haspopup="listbox" aria-expanded="false">
+                                                        <span class="dropdown-btn-text" id="customDeliveryText">请选择交付方式</span>
+                                                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                                                    </button>
+                                                    <div class="custom-dropdown-menu custom-delivery-menu" id="customDeliveryMenu" role="listbox" hidden>
+                                                        <div class="custom-dropdown-list" id="customDeliveryList"></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <span class="memo-delivery-status-badge" id="memoDeliveryStatusBadge" hidden></span>
                                             <div class="memo-delivery-review-actions" id="memoDeliveryReviewActions" hidden>
