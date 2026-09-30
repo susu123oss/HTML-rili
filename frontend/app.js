@@ -8253,6 +8253,7 @@ function carryOverYesterdayMemos() {
 }
 
 async function autoCarryOverYesterdayMemos(targetDateInput) {
+  if (state.dailyRolloverBusy) return;
   const targetDate = targetDateInput instanceof Date
     ? targetDateInput
     : (targetDateInput ? new Date(targetDateInput + 'T00:00:00') : (state.dailyDetailDate || new Date()));
@@ -8281,7 +8282,7 @@ async function autoCarryOverYesterdayMemos(targetDateInput) {
   const uncompleted = allMemos.filter(m =>
     m.date === prevKey &&
     (!targetUserId || Number(m.ownerId) === targetUserId) &&
-    !m.completed
+    !m.completed && !m.rolloverToId
   );
 
   if (!uncompleted.length) {
@@ -8291,29 +8292,22 @@ async function autoCarryOverYesterdayMemos(targetDateInput) {
 
   const confirmMsg = `检测到昨日 (${prevKey}) 有 ${uncompleted.length} 个未完成事项：\n` +
     uncompleted.map((m, i) => `• ${m.title}`).join('\n') +
-    `\n\n是否立即自动复制并结转至【${targetKey}】日历格子中？`;
+    `\n\n是否顺延至【${targetKey}】？完整正文与交付记录会保留，待验收事项将跳过。`;
   
   if (!confirm(confirmMsg)) return;
-
+  state.dailyRolloverBusy = true;
+  const failures = [];
+  try {
   let successCount = 0;
   for (const m of uncompleted) {
     try {
-      const newTitle = m.title.startsWith('[结转]') ? m.title : `[结转] ${m.title}`;
-      const payload = {
-        ownerId: m.ownerId || targetUserId || state.user?.id,
-        date: targetKey,
-        title: newTitle,
-        content: m.content || m.contentPreview || '',
-        color: m.color || '#4361ee',
-        completed: false,
-        planKind: m.planKind || 'memo',
-        dueTime: `${targetKey} 18:00:00`,
-        expectedDeliverable: m.expectedDeliverable || ''
-      };
-      await request('/memos', { method: 'POST', body: JSON.stringify(payload) });
+      const result = await request(`/memos/${m.id}/rollover`, {
+        method: 'POST', body: JSON.stringify({ targetDate: targetKey, dueTime: rolloverDueTime(m, targetKey), reason: '昨日事项结转' })
+      });
+      syncMemosLocally([result.original, result.memo]);
       successCount++;
     } catch (err) {
-      console.warn('Carryover failed for memo:', m.id, err);
+      failures.push(`${m.title}：${err.message}`);
     }
   }
 
@@ -8324,7 +8318,9 @@ async function autoCarryOverYesterdayMemos(targetDateInput) {
   if (state.dailyDetailDate) {
     loadDailyDetailMemos(state.dailyDetailDate);
   }
-  alert(`✔ 成功将昨日 ${successCount} 个未完成事项自动结转至 ${targetKey} 日历中！`);
+  await loadReminders();
+  alert(`已结转 ${successCount} 项至 ${targetKey}${failures.length ? `；跳过或失败 ${failures.length} 项\n${failures.slice(0, 8).join('\n')}` : ''}`);
+  } finally { state.dailyRolloverBusy = false; }
 }
 
 function handleMemoTemplateChipsClick(event) {

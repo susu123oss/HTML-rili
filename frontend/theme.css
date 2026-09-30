@@ -8511,8 +8511,8 @@ html[data-theme='dark'] .calendar-day .day-memo-item.completed {
 }
 
 html[data-theme='dark'] .calendar-day .day-memo-item.completed .memo-title-text {
-  color: #94a3b8 !important;
-  text-decoration-color: rgba(148, 163, 184, 0.55);
+  color: #64748b !important;
+  text-decoration-color: rgba(100, 116, 139, 0.55);
 }
 
 /* 2. 毛玻璃悬浮详情预览卡 (#memoHoverTooltip) 升级 */
