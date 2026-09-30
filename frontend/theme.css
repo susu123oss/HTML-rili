@@ -8705,56 +8705,6 @@ html[data-theme='dark'] .wp-day-column.is-drag-over {
   opacity: 0.65;
 }
 
-.dashboard-metric-value-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.dashboard-metric-ring {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.dashboard-metric-ring .dm-ring-bg {
-  stroke: rgba(148, 163, 184, 0.2);
-}
-
-.dashboard-metric-ring .dm-ring-fg {
-  transition: stroke-dashoffset 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.dashboard-metric-ring .dm-ring-text {
-  position: absolute;
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.risk-pulse-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ef4444;
-  margin-right: 4px;
-  vertical-align: middle;
-  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-  animation: risk-dot-pulse 1.6s infinite;
-}
-
-@keyframes risk-dot-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.65); }
-  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-}
-
 /* ==========================================================================
    Functions Modal – unified workbench visual language
    ========================================================================== */
@@ -9082,4 +9032,361 @@ html[data-theme] #functionsModal .modal-footer {
   }
 }
 
+/* ==========================================================================
+   R&D Dashboard – 视觉降噪与紧凑化 (Unified Workbench Style)
+   ========================================================================== */
 
+/* 1. 顶部横幅精简：去掉多余装饰与重复小标，压成清爽单行顶栏 */
+html[data-theme] #dashboardPage .dashboard-hero {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  padding: 14px 18px !important;
+  margin-bottom: 14px !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: var(--ui-shell-shadow) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-hero::before,
+html[data-theme] #dashboardPage .dashboard-hero::after,
+html[data-theme] #dashboardPage .dashboard-kicker {
+  display: none !important;
+}
+
+html[data-theme] #dashboardPage #dashboardTitle {
+  margin: 0 0 2px !important;
+  font-size: 1.24rem !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  color: var(--ui-text) !important;
+  text-shadow: none !important;
+}
+
+html[data-theme] #dashboardPage #dashboardSubtitle {
+  margin: 0 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-actions .btn {
+  min-height: 36px !important;
+  padding: 6px 13px !important;
+  border-radius: 8px !important;
+  font-size: 0.82rem !important;
+  box-shadow: none !important;
+}
+
+/* 2. 顶部 6 张指标卡：去掉彩虹粗顶条，平时干净克制，仅逾期/临期高亮警示 */
+html[data-theme] #dashboardPage .dashboard-metrics {
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-metric {
+  padding: 13px 15px !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-metric::before {
+  display: none !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-metric:hover {
+  border-color: var(--ui-border-strong) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+  transform: translateY(-1px) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-metric-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 6px !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-metric-label {
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-metric-icon {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 6px !important;
+  font-size: 0.76rem !important;
+  background: var(--ui-surface-soft) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-metric-value {
+  font-size: 1.68rem !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  margin-bottom: 4px !important;
+  color: var(--ui-text) !important;
+  text-shadow: none !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-metric-sub {
+  font-size: 0.73rem !important;
+  color: var(--ui-text-muted) !important;
+}
+
+/* 已完成：柔和绿字 */
+html[data-theme] #dashboardPage .dashboard-metric.metric-success .dashboard-metric-value {
+  color: #059669 !important;
+}
+html[data-theme='dark'] #dashboardPage .dashboard-metric.metric-success .dashboard-metric-value,
+html.dark #dashboardPage .dashboard-metric.metric-success .dashboard-metric-value {
+  color: #34d399 !important;
+}
+html[data-theme] #dashboardPage .dashboard-metric.metric-success .dashboard-metric-icon {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #059669 !important;
+}
+html[data-theme='dark'] #dashboardPage .dashboard-metric.metric-success .dashboard-metric-icon,
+html.dark #dashboardPage .dashboard-metric.metric-success .dashboard-metric-icon {
+  color: #34d399 !important;
+}
+
+/* 仅当逾期 > 0 (metric-danger) 或临期 > 0 (metric-warning) 时才高亮边框与数字 */
+html[data-theme='light'] #dashboardPage .dashboard-metric.metric-danger,
+html.light #dashboardPage .dashboard-metric.metric-danger {
+  border-color: #fecdd3 !important;
+  background: linear-gradient(180deg, #fff5f5 0%, #ffffff 75%) !important;
+}
+html[data-theme='dark'] #dashboardPage .dashboard-metric.metric-danger,
+html.dark #dashboardPage .dashboard-metric.metric-danger {
+  border-color: rgba(244, 63, 94, 0.4) !important;
+  background: linear-gradient(180deg, rgba(136, 19, 55, 0.24) 0%, rgba(15, 23, 42, 0.9) 75%) !important;
+}
+html[data-theme] #dashboardPage .dashboard-metric.metric-danger .dashboard-metric-value {
+  color: #dc2626 !important;
+}
+html[data-theme='dark'] #dashboardPage .dashboard-metric.metric-danger .dashboard-metric-value,
+html.dark #dashboardPage .dashboard-metric.metric-danger .dashboard-metric-value {
+  color: #fb7185 !important;
+}
+html[data-theme] #dashboardPage .dashboard-metric.metric-danger .dashboard-metric-icon {
+  background: rgba(239, 68, 68, 0.14) !important;
+  color: #dc2626 !important;
+}
+
+html[data-theme='light'] #dashboardPage .dashboard-metric.metric-warning,
+html.light #dashboardPage .dashboard-metric.metric-warning {
+  border-color: #fde68a !important;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 75%) !important;
+}
+html[data-theme='dark'] #dashboardPage .dashboard-metric.metric-warning,
+html.dark #dashboardPage .dashboard-metric.metric-warning {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  background: linear-gradient(180deg, rgba(120, 53, 15, 0.22) 0%, rgba(15, 23, 42, 0.9) 75%) !important;
+}
+html[data-theme] #dashboardPage .dashboard-metric.metric-warning .dashboard-metric-value {
+  color: #d97706 !important;
+}
+html[data-theme='dark'] #dashboardPage .dashboard-metric.metric-warning .dashboard-metric-value,
+html.dark #dashboardPage .dashboard-metric.metric-warning .dashboard-metric-value {
+  color: #fbbf24 !important;
+}
+html[data-theme] #dashboardPage .dashboard-metric.metric-warning .dashboard-metric-icon {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #d97706 !important;
+}
+
+/* 3. 人员负载：分段真实进度条 + 零值胶囊隐藏 + 100% 全达成紧凑双列区 */
+html[data-theme] #dashboardPage .dashboard-card {
+  padding: 16px 18px !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: var(--ui-shell-shadow) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-card-title {
+  margin-bottom: 12px !important;
+  padding-bottom: 10px !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-row {
+  padding: 11px 13px !important;
+  margin-bottom: 8px !important;
+  border-radius: 10px !important;
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-row:hover {
+  background: var(--ui-surface-hover) !important;
+  border-color: var(--ui-border-strong) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-progress {
+  display: flex !important;
+  align-items: stretch !important;
+  height: 6px !important;
+  margin-bottom: 7px !important;
+  border-radius: 999px !important;
+  background: rgba(148, 163, 184, 0.18) !important;
+  overflow: hidden !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-progress-fill.fill-normal {
+  height: 100% !important;
+  width: var(--dashboard-rate, 0%) !important;
+  border-radius: 0 !important;
+  background: linear-gradient(90deg, #0284c7, #10b981) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-progress-overdue {
+  height: 100% !important;
+  background: #ef4444 !important;
+  flex-shrink: 0 !important;
+}
+
+/* 100% 全达成分组标题与紧凑双列网格 */
+html[data-theme] #dashboardPage .dashboard-user-group-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 4px 2px 8px !important;
+  color: var(--ui-text-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-group-header.has-top-gap {
+  margin-top: 12px !important;
+  padding-top: 12px !important;
+  border-top: 1px dashed var(--ui-border) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-group-header span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-group-header i {
+  color: #10b981 !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-group-header small {
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-completed-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-row.is-compact {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 8px 11px !important;
+  margin-bottom: 0 !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-row.is-compact .user-row-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 0.8rem !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-row.is-compact .dashboard-user-name {
+  font-size: 0.85rem !important;
+  margin-bottom: 1px !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-row.is-compact .user-role-tag {
+  font-size: 0.68rem !important;
+  padding: 0 5px !important;
+}
+
+html[data-theme] #dashboardPage .user-row-compact-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+html[data-theme] #dashboardPage .compact-done-count {
+  font-size: 0.73rem !important;
+  color: var(--ui-text-muted) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-user-row.is-compact .dashboard-user-rate {
+  font-size: 0.92rem !important;
+  font-weight: 800 !important;
+}
+
+/* 4. 风险提醒卡片：克制底色 + 干净标签 */
+html[data-theme] #dashboardPage .dashboard-risk-item {
+  padding: 10px 12px !important;
+  margin-bottom: 8px !important;
+  border-radius: 10px !important;
+  background: var(--ui-surface-soft) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-left-width: 3px !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-risk-item.risk-danger {
+  border-left-color: #ef4444 !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-risk-item.risk-warning {
+  border-left-color: #f59e0b !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-risk-item:hover {
+  background: var(--ui-surface-hover) !important;
+  border-color: var(--ui-border-strong) !important;
+}
+
+html[data-theme] #dashboardPage .risk-badge {
+  padding: 2px 7px !important;
+  border-radius: 5px !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-risk-title {
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme] #dashboardPage .dashboard-risk-meta {
+  font-size: 0.75rem !important;
+  color: var(--ui-text-muted) !important;
+}
+
+@media (max-width: 640px) {
+  html[data-theme] #dashboardPage .dashboard-completed-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
