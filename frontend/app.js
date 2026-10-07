@@ -5793,8 +5793,18 @@ function startRealtimeRefresh() {
 }
 
 async function shiftVisibleMonth(delta) {
+  state.calendarStatusFilter = 'all';
   const current = state.currentDate;
   state.currentDate = new Date(current.getFullYear(), current.getMonth() + delta, 1);
+  const periodDisplay = $('currentPeriod');
+  if (periodDisplay) {
+    const months = visibleMonths();
+    const startMonth = months[0];
+    const endMonth = months[months.length - 1];
+    periodDisplay.textContent = state.monthsToShow === 1
+      ? `${startMonth.getFullYear()}年${startMonth.getMonth() + 1}月`
+      : `${startMonth.getFullYear()}年${startMonth.getMonth() + 1}月 - ${endMonth.getFullYear()}年${endMonth.getMonth() + 1}月`;
+  }
   await loadMemos();
 }
 
@@ -11793,6 +11803,7 @@ function initEventListeners() {
     monthSelect.value = String(state.monthsToShow);
     renderCustomMonthOptions();
     monthSelect.addEventListener('change', async (event) => {
+      state.calendarStatusFilter = 'all';
       state.monthsToShow = Number(event.target.value);
       localStorage.setItem('calendarMonthCount', String(state.monthsToShow));
       renderCustomMonthOptions();
@@ -11802,6 +11813,7 @@ function initEventListeners() {
   ['prevMonth', 'calendarPrevMonth'].forEach((id) => $(id)?.addEventListener('click', () => shiftVisibleMonth(-1)));
   ['nextMonth', 'calendarNextMonth'].forEach((id) => $(id)?.addEventListener('click', () => shiftVisibleMonth(1)));
   $('goTodayBtn')?.addEventListener('click', async () => {
+    state.calendarStatusFilter = 'all';
     state.currentDate = new Date();
     await loadMemos();
     const todayEl = document.querySelector('.calendar-day.today');
