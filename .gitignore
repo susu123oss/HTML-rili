@@ -10,3 +10,5 @@ npm-debug.log*
 calendar_db
 scratch/
 scripts/deploy.py
+*.exe
+*.csv

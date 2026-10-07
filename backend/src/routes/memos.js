@@ -137,7 +137,13 @@ const normalizeDueTime = (value) => {
   }
   const text = String(value).trim();
   if (!text) return null;
-  const d = new Date(text);
+  // 无时区标识的本地时间字符串（如 2026-09-30T18:00 或 2026-09-30 18:00:00）
+  // 统一按东八区（+08:00）解析，避免在 UTC 容器中被当作 UTC 时间导致每次保存往后偏移 8 小时到次日
+  const localMatch = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}(?:\.\d+)?))?$/.exec(text);
+  const normalizedText = localMatch
+    ? `${localMatch[1]}T${localMatch[2]}:${localMatch[3] || '00'}+08:00`
+    : text;
+  const d = new Date(normalizedText);
   if (isNaN(d.getTime())) return null;
   // 统一返回 ISO 8601，防止传入非标准格式的字符串穿透到数据库
   return d.toISOString();
@@ -278,57 +284,79 @@ memosRouter.get('/reminders', authRequired, async (req, res, next) => {
   }
 });
 
-// 批量完成任务（管理员可批量完成任意任务，工程师可批量完成无预期交付的日常任务）
+// 所有批量入口共用验收规则：员工只能完成明确选择的日常事务。
 memosRouter.post('/batch-complete', authRequired, async (req, res, next) => {
+  let client;
   try {
     const { memoIds } = req.body || {};
     if (!Array.isArray(memoIds) || !memoIds.length) {
       return res.status(400).json({ message: '请提供要完成的任务ID列表' });
     }
-    const numIds = memoIds.map(Number).filter((id) => Number.isInteger(id) && id > 0);
+    const numIds = [...new Set(memoIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
     if (!numIds.length) {
       return res.status(400).json({ message: '任务ID列表无效' });
     }
 
+    client = await pool.connect();
+    await client.query('BEGIN');
     let result;
     if (req.user.role === 'admin') {
-      result = await query(
+      result = await client.query(
         `
         UPDATE memos
         SET completed = TRUE,
             delivery_status = 'confirmed',
-            confirmed_at = COALESCE(confirmed_at, NOW()),
+            confirmed_at = NOW(),
+            is_reviewed = TRUE,
             updated_at = NOW()
         WHERE id = ANY($1::int[]) AND completed = FALSE AND rollover_to_id IS NULL
+          AND BTRIM(COALESCE(actual_deliverable, '')) <> ''
         RETURNING id
         `,
         [numIds]
       );
     } else {
-      result = await query(
+      result = await client.query(
         `
         UPDATE memos
         SET completed = TRUE,
             delivery_status = 'confirmed',
+            confirmed_at = NOW(),
             updated_at = NOW()
         WHERE id = ANY($1::int[])
           AND owner_id = $2
           AND completed = FALSE
           AND rollover_to_id IS NULL
           AND BTRIM(COALESCE(expected_deliverable, '')) = ''
+          AND actual_deliverable = '日常事务（无需交付物）'
+          AND delivery_status NOT IN ('submitted', 'returned')
         RETURNING id
         `,
         [numIds, req.user.id]
       );
     }
-
+    const updatedIds = result.rows.map((r) => r.id);
+    if (req.user.role === 'admin' && updatedIds.length) {
+      await client.query(
+        `INSERT INTO notifications(user_id, memo_id, type, title, content, sender_id, sender_name)
+         SELECT owner_id, id, 'confirm', '✓ 交付成果已确认',
+                '管理员已确认您的工作事项【' || title || '】交付成果', $2, $3
+         FROM memos WHERE id = ANY($1::int[]) AND owner_id <> $2`,
+        [updatedIds, req.user.id, req.user.displayName || req.user.username || '系统管理员']
+      );
+    }
+    await client.query('COMMIT');
     return res.json({
       ok: true,
       count: result.rowCount,
-      updatedIds: result.rows.map((r) => r.id)
+      updatedIds,
+      skippedIds: numIds.filter((id) => !updatedIds.includes(id))
     });
   } catch (error) {
+    if (client) await client.query('ROLLBACK');
     return next(error);
+  } finally {
+    client?.release();
   }
 });
 
@@ -481,7 +509,8 @@ memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
   try {
     const memoRes = await query(
       `SELECT id, owner_id AS "ownerId", title, is_reviewed AS "isReviewed", is_liked AS "isLiked",
-              actual_deliverable AS "actualDeliverable", review_comment AS "reviewComment"
+              actual_deliverable AS "actualDeliverable", review_comment AS "reviewComment",
+              rollover_to_id AS "rolloverToId"
        FROM memos WHERE id = $1`,
       [memoId]
     );
@@ -489,6 +518,12 @@ memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
       return res.status(404).json({ message: '事项不存在' });
     }
     const memo = memoRes.rows[0];
+    if (['confirm-delivery', 'return-delivery'].includes(action) && memo.rolloverToId) {
+      return res.status(409).json({ message: '该事项已经顺延，请在后继事项中验收' });
+    }
+    if (action === 'confirm-delivery' && !String(memo.actualDeliverable || '').trim()) {
+      return res.status(400).json({ message: '请先选择成果交付状态，再确认成果' });
+    }
     const senderName = req.user.displayName || req.user.username || '系统管理员';
 
     let newReviewed = memo.isReviewed;
@@ -614,7 +649,9 @@ memosRouter.post('/:id/rollover', authRequired, async (req, res, next) => {
       `SELECT id, owner_id AS "ownerId", to_char(date, 'YYYY-MM-DD') AS date,
               title, content, color, completed, plan_kind AS "planKind",
               rollover_to_id AS "rolloverToId",
-              expected_deliverable AS "expectedDeliverable"
+              expected_deliverable AS "expectedDeliverable",
+              actual_deliverable AS "actualDeliverable", delivery_status AS "deliveryStatus",
+              review_comment AS "reviewComment"
        FROM memos WHERE id = $1 FOR UPDATE`,
       [memoId]
     );
@@ -627,15 +664,26 @@ memosRouter.post('/:id/rollover', authRequired, async (req, res, next) => {
       await client.query('ROLLBACK');
       return res.status(403).json({ message: '没有顺延该计划的权限' });
     }
-    if (source.planKind !== 'plan' || source.completed || source.rolloverToId || targetDate <= source.date) {
+    if (source.rolloverToId) {
       await client.query('ROLLBACK');
-      return res.status(409).json({ message: '只能将尚未完成且未顺延的计划移至更晚日期' });
+      return res.status(409).json({ message: '该事项已经顺延，请打开后继事项继续处理' });
+    }
+    if (source.deliveryStatus === 'submitted') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: '成果正在等待管理员验收，请先处理本次提交再顺延' });
+    }
+    if (source.completed || targetDate <= source.date) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: '只能将尚未完成且未顺延的事项移至更晚日期' });
     }
     const inserted = await client.query(
       `INSERT INTO memos(owner_id, date, title, content, color, completed, due_time,
-                         plan_kind, rollover_from_id, rollover_reason, expected_deliverable, delivery_status)
-       VALUES($1, $2, $3, $4, $5, FALSE, $6, 'plan', $7, $8, $9, 'in_progress') RETURNING id`,
-      [source.ownerId, targetDate, source.title, source.content, source.color, targetDueTime, memoId, reason, source.expectedDeliverable || '']
+                         plan_kind, rollover_from_id, rollover_reason, expected_deliverable,
+                         actual_deliverable, delivery_status, review_comment)
+       VALUES($1, $2, $3, $4, $5, FALSE, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+      [source.ownerId, targetDate, source.title, source.content, source.color, targetDueTime,
+        source.planKind || 'memo', memoId, reason, source.expectedDeliverable || '',
+        source.actualDeliverable || '', source.deliveryStatus === 'returned' ? 'returned' : 'in_progress', source.reviewComment || '']
     );
     await client.query(
       'UPDATE memos SET rollover_to_id = $2, updated_at = NOW() WHERE id = $1',
@@ -798,7 +846,7 @@ async function handleUpdateMemo(req, res, next) {
       `
       SELECT memos.id, memos.owner_id AS "ownerId", users.display_name AS "ownerName",
              users.department_id AS "departmentId",
-             memos.title, memos.completed,
+             memos.title, memos.completed, memos.plan_kind AS "planKind",
              memos.due_time AS "dueTime", to_char(memos.date, 'YYYY-MM-DD') AS date,
              memos.rollover_to_id AS "rolloverToId", memos.rollover_from_id AS "rolloverFromId",
              memos.expected_deliverable AS "expectedDeliverable",
@@ -841,7 +889,7 @@ async function handleUpdateMemo(req, res, next) {
     if (planKind !== undefined && !['memo', 'plan'].includes(planKind)) {
       return res.status(400).json({ message: '事项类型无效' });
     }
-    if (memo.rolloverFromId && planKind === 'memo') {
+    if (memo.rolloverFromId && memo.planKind === 'plan' && planKind === 'memo') {
       return res.status(409).json({ message: '顺延事项必须保留计划类型' });
     }
     const hasDueTime = Object.prototype.hasOwnProperty.call(req.body || {}, 'dueTime');

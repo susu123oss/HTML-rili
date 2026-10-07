@@ -8,10 +8,13 @@ import { memosRouter } from './routes/memos.js';
 import { exportsRouter } from './routes/exports.js';
 import { opsRouter } from './routes/ops.js';
 import { notificationsRouter } from './routes/notifications.js';
+import { backupsRouter } from './routes/backups.js';
+import { avatarsRouter, profileAvatarRouter } from './routes/avatars.js';
 
 const app = express();
 
 app.use(cors({ origin: config.corsOrigin === '*' ? true : config.corsOrigin }));
+app.use('/api/backups', express.json({ limit: '20mb' }), backupsRouter);
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (req, res) => {
@@ -19,6 +22,8 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/users/me/avatar', profileAvatarRouter);
+app.use('/api/avatars', avatarsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/memos', memosRouter);
 app.use('/api/exports', exportsRouter);

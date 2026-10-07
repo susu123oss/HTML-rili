@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
 import { query } from '../db/pool.js';
 import { authRequired } from '../middleware/auth.js';
+import { toPublicUser } from '../services/user-profile.js';
 
 export const authRouter = express.Router();
 
@@ -16,16 +17,6 @@ const jobTitles = [
   '技术员',
   '储备干部'
 ];
-
-const toPublicUser = (user) => ({
-  id: user.id,
-  username: user.username,
-  displayName: user.displayName,
-  role: user.role,
-  jobTitle: user.jobTitle,
-  departmentId: user.departmentId,
-  departmentName: user.departmentName
-});
 
 authRouter.post('/register', async (req, res) => {
   const { username, password, displayName, jobTitle } = req.body || {};
@@ -89,7 +80,8 @@ authRouter.post('/login', async (req, res) => {
     `
     SELECT users.id, users.username, users.password_hash AS "passwordHash",
            users.display_name AS "displayName", users.role, users.job_title AS "jobTitle",
-           users.department_id AS "departmentId", departments.name AS "departmentName"
+           users.department_id AS "departmentId", departments.name AS "departmentName",
+           users.avatar_key AS "avatarKey"
     FROM users
     JOIN departments ON departments.id = users.department_id
     WHERE users.username = $1

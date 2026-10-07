@@ -3,6 +3,7 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
+      TZ: Asia/Shanghai
       POSTGRES_DB: calendar
       POSTGRES_USER: calendar
       POSTGRES_PASSWORD: calendar_pass
@@ -19,6 +20,7 @@ services:
       context: ./backend
     restart: unless-stopped
     environment:
+      TZ: Asia/Shanghai
       PORT: 3000
       DATABASE_URL: postgres://calendar:calendar_pass@db:5432/calendar
       JWT_SECRET: "请上线前修改这个密钥"

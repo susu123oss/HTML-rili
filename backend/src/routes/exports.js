@@ -1,8 +1,34 @@
 import express from 'express';
 import { query } from '../db/pool.js';
 import { authRequired } from '../middleware/auth.js';
+import { buildWeeklyReport, parseReportWeek } from '../services/weekly-report.js';
 
 export const exportsRouter = express.Router();
+
+exportsRouter.get('/weekly-report', authRequired, async (req, res, next) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ message: '仅管理员可导出全员周报' });
+  const weekStart = String(req.query.weekStart || '');
+  const days = parseReportWeek(weekStart);
+  if (!days) return res.status(400).json({ message: '周开始日期必须是有效的周一日期' });
+  try {
+    const usersResult = await query(`SELECT users.id, users.username, users.display_name AS "displayName",
+      users.job_title AS "jobTitle", departments.name AS "departmentName"
+      FROM users JOIN departments ON departments.id = users.department_id
+      ORDER BY departments.name, users.display_name, users.id`);
+    const memosResult = await query(`SELECT id, owner_id AS "ownerId", to_char(date, 'YYYY-MM-DD') AS date,
+      title, content, completed, plan_kind AS "planKind", rollover_to_id AS "rolloverToId",
+      expected_deliverable AS "expectedDeliverable", actual_deliverable AS "actualDeliverable",
+      delivery_status AS "deliveryStatus", review_comment AS "reviewComment"
+      FROM memos WHERE date >= $1::date AND date < $2::date ORDER BY owner_id, date, id`, [days[0], days[14]]);
+    const summariesResult = await query(`SELECT owner_id AS "ownerId", to_char(week_start, 'YYYY-MM-DD') AS "weekStart",
+      goals, deliverables, actual, risks FROM weekly_summaries
+      WHERE week_start = ANY($1::date[])`, [[days[0], days[7]]]);
+    const data = buildWeeklyReport({ weekStart, users: usersResult.rows, memos: memosResult.rows, summaries: summariesResult.rows });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`全员周报-${weekStart}.xlsx`)}`);
+    return res.send(data);
+  } catch (error) { return next(error); }
+});
 
 const pad = (value) => String(value).padStart(2, '0');
 const monthPattern = /^(\d{4})-(\d{2})$/;
@@ -85,7 +111,7 @@ const dateKey = (year, month, day) => `${year}-${pad(month)}-${pad(day)}`;
 
 const memoExportText = (memo) => {
   const status = memo.completed ? '✓' : '○';
-  const time = memo.dueTime ? ` · 截止 ${new Date(memo.dueTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}` : '';
+  const time = memo.dueTime ? ` · 截止 ${new Date(memo.dueTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' })}` : '';
   const detail = String(memo.content || '').trim();
   const titleLine = `${status} 任务：${memo.title}${time}`;
   return detail ? `${titleLine}\n  内容：${detail}` : titleLine;

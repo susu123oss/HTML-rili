@@ -1,0 +1,25 @@
+html[data-theme] :is(.user-avatar, .item-avatar, .user-row-avatar, .wp-team-avatar, .avatar-profile-preview) { overflow: hidden; }
+html[data-theme] :is(.user-avatar, .item-avatar, .user-row-avatar, .wp-team-avatar, .avatar-profile-preview) img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+html[data-theme] button.user-avatar { padding: 0; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+html[data-theme] button.user-avatar:hover { box-shadow: 0 0 0 3px var(--ui-accent-soft); }
+html[data-theme] button.user-avatar:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+html[data-theme] #avatarProfileModal { z-index: 2400; padding: 20px; }
+html[data-theme] #avatarProfileModal > .modal-content { width: min(440px, 100%); max-width: 440px; max-height: calc(100dvh - 40px); border-radius: 16px; background: var(--ui-surface); border: 1px solid var(--ui-border); color: var(--ui-text); overflow: auto; }
+html[data-theme] #avatarProfileModal .modal-header { padding: 18px 20px; background: var(--ui-surface); color: var(--ui-text); border-bottom: 1px solid var(--ui-border); }
+html[data-theme] #avatarProfileModal .modal-title { color: var(--ui-text); font-size: 16px; }
+html[data-theme] #avatarProfileModal .modal-title i { color: var(--ui-accent); }
+html[data-theme] #avatarProfileModal .close-modal { color: var(--ui-text-muted); font-size: 22px; }
+html[data-theme] #avatarProfileModal .avatar-profile-body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 20px 20px; }
+html[data-theme] #avatarProfileModal .avatar-profile-preview { display: grid; place-items: center; flex: 0 0 auto; width: 112px; height: 112px; border-radius: 50%; background: var(--ui-accent-soft); color: var(--ui-accent); font-size: 36px; font-weight: 700; }
+html[data-theme] #avatarProfileModal .avatar-profile-help { color: var(--ui-text-muted); font-size: 12px; margin: -5px 0 0; }
+html[data-theme] #avatarProfileModal #avatarProfileFeedback { width: 100%; min-height: 36px; color: var(--ui-text-muted); font-size: 12px; text-align: center; line-height: 1.7; }
+html[data-theme] #avatarProfileModal #avatarProfileFeedback.is-error { color: #dc3545; }
+html[data-theme] #avatarProfileModal .avatar-profile-footer { display: flex; justify-content: space-between; gap: 10px; padding: 16px 20px; background: var(--ui-surface); border-top: 1px solid var(--ui-border); }
+html[data-theme] #avatarProfileModal .avatar-profile-footer > div { display: flex; gap: 8px; }
+html[data-theme] #avatarProfileModal button:disabled { cursor: default; opacity: .55; }
+@media (max-width: 480px) {
+  html[data-theme] #avatarProfileModal { padding: 12px; }
+  html[data-theme] #avatarProfileModal > .modal-content { max-height: calc(100dvh - 24px); }
+  html[data-theme] #avatarProfileModal .avatar-profile-footer { padding: 14px; gap: 7px; }
+  html[data-theme] #avatarProfileModal .avatar-profile-footer .btn { padding: 9px 10px; font-size: 12px; }
+}

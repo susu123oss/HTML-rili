@@ -2,6 +2,8 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../db/pool.js';
 import { authRequired } from '../middleware/auth.js';
+import { toPublicUser } from '../services/user-profile.js';
+import { removeUnreferencedAvatar } from '../services/avatar.js';
 
 export const usersRouter = express.Router();
 
@@ -27,14 +29,15 @@ usersRouter.get('/', authRequired, async (req, res) => {
   const result = await query(
     `
     SELECT users.id, users.username, users.display_name AS "displayName", users.role,
-           users.job_title AS "jobTitle", users.department_id AS "departmentId", departments.name AS "departmentName"
+           users.job_title AS "jobTitle", users.department_id AS "departmentId", departments.name AS "departmentName",
+           users.avatar_key AS "avatarKey"
     FROM users
     JOIN departments ON departments.id = users.department_id
     ORDER BY users.role, users.display_name
     `
   );
 
-  return res.json({ users: result.rows });
+  return res.json({ users: result.rows.map(toPublicUser) });
 });
 
 usersRouter.patch('/:id', authRequired, async (req, res) => {
@@ -126,7 +129,7 @@ usersRouter.delete('/:id', authRequired, async (req, res) => {
 
   const result = await query(
     `
-    SELECT id, username, role, department_id AS "departmentId"
+    SELECT id, username, role, department_id AS "departmentId", avatar_key AS "avatarKey"
     FROM users
     WHERE id = $1
     `,
@@ -142,6 +145,7 @@ usersRouter.delete('/:id', authRequired, async (req, res) => {
     return res.status(400).json({ message: '不能删除系统管理员' });
   }
 
-  await query('DELETE FROM users WHERE id = $1', [targetId]);
+  const deleted = await query('DELETE FROM users WHERE id = $1 RETURNING avatar_key AS "avatarKey"', [targetId]);
+  await removeUnreferencedAvatar(deleted.rows[0]?.avatarKey);
   return res.json({ ok: true });
 });

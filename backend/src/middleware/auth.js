@@ -15,7 +15,8 @@ export async function authRequired(req, res, next) {
     const result = await query(
       `
       SELECT users.id, users.username, users.display_name AS "displayName", users.role,
-             users.job_title AS "jobTitle", users.department_id AS "departmentId", departments.name AS "departmentName"
+             users.job_title AS "jobTitle", users.department_id AS "departmentId", departments.name AS "departmentName",
+             users.avatar_key AS "avatarKey"
       FROM users
       JOIN departments ON departments.id = users.department_id
       WHERE users.id = $1

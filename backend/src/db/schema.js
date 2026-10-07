@@ -82,14 +82,15 @@ export async function initDatabase() {
 
   await query(`
     ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS job_title TEXT NOT NULL DEFAULT '技术员'
+    ADD COLUMN IF NOT EXISTS job_title TEXT NOT NULL DEFAULT '技术员',
+    ADD COLUMN IF NOT EXISTS avatar_key TEXT NOT NULL DEFAULT ''
   `);
 
   await query(`
     CREATE TABLE IF NOT EXISTS notifications (
       id SERIAL PRIMARY KEY,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      memo_id INTEGER REFERENCES memos(id) ON DELETE CASCADE,
+      memo_id INTEGER REFERENCES memos(id) ON DELETE SET NULL,
       type TEXT NOT NULL DEFAULT 'urge',
       title TEXT NOT NULL,
       content TEXT NOT NULL DEFAULT '',
@@ -99,6 +100,26 @@ export async function initDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+
+  await query('ALTER TABLE notifications ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ');
+
+  // Keep the message text available even when its related task was removed.
+  await query(`
+    DO $$ DECLARE fk RECORD; BEGIN
+      FOR fk IN SELECT conname FROM pg_constraint
+        WHERE conrelid = 'notifications'::regclass AND confrelid = 'memos'::regclass AND contype = 'f' AND confdeltype <> 'n'
+      LOOP
+        EXECUTE format('ALTER TABLE notifications DROP CONSTRAINT %I', fk.conname);
+        ALTER TABLE notifications ADD CONSTRAINT notifications_memo_id_fkey
+          FOREIGN KEY (memo_id) REFERENCES memos(id) ON DELETE SET NULL;
+      END LOOP;
+    END $$
+  `);
+  await query(`CREATE TABLE IF NOT EXISTS memo_backup_imports (
+    backup_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, imported_ids JSONB NOT NULL,
+    imported_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
 
   await query('CREATE INDEX IF NOT EXISTS idx_memos_owner_date ON memos(owner_id, date)');
   await query('CREATE INDEX IF NOT EXISTS idx_memos_date ON memos(date)');

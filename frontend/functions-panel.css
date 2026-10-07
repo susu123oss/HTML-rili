@@ -1,0 +1,424 @@
+/* Workspace tools share the calendar's surfaces, typography and blue accent. */
+html[data-theme] #functionsModal.function-workspace {
+  padding: 24px !important;
+  align-items: center !important;
+  overflow: hidden !important;
+}
+html[data-theme] #functionsModal.function-workspace > .modal-content {
+  width: min(1000px, 100%) !important;
+  max-width: 1000px !important;
+  height: min(720px, calc(100dvh - 48px)) !important;
+  max-height: calc(100dvh - 48px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 16px !important;
+  background: var(--ui-surface) !important;
+}
+html[data-theme] #functionsModal.function-workspace .modal-header {
+  flex: 0 0 auto;
+  padding: 14px 20px !important;
+  min-height: 58px;
+  background: var(--ui-surface) !important;
+}
+html[data-theme] #functionsModal.function-workspace .fn-workspace-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  display: grid !important;
+  grid-template-columns: 176px minmax(0, 1fr);
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+html[data-theme] #functionsModal.function-workspace [hidden] { display: none !important; }
+html[data-theme] #functionsModal.function-workspace .fn-workspace-nav {
+  padding: 22px 12px;
+  border-right: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  overflow-y: auto;
+}
+html[data-theme] #functionsModal.function-workspace .fn-nav-caption {
+  padding: 0 12px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  letter-spacing: .06em;
+}
+html[data-theme] #functionsModal.function-workspace .tabs {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+html[data-theme] #functionsModal.function-workspace .tabs .tab {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 62px !important;
+  padding: 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  color: var(--ui-text-muted) !important;
+  box-shadow: none !important;
+  text-align: left !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  transition: background .18s, color .18s;
+}
+html[data-theme] #functionsModal.function-workspace .tabs .tab::after { display: none !important; }
+html[data-theme] #functionsModal.function-workspace .tabs .tab:hover { background: var(--ui-surface) !important; }
+html[data-theme] #functionsModal.function-workspace .tabs .tab.active {
+  color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+  border-color: transparent !important;
+}
+html[data-theme] #functionsModal.function-workspace .tab .tabler-icon { flex: 0 0 18px; margin-top: 1px; }
+html[data-theme] #functionsModal.function-workspace .tabs .tab > span { color: inherit !important; transition: none !important; }
+html[data-theme] #functionsModal.function-workspace .tab small {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  margin-top: 5px;
+  color: var(--ui-text-muted);
+}
+html[data-theme] #functionsModal.function-workspace .fn-nav-tip {
+  padding: 18px 12px 0;
+  margin: 20px 0 0;
+  border-top: 1px solid var(--ui-border);
+  color: var(--ui-text-muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+html[data-theme] #functionsModal.function-workspace .fn-workspace-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+html[data-theme] #functionsModal.function-workspace .fn-mobile-nav { display: none; }
+html[data-theme] #functionsModal.function-workspace .fn-workspace-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 24px 26px 18px;
+}
+html[data-theme] #functionsModal.function-workspace .fn-workspace-heading h2 {
+  margin: 0 0 7px;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--ui-text);
+  line-height: 1.3;
+}
+html[data-theme] #functionsModal.function-workspace .fn-workspace-heading p {
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+html[data-theme] #functionsModal.function-workspace .fn-context-badge {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--ui-surface-soft);
+  color: var(--ui-text-muted);
+  font-size: 11px;
+}
+html[data-theme] #functionsModal.function-workspace .fn-workspace-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 2px 26px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+html[data-theme] #functionsModal.function-workspace .tab-content.active {
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  animation: none !important;
+}
+html[data-theme] #functionsModal.function-workspace .form-group { margin-bottom: 20px !important; }
+html[data-theme] #functionsModal.function-workspace :is(.form-control, .user-edit-grid select, .user-edit-grid input) {
+  min-width: 0 !important;
+  min-height: 40px !important;
+  height: auto;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  color: var(--ui-text) !important;
+  background-color: var(--ui-surface) !important;
+}
+html[data-theme] #functionsModal.function-workspace :is(select.form-control, .user-edit-grid select) {
+  padding-right: 34px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 14px !important;
+  appearance: none;
+}
+html[data-theme] #functionsModal.function-workspace :is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+html[data-theme] #functionsModal.function-workspace .fn-workspace-actions {
+  flex: 0 0 auto;
+  padding: 14px 26px;
+  border-top: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+html[data-theme] #functionsModal.function-workspace .fn-footer-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+html[data-theme] #functionsModal.function-workspace .fn-footer-copy {
+  min-width: 0;
+  color: var(--ui-text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+html[data-theme] #functionsModal.function-workspace .fn-footer-buttons { display: flex; gap: 8px; flex-shrink: 0; }
+html[data-theme] #functionsModal.function-workspace .fn-workspace-actions .btn {
+  flex-shrink: 0;
+  min-height: 40px !important;
+  height: auto !important;
+  border-radius: 8px !important;
+  padding: 9px 16px !important;
+  font-size: 13px !important;
+  min-width: 0 !important;
+  white-space: nowrap;
+}
+html[data-theme] #functionsModal.function-workspace #taskPublishFeedback {
+  margin: 4px 0 0;
+  max-height: 80px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+/* Task publishing: clear fields and a single row of category colors. */
+html[data-theme] #functionsModal.function-workspace .fn-publish-meta-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  padding: 0 !important;
+  margin-bottom: 20px !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+html[data-theme] #functionsModal.function-workspace .fn-publish-meta-grid .memo-meta-col:last-child { grid-column: 1 / -1; }
+html[data-theme] #functionsModal.function-workspace #taskColorOptions {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 9px !important;
+  width: auto !important;
+  padding: 4px 2px !important;
+  max-width: 100%;
+}
+html[data-theme] #functionsModal.function-workspace #taskColorOptions .color-option {
+  flex: 0 0 24px !important;
+  width: 24px !important;
+  height: 24px !important;
+  margin: 0 !important;
+}
+html[data-theme] #functionsModal.function-workspace .task-assignee-panel {
+  padding: 12px !important;
+  background: var(--ui-surface) !important;
+}
+html[data-theme] #functionsModal.function-workspace .task-assignee-tags { max-height: 170px; overflow-y: auto; }
+html[data-theme] #functionsModal.function-workspace #taskDescription { min-height: 130px !important; resize: vertical; }
+/* Reminder settings: simple sections and native, keyboard-operable switches. */
+html[data-theme] #functionsModal.function-workspace .fn-settings-section { margin-bottom: 24px; }
+html[data-theme] #functionsModal.function-workspace :is(.fn-settings-section h3, .fn-stats-heading h3) {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ui-text);
+}
+html[data-theme] #functionsModal.function-workspace .fn-settings-grid { gap: 20px !important; margin: 0 !important; }
+html[data-theme] #functionsModal.function-workspace .fn-field-card {
+  padding: 0 !important;
+  gap: 8px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+html[data-theme] #functionsModal.function-workspace .fn-field-hint { font-size: 11px !important; line-height: 1.6; }
+html[data-theme] #functionsModal.function-workspace .fn-switch-grid {
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+html[data-theme] #functionsModal.function-workspace .fn-switch-card,
+html[data-theme] #functionsModal.function-workspace .fn-switch-card:has(input:checked) {
+  gap: 12px !important;
+  padding: 16px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--ui-surface) !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+html[data-theme] #functionsModal.function-workspace .fn-switch-card + .fn-switch-card { border-top: 1px solid var(--ui-border) !important; }
+html[data-theme] #functionsModal.function-workspace .fn-switch-icon {
+  width: 32px !important;
+  height: 32px !important;
+  flex: 0 0 32px !important;
+  border-radius: 8px !important;
+  background: var(--ui-surface-soft) !important;
+  color: var(--ui-text-muted) !important;
+  font-size: 15px !important;
+}
+html[data-theme] #functionsModal.function-workspace .fn-switch-info { min-width: 0; flex: 1; }
+html[data-theme] #functionsModal.function-workspace .fn-switch-info strong { font-size: 13px !important; }
+html[data-theme] #functionsModal.function-workspace .fn-switch-info span { font-size: 11px !important; line-height: 1.6 !important; }
+html[data-theme] #functionsModal.function-workspace .fn-switch-card input[type=checkbox] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  flex: 0 0 38px !important;
+  width: 38px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: #94a3b8 !important;
+  position: relative;
+  cursor: pointer;
+  transition: background .18s;
+}
+html[data-theme] #functionsModal.function-workspace .fn-switch-card input[type=checkbox]::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px #0002;
+  transition: transform .18s;
+}
+html[data-theme] #functionsModal.function-workspace .fn-switch-card input:checked { background: var(--ui-accent) !important; }
+html[data-theme] #functionsModal.function-workspace .fn-switch-card input:checked::before { transform: translateX(16px); }
+html[data-theme] #functionsModal.function-workspace :is(.fn-reminder-help, .fn-backup-section) {
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  padding: 0 14px;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  background: var(--ui-surface-soft);
+}
+html[data-theme] #functionsModal.function-workspace summary { padding: 13px 0; cursor: pointer; color: var(--ui-text); }
+html[data-theme] #functionsModal.function-workspace summary i { margin: 0 5px; color: var(--ui-text-muted); }
+html[data-theme] #functionsModal.function-workspace .fn-reminder-help ul { margin: 0 0 14px; padding-left: 18px; line-height: 1.8; }
+html[data-theme] #functionsModal.function-workspace .fn-reminder-help li + li { margin-top: 6px; }
+/* Reports, backup and member maintenance. */
+html[data-theme] #functionsModal.function-workspace .fn-stats-banner {
+  padding: 0 !important;
+  margin-bottom: 24px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+html[data-theme] #functionsModal.function-workspace .fn-stats-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+html[data-theme] #functionsModal.function-workspace .fn-stats-heading h3 { margin: 0; }
+html[data-theme] #functionsModal.function-workspace .fn-stats-heading .btn { padding: 4px 8px !important; min-height: 30px !important; font-size: 11px !important; }
+html[data-theme] #functionsModal.function-workspace .fn-stats-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 8px !important; }
+html[data-theme] #functionsModal.function-workspace .fn-stat-item { grid-column: span 2; padding: 12px !important; background: var(--ui-surface-soft) !important; }
+html[data-theme] #functionsModal.function-workspace .fn-stat-item:nth-child(n+4) { grid-column: span 3; display: flex !important; flex-direction: row !important; justify-content: space-between; gap: 8px; border: 0 !important; padding: 4px 0 !important; background: transparent !important; }
+html[data-theme] #functionsModal.function-workspace .excel-export-panel { padding: 0 !important; margin-bottom: 24px !important; border: 0 !important; background: transparent !important; }
+html[data-theme] #functionsModal.function-workspace .fn-card-head { margin-bottom: 16px !important; }
+html[data-theme] #functionsModal.function-workspace .excel-export-grid { gap: 16px !important; }
+html[data-theme] #functionsModal.function-workspace .excel-user-picker { max-height: 180px; overflow-y: auto; }
+html[data-theme] #functionsModal.function-workspace .fn-summary-caption { float: right; color: var(--ui-text-muted); font-size: 11px; }
+html[data-theme] #functionsModal.function-workspace .fn-backup-section .fn-subtext { font-size: 12px; line-height: 1.8; margin: 0 0 14px; }
+html[data-theme] #functionsModal.function-workspace .data-management-buttons { display: flex !important; flex-wrap: wrap; padding-bottom: 14px; }
+html[data-theme] #functionsModal.function-workspace #userManagementList.fn-user-grid { grid-template-columns: 1fr !important; max-height: none !important; overflow: visible !important; padding: 0 !important; gap: 16px !important; }
+html[data-theme] #functionsModal.function-workspace .user-management-item { border-left: 1px solid var(--ui-border) !important; background: var(--ui-surface) !important; padding: 16px !important; }
+html[data-theme] #functionsModal.function-workspace .user-edit-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+html[data-theme] #functionsModal.function-workspace .user-management-actions { justify-content: flex-end; }
+html[data-theme] #functionsModal.function-workspace .user-management-current { flex-shrink: 0; }
+/* Storage paths and physical filesystem capacity. */
+html[data-theme] #functionsModal.function-workspace .ops-storage-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 9px;
+  color: var(--ui-text);
+  background: var(--ui-accent-soft);
+  font-size: 13px;
+  line-height: 1.7;
+}
+html[data-theme] #functionsModal.function-workspace .ops-storage-lead i { color: var(--ui-accent); margin-top: 4px; }
+html[data-theme] #functionsModal.function-workspace .ops-storage-lead strong { color: var(--ui-accent); margin: 0 4px; }
+html[data-theme] #functionsModal.function-workspace .ops-storage-locations { display: grid; gap: 12px; }
+html[data-theme] #functionsModal.function-workspace .ops-storage-location { min-width: 0; }
+html[data-theme] #functionsModal.function-workspace .ops-storage-location > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 5px; font-size: 12px; }
+html[data-theme] #functionsModal.function-workspace .ops-storage-location span { color: var(--ui-text-muted); }
+html[data-theme] #functionsModal.function-workspace .ops-storage-location code { display: block; padding: 9px 11px; border: 1px solid var(--ui-border); border-radius: 7px; color: var(--ui-text); background: var(--ui-surface-soft); font-size: 12px; line-height: 1.6; white-space: normal; overflow-wrap: anywhere; }
+html[data-theme] #functionsModal.function-workspace .ops-disk-purpose { margin: -2px 0 9px; line-height: 1.6; }
+@media (max-width: 740px) {
+  html[data-theme] #functionsModal.function-workspace { padding: 10px !important; }
+  html[data-theme] #functionsModal.function-workspace > .modal-content { height: calc(100dvh - 20px) !important; max-height: calc(100dvh - 20px) !important; border-radius: 13px !important; }
+  html[data-theme] #functionsModal.function-workspace .modal-header { padding: 12px 16px !important; min-height: 54px; }
+  html[data-theme] #functionsModal.function-workspace .fn-workspace-body { grid-template-columns: minmax(0, 1fr); }
+  html[data-theme] #functionsModal.function-workspace .fn-workspace-nav { display: none; }
+  html[data-theme] #functionsModal.function-workspace .fn-mobile-nav { display: flex; align-items: center; flex: 0 0 auto; gap: 12px; padding: 14px 16px 0; }
+  html[data-theme] #functionsModal.function-workspace .fn-mobile-nav label { margin: 0 !important; flex-shrink: 0; font-size: 12px !important; color: var(--ui-text-muted) !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-mobile-nav select { flex: 1; width: 0; font-weight: 600; }
+  html[data-theme] #functionsModal.function-workspace .fn-workspace-heading { padding: 18px 16px 14px; gap: 8px; }
+  html[data-theme] #functionsModal.function-workspace .fn-workspace-heading h2 { font-size: 18px; margin-bottom: 5px; }
+  html[data-theme] #functionsModal.function-workspace .fn-workspace-heading p { font-size: 12px; }
+  html[data-theme] #functionsModal.function-workspace .fn-context-badge { font-size: 10px; padding: 4px 6px; }
+  html[data-theme] #functionsModal.function-workspace .fn-workspace-scroll { padding: 0 16px 20px; scrollbar-gutter: auto; }
+  html[data-theme] #functionsModal.function-workspace :is(.form-control, .user-edit-grid select, .user-edit-grid input) { font-size: 16px !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-workspace-actions { padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  html[data-theme] #functionsModal.function-workspace .fn-footer-group { flex-wrap: wrap; gap: 8px; }
+  html[data-theme] #functionsModal.function-workspace .fn-footer-copy { flex-basis: 100%; font-size: 10px; }
+  html[data-theme] #functionsModal.function-workspace .fn-workspace-actions .btn { flex: 1; }
+  html[data-theme] #functionsModal.function-workspace .fn-footer-buttons { width: 100%; }
+  html[data-theme] #functionsModal.function-workspace .fn-footer-buttons .btn { padding: 9px 10px !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-publish-meta-grid { gap: 12px !important; }
+  html[data-theme] #functionsModal.function-workspace #taskColorOptions { gap: 5px !important; }
+  html[data-theme] #functionsModal.function-workspace #taskColorOptions .color-option { width: 22px !important; height: 22px !important; flex-basis: 22px !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-settings-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-switch-card { padding: 13px 10px !important; gap: 9px !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-switch-icon { display: none !important; }
+  html[data-theme] #functionsModal.function-workspace .user-edit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  html[data-theme] #functionsModal.function-workspace .user-management-item { padding: 12px !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-stat-item:nth-child(n+4) { grid-column: 1 / -1; }
+  html[data-theme] #functionsModal.function-workspace .fn-stat-value { font-size: 18px !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-stat-label { font-size: 10px !important; }
+  html[data-theme] #functionsModal.function-workspace .fn-stat-item { padding: 10px !important; }
+  html[data-theme] #functionsModal.function-workspace .excel-user-picker-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  html[data-theme] #functionsModal.function-workspace #taskPublishFeedback { max-height: 60px; }
+}
+@media (max-width: 360px) {
+  html[data-theme] #functionsModal.function-workspace .fn-publish-meta-grid { grid-template-columns: 1fr !important; }
+  html[data-theme] #functionsModal.function-workspace #taskColorOptions { gap: 2px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] #functionsModal.function-workspace :is(.tab, input, input::before) { transition: none !important; }
+  html[data-theme] #functionsModal.function-workspace .tabs .tab { transition: none !important; }
+}

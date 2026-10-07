@@ -51,6 +51,11 @@ const state = {
   taskAssigneeIds: [],
   excelSelectedUserIds: null,
   activeView: 'calendar',
+  dashboardRiskFilter: 'risk',
+  dashboardTaskFilter: 'all',
+  dashboardTaskQuery: '',
+  dashboardTaskLimit: 25,
+  dashboardReturnScrollY: null,
   opsStatus: null,
   realtimeRefreshTimer: null,
   realtimeRefreshBusy: false,
@@ -156,7 +161,8 @@ function handleDialogKeydown(event) {
   if (event.key === 'Escape') {
     event.preventDefault();
     ({ memoModal: closeMemoModal, functionsModal: closeFunctionsModal,
-      dailyDetailModal: closeDailyDetailModal, reminderModal: closeReminderModal, weeklyPlanModal: closeWeeklyPlanModal })[id]?.();
+      dailyDetailModal: closeDailyDetailModal, reminderModal: closeReminderModal,
+      dashboardTaskModal: closeDashboardTaskList, avatarProfileModal: closeAvatarProfile })[id]?.();
     return;
   }
   if (event.key !== 'Tab') return;
@@ -214,7 +220,7 @@ const opsLevelText = (level) => ({ normal: '正常', warning: '注意', danger: 
 const opsLevelClass = (level) => `ops-level-badge ops-level-${level || 'normal'}`;
 
 async function request(path, options = {}) {
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  const headers = { ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) };
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
   const response = await fetch(`${apiBase}${path}`, { cache: 'no-store', ...options, headers });
   if (response.status === 304) return { notModified: true, etag: response.headers.get('etag') || '' };
@@ -230,6 +236,211 @@ async function request(path, options = {}) {
     throw new Error(errorMsg);
   }
   return { ...data, etag: response.headers.get('etag') || data.etag || '' };
+}
+
+const avatarImageCache = new Map();
+const avatarUrlPattern = /^\/api\/avatars\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/;
+let avatarObserver = null;
+let avatarHydrationQueued = false;
+let avatarDraft = { file: null, previewUrl: '', busy: false, epoch: 0 };
+
+function userAvatarAttributes(user) {
+  const url = avatarUrlPattern.test(user?.avatarUrl || '') ? user.avatarUrl : '';
+  const initial = (user?.displayName || user?.username || '用').trim().charAt(0);
+  return `data-avatar-url="${escapeHtml(url)}" data-avatar-initial="${escapeHtml(initial)}"`;
+}
+
+function queueAvatarHydration() {
+  if (avatarHydrationQueued || !state.user || !state.token) return;
+  avatarHydrationQueued = true;
+  queueMicrotask(() => { avatarHydrationQueued = false; hydrateAvatarImages(); });
+}
+
+async function cachedAvatarImage(url, sessionVersion) {
+  let entry = avatarImageCache.get(url);
+  if (entry?.objectUrl) return entry.objectUrl;
+  if (entry?.promise) return entry.promise;
+  if (entry?.failedAt && Date.now() - entry.failedAt < 10000) return '';
+  entry = { controller: new AbortController(), objectUrl: '' };
+  avatarImageCache.set(url, entry);
+  entry.promise = (async () => {
+    try {
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${state.token}` }, cache: 'no-store', signal: entry.controller.signal });
+      if (!response.ok || !response.headers.get('content-type')?.startsWith('image/webp')) throw new Error('Avatar unavailable');
+      const blob = await response.blob();
+      if (!isCurrentSession(sessionVersion) || avatarImageCache.get(url) !== entry) return '';
+      entry.objectUrl = URL.createObjectURL(blob);
+      return entry.objectUrl;
+    } catch { entry.failedAt = Date.now(); return ''; }
+    finally { entry.promise = null; }
+  })();
+  return entry.promise;
+}
+
+function hydrateAvatarImages() {
+  if (!state.user || !state.token) return;
+  const sessionVersion = state.sessionVersion;
+  document.querySelectorAll('[data-avatar-url]').forEach(async (element) => {
+    const url = element.dataset.avatarUrl;
+    if (!avatarUrlPattern.test(url)) return;
+    const cached = avatarImageCache.get(url)?.objectUrl;
+    if (cached && element.querySelector('img')?.getAttribute('src') === cached) return;
+    const objectUrl = await cachedAvatarImage(url, sessionVersion);
+    if (!objectUrl || !element.isConnected || !isCurrentSession(sessionVersion) || element.dataset.avatarUrl !== url) return;
+    if (element.querySelector('img')?.getAttribute('src') === objectUrl) return;
+    const image = document.createElement('img');
+    image.alt = '';
+    image.src = objectUrl;
+    image.addEventListener('error', () => {
+      if (!element.contains(image) || element.dataset.avatarUrl !== url) return;
+      const entry = avatarImageCache.get(url);
+      if (entry?.objectUrl === objectUrl) { URL.revokeObjectURL(objectUrl); entry.objectUrl = ''; entry.failedAt = Date.now(); }
+      element.textContent = element.dataset.avatarInitial || '用';
+    }, { once: true });
+    element.replaceChildren(image);
+  });
+}
+
+function renderCurrentUserAvatar() {
+  const avatar = $('sidebarUserAvatar');
+  if (!avatar) return;
+  avatar.dataset.avatarUrl = avatarUrlPattern.test(state.user?.avatarUrl || '') ? state.user.avatarUrl : '';
+  avatar.dataset.avatarInitial = (state.user?.displayName || '用').trim().charAt(0);
+  avatar.textContent = avatar.dataset.avatarInitial;
+  queueAvatarHydration();
+}
+
+function clearAvatarSession() {
+  avatarImageCache.forEach((entry) => { entry.controller?.abort(); if (entry.objectUrl) URL.revokeObjectURL(entry.objectUrl); });
+  avatarImageCache.clear();
+  document.querySelectorAll('[data-avatar-url]').forEach((element) => {
+    element.textContent = element.dataset.avatarInitial || '用';
+    element.removeAttribute('data-avatar-url');
+  });
+  avatarDraft.controller?.abort();
+  avatarDraft.busy = false;
+  closeAvatarProfile();
+}
+
+function avatarProfileFeedback(message, isError = false) {
+  const box = $('avatarProfileFeedback');
+  if (!box) return;
+  box.textContent = message;
+  box.classList.toggle('is-error', isError);
+}
+
+function setAvatarProfileBusy(busy) {
+  avatarDraft.busy = busy;
+  ['avatarFileInput', 'chooseAvatarFile', 'saveAvatarProfile', 'resetAvatarProfile', 'closeAvatarProfile', 'cancelAvatarProfile'].forEach((id) => { if ($(id)) $(id).disabled = busy; });
+  $('saveAvatarProfile').disabled = busy || !avatarDraft.file;
+  $('resetAvatarProfile').disabled = busy || !state.user?.avatarUrl;
+  $('saveAvatarProfile').textContent = busy ? '正在保存…' : '保存头像';
+}
+
+function renderAvatarProfilePreview() {
+  const preview = $('avatarProfilePreview');
+  preview.replaceChildren();
+  preview.dataset.avatarInitial = (state.user?.displayName || '用').trim().charAt(0);
+  preview.textContent = preview.dataset.avatarInitial;
+  preview.dataset.avatarUrl = avatarDraft.previewUrl ? '' : (state.user?.avatarUrl || '');
+  if (avatarDraft.previewUrl) {
+    const image = document.createElement('img'); image.alt = '新头像预览'; image.src = avatarDraft.previewUrl; preview.replaceChildren(image);
+  } else queueAvatarHydration();
+}
+
+function openAvatarProfile() {
+  if (!state.user || !state.token || avatarDraft.busy) return;
+  closeAvatarProfile();
+  avatarDraft.epoch += 1;
+  $('avatarProfileName').textContent = state.user.displayName || state.user.username;
+  $('avatarFileInput').value = '';
+  avatarProfileFeedback('选择图片后可预览，保存后会更新你的头像。');
+  renderAvatarProfilePreview();
+  setAvatarProfileBusy(false);
+  showDialog('avatarProfileModal', 'chooseAvatarFile');
+}
+
+function closeAvatarProfile() {
+  if (avatarDraft.busy) return;
+  if (avatarDraft.previewUrl) URL.revokeObjectURL(avatarDraft.previewUrl);
+  avatarDraft = { file: null, previewUrl: '', busy: false, epoch: avatarDraft.epoch + 1 };
+  hideDialog('avatarProfileModal');
+}
+
+async function chooseAvatarPreview() {
+  if (avatarDraft.busy) return;
+  const file = $('avatarFileInput').files?.[0];
+  if (!file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+    if (avatarDraft.previewUrl) URL.revokeObjectURL(avatarDraft.previewUrl);
+    avatarDraft.previewUrl = ''; avatarDraft.file = null;
+    renderAvatarProfilePreview(); setAvatarProfileBusy(false);
+    avatarProfileFeedback('请选择不超过 5 MB 的 JPG、PNG 或 WebP 图片。', true); $('avatarFileInput').value = ''; return;
+  }
+  if (avatarDraft.previewUrl) URL.revokeObjectURL(avatarDraft.previewUrl);
+  avatarDraft.previewUrl = URL.createObjectURL(file);
+  avatarDraft.file = null;
+  const epoch = ++avatarDraft.epoch;
+  setAvatarProfileBusy(false);
+  try {
+    const image = new Image();
+    await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = avatarDraft.previewUrl; });
+    if (epoch !== avatarDraft.epoch) return;
+    if (!image.naturalWidth || image.naturalWidth * image.naturalHeight > 25000000) throw new Error('Image too large');
+    avatarDraft.file = file;
+    renderAvatarProfilePreview();
+    avatarProfileFeedback('图片将裁成正方形，按上方效果保存。');
+  } catch {
+    if (epoch !== avatarDraft.epoch) return;
+    URL.revokeObjectURL(avatarDraft.previewUrl); avatarDraft.previewUrl = ''; avatarDraft.file = null;
+    renderAvatarProfilePreview(); avatarProfileFeedback('图片无法读取，请更换图片（不超过 2500 万像素）。', true);
+  }
+  if (epoch === avatarDraft.epoch) setAvatarProfileBusy(false);
+}
+
+async function saveAvatarProfile(reset = false) {
+  if (avatarDraft.busy || !state.user || !state.token || (!reset && !avatarDraft.file)) return;
+  const sessionVersion = state.sessionVersion;
+  const controller = new AbortController();
+  avatarDraft.controller = controller;
+  setAvatarProfileBusy(true);
+  avatarProfileFeedback(reset ? '正在恢复默认头像…' : '正在上传头像…');
+  try {
+    const body = reset ? undefined : new FormData();
+    if (body) body.append('avatar', avatarDraft.file);
+    const data = await request('/users/me/avatar', { method: reset ? 'DELETE' : 'POST', body, signal: controller.signal });
+    if (!isCurrentSession(sessionVersion)) return;
+    const previous = state.user.avatarUrl;
+    state.user = { ...state.user, ...data.user };
+    state.users = state.users.map((user) => Number(user.id) === Number(state.user.id) ? { ...user, ...data.user } : user);
+    const oldImage = avatarImageCache.get(previous);
+    if (oldImage?.objectUrl) URL.revokeObjectURL(oldImage.objectUrl);
+    oldImage?.controller?.abort(); avatarImageCache.delete(previous);
+    renderCurrentUserAvatar();
+    renderCustomMemberOptions();
+    refreshMemoViews();
+    avatarDraft.busy = false;
+    closeAvatarProfile();
+    showGlobalToast(reset ? '已恢复默认头像' : '头像已更新', 'success');
+  } catch (error) {
+    if (isCurrentSession(sessionVersion)) avatarProfileFeedback(error.message || '头像保存失败，请重试', true);
+  } finally {
+    if (isCurrentSession(sessionVersion)) setAvatarProfileBusy(false);
+  }
+}
+
+function bindAvatarProfileUi() {
+  if ($('sidebarUserAvatar').dataset.profileBound) return;
+  $('sidebarUserAvatar').dataset.profileBound = 'true';
+  $('sidebarUserAvatar').addEventListener('click', openAvatarProfile);
+  $('chooseAvatarFile').addEventListener('click', () => $('avatarFileInput').click());
+  $('avatarFileInput').addEventListener('change', chooseAvatarPreview);
+  $('saveAvatarProfile').addEventListener('click', () => saveAvatarProfile(false));
+  $('resetAvatarProfile').addEventListener('click', () => saveAvatarProfile(true));
+  ['closeAvatarProfile', 'cancelAvatarProfile'].forEach((id) => $(id).addEventListener('click', closeAvatarProfile));
+  $('avatarProfileModal').addEventListener('click', (event) => { if (event.target.id === 'avatarProfileModal') closeAvatarProfile(); });
+  avatarObserver = new MutationObserver(queueAvatarHydration);
+  avatarObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 function readSavedLogin() {
@@ -848,7 +1059,7 @@ function renderCustomMemberOptions() {
     items.push(`
       <div class="custom-dropdown-item ${isSelected ? 'selected' : ''}" data-value="${escapeHtml(userId)}" role="option" aria-selected="${isSelected}">
         <div class="item-main">
-          <span class="item-avatar">${escapeHtml(initial)}</span>
+          <span class="item-avatar" ${userAvatarAttributes(user)}>${escapeHtml(initial)}</span>
           <span class="item-name">${escapeHtml(displayName)}</span>
         </div>
         <span class="item-badge">${escapeHtml(roleText)}</span>
@@ -4679,6 +4890,7 @@ function injectServerCss() {
 }
 
 function injectUserBar() {
+  bindAvatarProfileUi();
   const memberSelect = $('serverMemberSelect');
   if (memberSelect && !memberSelect.dataset.bound) {
     memberSelect.dataset.bound = 'true';
@@ -4996,15 +5208,27 @@ function resetMemoSnapshot() {
   state.reminderError = '';
   state.memoEtag = '';
   state.memoRangeKey = '';
+  state.dashboardRiskFilter = 'risk';
+  state.dashboardTaskFilter = 'all';
+  state.dashboardTaskQuery = '';
+  state.dashboardTaskLimit = 25;
+  state.dashboardReturnScrollY = null;
+  if ($('dashboardTaskModal')?.classList.contains('active')) {
+    hideDialog('memoModal');
+    closeDashboardTaskList();
+  }
+  $('dashboardTaskList')?.replaceChildren();
 }
 
 function beginSession(user) {
+  clearAvatarSession();
   state.sessionVersion += 1;
   state.initialLoadSessionVersion = null;
   stopRealtimeRefresh();
   stopDueReminderTimer();
   resetMemoSnapshot();
   state.user = user;
+  renderCurrentUserAvatar();
   state.users = [];
   state.opsStatus = null;
   return state.sessionVersion;
@@ -5201,10 +5425,7 @@ async function startApp(sessionVersion = state.sessionVersion) {
   resetSessionViewState();
   $('serverUserName').textContent = state.user.displayName;
   $('serverUserRole').textContent = displayUserRoleDept(state.user);
-  const avatarEl = $('sidebarUserAvatar');
-  if (avatarEl && state.user?.displayName) {
-    avatarEl.textContent = state.user.displayName.trim().charAt(0) || '用';
-  }
+  renderCurrentUserAvatar();
   applyRoleScopedUi();
   updateSessionProgress(50, '正在同步团队人员列表…');
   await loadUsers(sessionVersion);
@@ -5233,6 +5454,7 @@ async function startApp(sessionVersion = state.sessionVersion) {
 }
 
 function logout() {
+  clearAvatarSession();
   state.sessionVersion += 1;
   stopRealtimeRefresh();
   stopDueReminderTimer();
@@ -5886,24 +6108,26 @@ function renderDashboardMetrics(summary) {
     ? `含 ${summary.submitted} 项待确认成果`
     : (summary.pending ? '仍需推进完成' : '当前已全部清零');
   const cards = [
-    { label: '总任务', value: summary.total, sub: `${summary.activeUsers} 人有分配任务`, icon: 'fas fa-layer-group', tone: 'total' },
-    { label: '已确认完成', value: summary.completed, sub: `整体完成率 ${summary.rate}%`, icon: 'fas fa-check-circle', tone: 'success' },
-    { label: '待完/待验', value: summary.pending, sub: pendingSub, icon: 'fas fa-hourglass-half', tone: summary.submitted ? 'warning' : (summary.pending ? 'pending' : 'safe') },
-    { label: '逾期任务', value: summary.overdue, sub: summary.overdue ? '需优先跟进处理' : '无逾期风险', icon: 'fas fa-exclamation-triangle', tone: summary.overdue ? 'danger' : 'safe' },
-    { label: '临近截止', value: summary.dueSoon, sub: summary.dueSoon ? '3天内即将到期' : '近期无临期', icon: 'far fa-clock', tone: summary.dueSoon ? 'warning' : 'safe' },
-    { label: '今日进度', value: `${summary.todayCompleted} / ${summary.todayTotal}`, sub: todayText, icon: 'fas fa-calendar-check', tone: 'today' }
+    { filter: 'all', label: '总任务', value: summary.total, sub: `${summary.activeUsers} 人有分配任务`, icon: 'fas fa-layer-group', tone: 'total' },
+    { filter: 'completed', label: '已确认完成', value: summary.completed, sub: `整体完成率 ${summary.rate}%`, icon: 'fas fa-check-circle', tone: 'success' },
+    { filter: 'pending', label: '未完成事项', value: summary.pending, sub: pendingSub, icon: 'fas fa-hourglass-half', tone: summary.pending ? 'pending' : 'safe' },
+    { filter: 'submitted', label: '待验收', value: summary.submitted, sub: '已提交成果，等待确认', icon: 'fas fa-box-open', tone: summary.submitted ? 'warning' : 'safe' },
+    { filter: 'overdue', label: '逾期任务', value: summary.overdue, sub: summary.overdue ? '需优先跟进处理' : '无逾期风险', icon: 'fas fa-exclamation-triangle', tone: summary.overdue ? 'danger' : 'safe' },
+    { filter: 'returned', label: '退回修改', value: summary.returned, sub: summary.returned ? '需修改后重新提交成果' : '暂无退回事项', icon: 'fas fa-undo-alt', tone: summary.returned ? 'danger' : 'safe' },
+    { filter: 'dueSoon', label: '临近截止', value: summary.dueSoon, sub: summary.dueSoon ? '3天内即将到期' : '近期无临期', icon: 'far fa-clock', tone: summary.dueSoon ? 'warning' : 'safe' },
+    { filter: 'today', label: '今日进度', value: `${summary.todayCompleted} / ${summary.todayTotal}`, sub: todayText, icon: 'fas fa-calendar-check', tone: 'today' }
   ];
   metrics.innerHTML = cards.map((card) => `
-    <div class="dashboard-metric metric-${card.tone}">
+    <button type="button" class="dashboard-metric metric-${card.tone}" data-dashboard-list-filter="${card.filter}" aria-label="查看${escapeHtml(card.label)}：${escapeHtml(String(card.value))}">
       <div class="dashboard-metric-top">
         <span class="dashboard-metric-label">${escapeHtml(card.label)}</span>
         <span class="dashboard-metric-icon"><i class="${card.icon}"></i></span>
       </div>
       <div class="dashboard-metric-value">${escapeHtml(String(card.value))}</div>
       <div class="dashboard-metric-sub">
-        <span>${escapeHtml(card.sub)}</span>
+        <span>${escapeHtml(card.sub)}</span><span class="dashboard-metric-open" aria-hidden="true">查看 <i class="fas fa-angle-right"></i></span>
       </div>
-    </div>
+    </button>
   `).join('');
 }
 
@@ -5927,7 +6151,7 @@ function renderDashboardActiveUserRow(row) {
   return `
     <div class="dashboard-user-row ${hasOverdue ? 'has-overdue' : ''}" data-dashboard-user-id="${row.user.id}" title="点击穿透查看 ${escapeHtml(row.user.displayName)} 的工作日历" style="--dashboard-rate:${row.rate}%">
       <div class="user-row-profile">
-        <div class="user-row-avatar avatar-normal">
+        <div class="user-row-avatar avatar-normal" ${userAvatarAttributes(row.user)}>
           ${escapeHtml(initial)}
         </div>
         <div class="user-row-info">
@@ -5960,7 +6184,7 @@ function renderDashboardCompletedUserRow(row) {
   return `
     <div class="dashboard-user-row is-complete is-compact" data-dashboard-user-id="${row.user.id}" title="点击穿透查看 ${escapeHtml(row.user.displayName)} 的工作日历">
       <div class="user-row-profile">
-        <div class="user-row-avatar avatar-complete">
+        <div class="user-row-avatar avatar-complete" ${userAvatarAttributes(row.user)}>
           ${escapeHtml(initial)}
         </div>
         <div class="user-row-info">
@@ -6009,48 +6233,149 @@ function renderDashboardUserLoad(rows) {
   box.innerHTML = parts.join('');
 }
 
-function dashboardRiskEntries() {
-  const now = new Date();
-  return dashboardMemos()
-    .filter((memo) => !memo.completed)
-    .map((memo) => {
-      const dStatus = memoDeliveryStatus(memo);
-      if (dStatus === 'submitted') return { memo, level: 'warning', label: '📦 待确认成果', priority: 0 };
-      if (isOverdueMemo(memo, now)) return { memo, level: 'danger', label: '已逾期', priority: 1 };
-      if (dStatus === 'returned') return { memo, level: 'danger', label: '↩ 退回修改', priority: 1 };
-      if (isDueSoonMemo(memo, now)) return { memo, level: 'warning', label: '临近截止', priority: 2 };
-      if (isStaleMemo(memo, now)) return { memo, level: 'muted', label: '长时间未更新', priority: 3 };
-      return null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.priority - b.priority || (memoDeadlineDate(a.memo)?.getTime() || 0) - (memoDeadlineDate(b.memo)?.getTime() || 0))
-    .slice(0, 8);
+const dashboardTaskFilters = {
+  all: '总任务', pending: '未完成', submitted: '待验收', returned: '退回修改',
+  overdue: '已逾期', dueSoon: '临近截止', stale: '久未更新', completed: '已确认', today: '今日任务', risk: '全部风险'
+};
+const dashboardRiskKinds = ['risk', 'overdue', 'submitted', 'returned', 'dueSoon', 'stale'];
+
+function dashboardMemoRisks(memo, now = new Date()) {
+  if (memo.completed) return [];
+  const kinds = [];
+  if (isOverdueMemo(memo, now)) kinds.push('overdue');
+  const status = memoDeliveryStatus(memo);
+  if (status === 'returned') kinds.push('returned');
+  if (status === 'submitted') kinds.push('submitted');
+  if (isDueSoonMemo(memo, now)) kinds.push('dueSoon');
+  if (isStaleMemo(memo, now)) kinds.push('stale');
+  return kinds;
+}
+
+function dashboardMatchesFilter(memo, filter, now = new Date()) {
+  if (filter === 'all') return true;
+  if (filter === 'completed') return Boolean(memo.completed);
+  if (filter === 'pending') return !memo.completed;
+  if (filter === 'today') return memo.date === dateKey(now);
+  const kinds = dashboardMemoRisks(memo, now);
+  return filter === 'risk' ? kinds.length > 0 : kinds.includes(filter);
+}
+
+function dashboardFilterCounts(memos = dashboardMemos(), now = new Date()) {
+  return Object.fromEntries(Object.keys(dashboardTaskFilters).map((filter) => [filter,
+    memos.filter((memo) => dashboardMatchesFilter(memo, filter, now)).length]));
+}
+
+function dashboardOwnerName(memo) {
+  return memo.ownerName || state.users.find((user) => String(user.id) === String(memo.ownerId))?.displayName || '未知人员';
+}
+
+function dashboardDeadlineLabel(memo) {
+  const deadline = memoDeadlineDate(memo);
+  return deadline ? deadline.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '未设置截止时间';
+}
+
+function dashboardRiskEntries(filter = 'risk', now = new Date()) {
+  return dashboardMemos().filter((memo) => dashboardMatchesFilter(memo, filter, now)).map((memo) => {
+    const kinds = dashboardMemoRisks(memo, now);
+    const first = kinds[0];
+    return { memo, kinds, level: ['overdue', 'returned'].includes(first) ? 'danger' : first === 'stale' ? 'muted' : 'warning',
+      priority: ['overdue', 'returned', 'submitted', 'dueSoon', 'stale'].indexOf(first) };
+  }).sort((a, b) => a.priority - b.priority || (memoDeadlineDate(a.memo)?.getTime() || 0) - (memoDeadlineDate(b.memo)?.getTime() || 0) || Number(a.memo.id) - Number(b.memo.id));
+}
+
+function dashboardStatusBadges(memo, now = new Date()) {
+  const status = memoDeliveryStatus(memo);
+  const main = memo.completed ? 'completed' : status === 'submitted' ? 'submitted' : status === 'returned' ? 'returned' : 'pending';
+  const keys = [main, ...dashboardMemoRisks(memo, now).filter((key) => key !== main)];
+  return keys.map((key) => `<span class="dashboard-task-badge badge-${key}">${dashboardTaskFilters[key]}</span>`).join('');
 }
 
 function renderDashboardRisks() {
   const list = $('dashboardRiskList');
   if (!list) return;
-  const risks = dashboardRiskEntries();
+  const filter = state.dashboardRiskFilter;
+  const counts = dashboardFilterCounts();
+  $('dashboardRiskFilters').innerHTML = dashboardRiskKinds.map((key) => `<button type="button" data-dashboard-risk-filter="${key}" class="dashboard-risk-filter ${key === filter ? 'active' : ''}" aria-pressed="${key === filter}">${key === 'risk' ? '全部' : dashboardTaskFilters[key]} <span>${counts[key]}</span></button>`).join('');
+  const allRisks = dashboardRiskEntries(filter);
+  const risks = allRisks.slice(0, 6);
   list.innerHTML = risks.length
-    ? risks.map(({ memo, level, label }) => {
-      const timeStr = memo.dueTime 
-        ? new Date(memo.dueTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) 
-        : memo.date;
+    ? risks.map(({ memo, level }) => {
       return `
-      <div class="dashboard-risk-item risk-${level}" data-memo-id="${memo.id}" title="点击查看备忘录详情并处理">
+      <button type="button" class="dashboard-risk-item risk-${level}" data-memo-id="${memo.id}" title="查看详情并处理">
         <div class="dashboard-risk-header">
-          <span class="risk-badge badge-${level}">${escapeHtml(label)}</span>
           <span class="dashboard-risk-title">${escapeHtml(memo.title || '无标题任务')}</span>
+          <span class="dashboard-task-badges">${dashboardStatusBadges(memo)}</span>
         </div>
         <div class="dashboard-risk-meta">
-          <span class="risk-meta-user">${escapeHtml(memo.ownerName || '未知人员')}</span>
-          <span class="risk-meta-time">${escapeHtml(timeStr)}</span>
+          <span class="risk-meta-user">${escapeHtml(dashboardOwnerName(memo))}</span>
+          <span class="risk-meta-time">${escapeHtml(dashboardDeadlineLabel(memo))}</span>
           <span class="risk-meta-action">查看处理 <i class="fas fa-angle-right"></i></span>
         </div>
-      </div>
+      </button>
     `;
     }).join('')
-    : '<div class="dashboard-empty"><i class="fas fa-check-circle" style="font-size:2rem;margin-bottom:8px;color:#10b981;display:block;"></i>当前暂无风险任务，团队研发进度良好</div>';
+    : `<div class="dashboard-empty">当前范围内暂无${filter === 'risk' ? '待跟进' : dashboardTaskFilters[filter]}事项</div>`;
+  $('dashboardRiskFooter').innerHTML = `<span>${allRisks.length > risks.length ? `显示前 ${risks.length} 项，共 ${allRisks.length} 项` : `共 ${allRisks.length} 项`} · 同一事项可命中多类</span><button type="button" class="dashboard-link" data-dashboard-list-filter="${filter}">查看完整清单 <i class="fas fa-angle-right" aria-hidden="true"></i></button>`;
+}
+
+function openDashboardTaskList(filter = 'all') {
+  if (!canManageWorkspace() || !Object.hasOwn(dashboardTaskFilters, filter)) return;
+  state.dashboardTaskFilter = filter;
+  state.dashboardTaskQuery = '';
+  state.dashboardTaskLimit = 25;
+  $('dashboardTaskSearch').value = '';
+  renderDashboardTaskList();
+  showDialog('dashboardTaskModal', 'closeDashboardTaskModal');
+  $('dashboardTaskList').scrollTop = 0;
+}
+
+function closeDashboardTaskList() {
+  hideDialog('dashboardTaskModal');
+}
+
+function setDashboardTaskFilter(filter) {
+  if (!canManageWorkspace() || !Object.hasOwn(dashboardTaskFilters, filter)) return;
+  state.dashboardTaskFilter = filter;
+  state.dashboardTaskLimit = 25;
+  renderDashboardTaskList();
+  $('dashboardTaskList').scrollTop = 0;
+}
+
+function renderDashboardTaskList() {
+  if (!canManageWorkspace()) return;
+  const list = $('dashboardTaskList');
+  if (!list) return;
+  const scrollTop = list.scrollTop;
+  const focusedFilter = document.activeElement?.closest('#dashboardTaskFilters [data-dashboard-task-filter]')?.dataset.dashboardTaskFilter;
+  const now = new Date();
+  const memos = dashboardMemos();
+  const counts = dashboardFilterCounts(memos, now);
+  const filter = state.dashboardTaskFilter;
+  const query = state.dashboardTaskQuery.toLocaleLowerCase();
+  const matches = memos.filter((memo) => dashboardMatchesFilter(memo, filter, now)
+    && (!query || [memo.title, dashboardOwnerName(memo)].some((value) => String(value || '').toLocaleLowerCase().includes(query))))
+    .sort((a, b) => (memoDeadlineDate(a)?.getTime() || 0) - (memoDeadlineDate(b)?.getTime() || 0) || Number(a.id) - Number(b.id));
+  const visible = matches.slice(0, state.dashboardTaskLimit);
+  $('dashboardTaskTitle').textContent = `${dashboardTaskFilters[filter]} · 事项清单`;
+  $('dashboardTaskSubtitle').textContent = `${leaderboardPeriodText()} · ${matches.length} 项${query ? '匹配搜索' : ''}`;
+  $('dashboardTaskFilters').innerHTML = Object.entries(dashboardTaskFilters).map(([key, label]) => `<button type="button" data-dashboard-task-filter="${key}" class="dashboard-risk-filter ${key === filter ? 'active' : ''}" aria-pressed="${key === filter}">${label} <span>${counts[key]}</span></button>`).join('');
+  const select = $('dashboardTaskFilterSelect');
+  select.innerHTML = Object.entries(dashboardTaskFilters).map(([key, label]) => `<option value="${key}">${label}（${counts[key]}）</option>`).join('');
+  select.value = filter;
+  list.innerHTML = visible.length ? visible.map((memo) => {
+    const status = memoDeliveryStatus(memo);
+    const note = status === 'submitted' && memo.actualDeliverable ? `已提交：${memo.actualDeliverable}`
+      : status === 'returned' && memo.reviewComment ? `修改要求：${memo.reviewComment}` : '';
+    return `<div role="listitem"><button type="button" class="dashboard-task-row" id="dashboardTaskMemo${memo.id}" data-dashboard-memo-id="${memo.id}">
+      <span class="dashboard-task-row-top"><strong>${escapeHtml(memo.title || '无标题任务')}</strong><span class="dashboard-task-row-action">${memo.rolloverToId ? '查看详情' : '查看 / 处理'} <i class="fas fa-angle-right" aria-hidden="true"></i></span></span>
+      <span class="dashboard-task-row-meta">${escapeHtml(dashboardOwnerName(memo))}<span>截止 ${escapeHtml(dashboardDeadlineLabel(memo))}</span></span>
+      <span class="dashboard-task-badges">${dashboardStatusBadges(memo, now)}${memo.rolloverToId ? '<span class="dashboard-task-badge badge-stale">已转期</span>' : ''}</span>
+      ${note ? `<span class="dashboard-task-row-note">${escapeHtml(note)}</span>` : ''}</button></div>`;
+  }).join('') : `<div class="dashboard-task-empty"><i class="fas fa-${query ? 'search' : 'check-circle'}" aria-hidden="true"></i><strong>${query ? '没有匹配的事项' : '当前分类暂无事项'}</strong><span>${query ? '可以换一个标题或负责人重新搜索' : '切换分类可查看其他事项'}</span></div>`;
+  list.scrollTop = scrollTop;
+  $('dashboardTaskCount').textContent = `已显示 ${visible.length} / ${matches.length} 项`;
+  $('dashboardTaskMore').hidden = visible.length >= matches.length;
+  if (focusedFilter) $('dashboardTaskFilters').querySelector(`[data-dashboard-task-filter="${focusedFilter}"]`)?.focus({ preventScroll: true });
 }
 
 function dashboardTrendDays() {
@@ -6118,6 +6443,7 @@ function renderDashboard() {
   renderDashboardUserLoad(dashboardUserRows());
   renderDashboardRisks();
   renderDashboardTrend();
+  if ($('dashboardTaskModal')?.classList.contains('active')) renderDashboardTaskList();
 }
 
 function renderTeamLeaderboard() {
@@ -6220,15 +6546,12 @@ function renderTeamLeaderboard() {
 }
 
 async function openDashboardMemo(memoId) {
+  if (!canManageWorkspace()) return;
   const memo = dashboardMemos().find((item) => String(item.id) === String(memoId));
-  if (!memo) return;
-  state.activeView = 'calendar';
-  state.selectedUserId = String(memo.ownerId);
-  const memberSelect = $('serverMemberSelect');
-  if (memberSelect) memberSelect.value = state.selectedUserId;
-  renderCustomMemberOptions();
-  refreshMemoViews();
-  await openMemoModal(memoId);
+  if (!memo) { showGlobalToast('事项已更新，请刷新后重新查看', 'info'); return; }
+  state.dashboardReturnScrollY = window.scrollY;
+  await openMemoModal(memoId, memo.date);
+  if (!$('memoModal').classList.contains('active')) state.dashboardReturnScrollY = null;
 }
 
 function jumpToUserCalendar(userId) {
@@ -7148,10 +7471,22 @@ function closeMemoModal() {
   hideMemoCalendarPopup();
   hideMemoCalendarDuePopup();
   state.memoDetailRequestVersion += 1;
+  const memoId = state.selectedMemoId;
   hideDialog('memoModal');
   state.selectedMemoId = null;
   state.detailDraftFromQuickAdd = false;
   switchMemoContentTab('edit');
+  if (state.activeView === 'dashboard' && state.dashboardReturnScrollY !== null) {
+    const scrollY = state.dashboardReturnScrollY;
+    state.dashboardReturnScrollY = null;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, behavior: 'instant' });
+      if ($('dashboardTaskModal')?.classList.contains('active')) {
+        const target = $(`dashboardTaskMemo${memoId}`) || $('dashboardTaskList').querySelector('.dashboard-task-row') || $('closeDashboardTaskModal');
+        target.focus({ preventScroll: true });
+      }
+    });
+  }
 }
 
 let memoPickerState = {
@@ -7424,8 +7759,10 @@ function commitMemoDuePicker() {
   const minEl = $('mdpMinute');
   const selDate = memoDuePickerState.selectedDate;
   if (!selDate) return;
-  const hh = Math.max(0, Math.min(23, parseInt(hourEl?.value ?? '18', 10) || 18));
-  const mm = Math.max(0, Math.min(59, parseInt(minEl?.value ?? '0', 10) || 0));
+  const parsedHh = parseInt(hourEl?.value ?? '18', 10);
+  const parsedMm = parseInt(minEl?.value ?? '0', 10);
+  const hh = Math.max(0, Math.min(23, Number.isNaN(parsedHh) ? 18 : parsedHh));
+  const mm = Math.max(0, Math.min(59, Number.isNaN(parsedMm) ? 0 : parsedMm));
   setMemoDuePickerValue(`${selDate}T${pad(hh)}:${pad(mm)}`);
 }
 
@@ -7479,6 +7816,7 @@ function initMemoDuePicker() {
   $('mdpTodayBtn')?.addEventListener('click', (e) => {
     e.stopPropagation();
     memoDuePickerState.selectedDate = dateKey(new Date());
+    commitMemoDuePicker();
     renderMemoDueCalendar();
   });
 
@@ -7487,6 +7825,7 @@ function initMemoDuePicker() {
     if (!btn) return;
     e.stopPropagation();
     memoDuePickerState.selectedDate = btn.dataset.date;
+    commitMemoDuePicker();
     renderMemoDueCalendar();
   });
 
@@ -8144,6 +8483,7 @@ function handleQuickDueChipClick(event) {
     dateInput.value = dateKey(new Date());
   }
   setMemoDuePickerValue(toLocalDateTimeInput(target));
+  hideMemoCalendarDuePopup();
 
   document.querySelectorAll('.quick-due-chip').forEach(c => c.classList.remove('active'));
   chip.classList.add('active');
@@ -9573,7 +9913,7 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
         return `
           <div class="wp-team-card wp-team-status-${statusClass}">
             <div class="wp-team-card-head">
-              <div class="wp-team-avatar" style="background:${color}">${getInitials(u)}</div>
+              <div class="wp-team-avatar" style="background:${color}" ${userAvatarAttributes(u)}>${getInitials(u)}</div>
               <div class="wp-team-user-info">
                 <strong>${escapeHtml(u.displayName || u.username)}</strong>
                 <span>${escapeHtml(u.jobTitle || '工程师')}</span>
@@ -9777,15 +10117,26 @@ function openDetailedMemoFromDaily() {
   });
 }
 
+const functionsSections = {
+  taskPublish: { title: '任务发布', description: '填写工作内容，选择接收人，直接下发当日任务。' },
+  dataManagement: { title: '数据管理', description: '选择月份与人员导出工作日历，也可以备份或恢复数据。' },
+  userManagement: { title: '人员管理', description: '维护成员岗位、部门与账号权限；修改后在对应成员下保存。' },
+  opsMonitor: { title: '运维监控', description: '查看服务运行情况、资源使用量与最近检查结果。' },
+  reminderSettings: { title: '提醒设置', description: '设置事项何时提醒，以及用什么方式提醒。' }
+};
+const functionsVisitedTabs = new Set();
+const functionsTabScroll = new Map();
+
 function openFunctionsModal(tab = 'taskPublish') {
   if (!canManageWorkspace()) return;
+  functionsVisitedTabs.clear();
+  functionsTabScroll.clear();
   setOperationFeedback('taskPublishFeedback', '');
+  syncReminderSettingsForm();
+  if ($('functionsReminderSaveStatus')) $('functionsReminderSaveStatus').textContent = '保存后在当前浏览器生效';
   setActiveTab(tab);
   showDialog('functionsModal', 'closeFunctionsModal');
-  const body = document.querySelector('#functionsModal .modal-body');
-  if (body) body.scrollTop = 0;
   revealActiveFunctionsTab();
-  if (tab === 'reminderSettings') syncReminderSettingsForm();
 }
 
 function closeFunctionsModal() {
@@ -9793,34 +10144,61 @@ function closeFunctionsModal() {
 }
 
 function revealActiveFunctionsTab() {
-  const tabs = document.querySelector('#functionsModal .tabs');
-  const active = tabs?.querySelector('.tab.active');
+  const modal = $('functionsModal');
+  const active = modal?.querySelector('.tab.active');
   if (!active) return;
-  const targetLeft = active.getBoundingClientRect().left - tabs.getBoundingClientRect().left + tabs.scrollLeft - 8;
-  tabs.scrollLeft = Math.max(0, targetLeft);
+  const section = active.dataset.tab;
+  const info = functionsSections[section];
+  $('functionsSectionTitle').textContent = info.title;
+  $('functionsSectionDescription').textContent = info.description;
+  $('functionsSectionBadge').hidden = section !== 'reminderSettings';
+  $('functionsSectionSelect').value = section;
+  const opsOption = $('functionsSectionSelect').querySelector('[value="opsMonitor"]');
+  opsOption.hidden = opsOption.disabled = state.user?.role !== 'admin';
+  modal.querySelectorAll('[data-functions-actions]').forEach((group) => {
+    group.hidden = group.dataset.functionsActions !== section;
+  });
+  $('exportExcel').hidden = state.user?.role !== 'admin';
+  modal.dataset.section = section;
 }
 
 function setActiveTab(tabName) {
   if (!canManageWorkspace()) return;
+  if (!functionsSections[tabName]) return;
   if (tabName === 'opsMonitor' && state.user?.role !== 'admin') return;
-  document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === tabName));
-  document.querySelectorAll('.tab-content').forEach((tab) => tab.classList.remove('active'));
-  if ($('functionsModal').classList.contains('active')) revealActiveFunctionsTab();
+  const modal = $('functionsModal');
+  const scroll = $('functionsWorkspaceScroll');
+  if (modal.classList.contains('active')) functionsTabScroll.set(modal.dataset.section, scroll.scrollTop);
+  const firstVisit = !functionsVisitedTabs.has(tabName);
+  modal.querySelectorAll('.tab').forEach((tab) => {
+    const selected = tab.dataset.tab === tabName;
+    tab.classList.toggle('active', selected);
+    tab.setAttribute('aria-selected', String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+  modal.querySelectorAll('.tab-content').forEach((panel) => {
+    panel.classList.remove('active');
+    panel.hidden = panel.id !== `${tabName}Tab`;
+  });
   const content = $(`${tabName}Tab`);
   if (content) content.classList.add('active');
   if (tabName === 'dataManagement') {
     updateStats();
-    renderExcelExportPanel();
+    renderExcelExportPanel({ preserveDraft: !firstVisit });
   }
-  if (tabName === 'userManagement') renderUserManagement();
+  if (tabName === 'userManagement' && firstVisit) renderUserManagement();
   if (tabName === 'opsMonitor' && !state.opsStatus) refreshOpsStatus();
   if (tabName === 'taskPublish') {
-    state.selectedTaskColor = randomMemoColor(latestMemoColor());
+    if (!$('taskStartDate').value) {
+      $('taskStartDate').value = dateKey(new Date());
+      state.selectedTaskColor = randomMemoColor(latestMemoColor());
+    }
     renderTaskAssignees();
     renderColorOptions(state.selectedTaskColor, 'task');
-    const today = new Date();
-    if ($('taskStartDate')) $('taskStartDate').value = dateKey(today);
   }
+  functionsVisitedTabs.add(tabName);
+  revealActiveFunctionsTab();
+  scroll.scrollTop = functionsTabScroll.get(tabName) || 0;
 }
 
 async function publishTask() {
@@ -10005,10 +10383,7 @@ async function saveUserById(userId) {
     state.user = updatedCurrentUser;
     $('serverUserName').textContent = state.user.displayName;
     $('serverUserRole').textContent = displayUserRoleDept(state.user);
-    const avatarEl = $('sidebarUserAvatar');
-    if (avatarEl && state.user?.displayName) {
-      avatarEl.textContent = state.user.displayName.trim().charAt(0) || '用';
-    }
+    renderCurrentUserAvatar();
   }
   renderUserManagement();
   renderTaskAssignees();
@@ -10077,17 +10452,39 @@ function opsInfoRow(label, value) {
 
 function renderOpsDisk(disk) {
   const level = disk.level || 'normal';
+  const available = disk.available !== false;
+  const identity = disk.device || disk.path;
   return `
     <div class="ops-disk-item">
       <div class="ops-disk-top">
-        <span>${escapeHtml(disk.label)} · ${escapeHtml(disk.path)}</span>
-        <span>${Number(disk.usedPercent || 0).toFixed(1)}%</span>
+        <span>${escapeHtml(disk.label)} · ${escapeHtml(identity)}</span>
+        <span>${available ? `${Number(disk.usedPercent || 0).toFixed(1)}%` : '容量暂不可读'}</span>
       </div>
-      <div class="ops-progress">
+      <div class="ops-card-subtitle ops-disk-purpose">挂载目录 ${escapeHtml(disk.path)}${disk.filesystem ? ` · ${escapeHtml(disk.filesystem)}` : ''}${disk.purpose ? ` · ${escapeHtml(disk.purpose)}` : ''}</div>
+      ${available ? `<div class="ops-progress">
         <div class="ops-progress-bar ${level === 'normal' ? '' : level}" style="width:${Math.min(100, Number(disk.usedPercent || 0))}%"></div>
       </div>
       <div class="ops-card-subtitle">
         已用 ${formatBytes(disk.usedBytes)} / 总量 ${formatBytes(disk.totalBytes)}，可用 ${formatBytes(disk.availableBytes)}
+      </div>` : ''}
+    </div>
+  `;
+}
+
+function renderOpsStorageLocations(storage) {
+  const database = storage.locations?.find((item) => item.kind === 'database' && item.verified);
+  if (!database) return '';
+  return `
+    <div class="ops-section ops-storage-section">
+      <h4><i class="fas fa-folder-open"></i> 数据存放位置</h4>
+      <div class="ops-storage-lead"><i class="fas fa-database"></i><span>当前日历数据存放在<strong>${escapeHtml(database.diskLabel)}</strong>（${escapeHtml(database.device)}）</span></div>
+      <div class="ops-storage-locations">
+        ${(storage.locations || []).map((item) => `
+          <div class="ops-storage-location">
+            <div><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.diskLabel)} · ${escapeHtml(item.device)}</span></div>
+            <code>${escapeHtml(item.hostPath)}</code>
+          </div>
+        `).join('')}
       </div>
     </div>
   `;
@@ -10107,6 +10504,8 @@ function renderOpsStatus() {
   const database = data.database || {};
   const connectionPool = database.connectionPool || {};
   const processInfo = runtime.process || {};
+  const storage = data.storage || {};
+  const disks = storage.disks || data.disks || [];
   box.innerHTML = `
     <div class="ops-status-summary">
       ${opsSummaryCard('fas fa-heartbeat', '总体状态', opsLevelText(data.level), `检查时间：${new Date(data.checkedAt).toLocaleString('zh-CN')}`, data.level)}
@@ -10115,17 +10514,19 @@ function renderOpsStatus() {
       ${opsSummaryCard('fas fa-database', '数据库', formatBytes(database.databaseSizeBytes), `${database.userCount || 0} 个用户 · ${database.memoCount || 0} 条任务`)}
     </div>
 
+    ${renderOpsStorageLocations(storage)}
+
     <div class="ops-section">
-      <h4><i class="fas fa-hdd"></i> 磁盘状态</h4>
+      <h4><i class="fas fa-hdd"></i> ${storage.scope === 'host' ? `服务器磁盘（${disks.length}）` : '容器可见文件系统'}</h4>
       <div class="ops-disk-list">
-        ${(data.disks || []).map(renderOpsDisk).join('')}
+        ${disks.map(renderOpsDisk).join('')}
       </div>
     </div>
 
     <div class="ops-section">
       <h4><i class="fas fa-server"></i> 运行环境</h4>
       <div class="ops-info-grid">
-        ${opsInfoRow('主机名', runtime.hostname || '-')}
+        ${opsInfoRow('容器主机名', runtime.hostname || '-')}
         ${opsInfoRow('系统', `${runtime.platform || '-'} ${runtime.arch || ''} ${runtime.release || ''}`)}
         ${opsInfoRow('系统运行时间', formatDuration(runtime.uptimeSeconds))}
         ${opsInfoRow('后端进程运行时间', formatDuration(processInfo.uptimeSeconds))}
@@ -10133,7 +10534,7 @@ function renderOpsStatus() {
         ${opsInfoRow('后端进程内存', formatBytes(processInfo.memoryUsage?.rss))}
         ${opsInfoRow('数据库连接池', `总 ${connectionPool.totalConnections || 0} · 空闲 ${connectionPool.idleConnections || 0} · 等待 ${connectionPool.waitingRequests || 0}`)}
         ${opsInfoRow('部门数量', String(database.departmentCount || 0))}
-        ${opsInfoRow('挂载点', (data.mounts || []).map((item) => item.target).join('、') || '-')}
+        ${opsInfoRow(storage.scope === 'host' ? '服务器挂载目录' : '容器目录', (data.mounts || []).map((item) => item.target).join('、') || '-')}
       </div>
     </div>
 
@@ -10942,7 +11343,7 @@ function renderExcelUserPicker() {
     : '<div class="excel-user-picker-empty">暂无可导出人员</div>';
 }
 
-function renderExcelExportPanel() {
+function renderExcelExportPanel({ preserveDraft = false } = {}) {
   const panel = $('excelExportPanel');
   if (!panel) return;
   const isAdmin = state.user?.role === 'admin';
@@ -10951,8 +11352,8 @@ function renderExcelExportPanel() {
 
   const startMonth = $('excelStartMonth');
   const monthCount = $('excelMonthCount');
-  if (startMonth) startMonth.value = monthKey(state.currentDate);
-  if (monthCount) monthCount.value = String(state.monthsToShow);
+  if (startMonth && !preserveDraft) startMonth.value = monthKey(state.currentDate);
+  if (monthCount && !preserveDraft) monthCount.value = String(state.monthsToShow);
   renderExcelUserPicker();
 }
 
@@ -11319,6 +11720,7 @@ function initEventListeners() {
   $('floatingFunctions').addEventListener('click', () => openFunctionsModal('taskPublish'));
   $('closeFunctionsModal').addEventListener('click', closeFunctionsModal);
   $('closeFunctionsModalBtn').addEventListener('click', closeFunctionsModal);
+  $('refreshOpsStatus')?.addEventListener('click', refreshOpsStatus);
   $('wpBackToCalendar')?.addEventListener('click', closeWeeklyPlanPage);
   $('wpPagePrevWeek')?.addEventListener('click', () => shiftWeeklyPlanWeek(-1));
   $('wpPageNextWeek')?.addEventListener('click', () => shiftWeeklyPlanWeek(1));
@@ -11338,6 +11740,17 @@ function initEventListeners() {
   $('toolbarDashboard')?.addEventListener('click', openDashboardPage);
   $('dashboardBackToCalendar')?.addEventListener('click', closeDashboardPage);
   $('dashboardRefresh')?.addEventListener('click', async () => { await loadMemos(); });
+  $('closeDashboardTaskModal')?.addEventListener('click', closeDashboardTaskList);
+  $('closeDashboardTaskModalBtn')?.addEventListener('click', closeDashboardTaskList);
+  $('dashboardTaskModal')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) closeDashboardTaskList(); });
+  $('dashboardTaskFilterSelect')?.addEventListener('change', (event) => setDashboardTaskFilter(event.target.value));
+  $('dashboardTaskSearch')?.addEventListener('input', (event) => {
+    state.dashboardTaskQuery = event.target.value.trim();
+    state.dashboardTaskLimit = 25;
+    renderDashboardTaskList();
+    $('dashboardTaskList').scrollTop = 0;
+  });
+  $('dashboardTaskMore')?.addEventListener('click', () => { state.dashboardTaskLimit += 25; renderDashboardTaskList(); });
   $('toolbarExport').addEventListener('click', openExcelExportPanel);
   $('toolbarImport').addEventListener('click', importData);
   $('exportData').addEventListener('click', exportData);
@@ -11403,7 +11816,22 @@ function initEventListeners() {
     $('themeToggleBtn')?.blur();
   });
 
-  document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => setActiveTab(tab.dataset.tab)));
+  document.querySelectorAll('#functionsModal .tab').forEach((tab) => tab.addEventListener('click', () => setActiveTab(tab.dataset.tab)));
+  $('functionsSectionSelect')?.addEventListener('change', (event) => setActiveTab(event.target.value));
+  document.querySelector('#functionsModal .tabs')?.addEventListener('keydown', (event) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const tabs = [...document.querySelectorAll('#functionsModal .tab')].filter((tab) => tab.getClientRects().length);
+    const currentIndex = tabs.indexOf(event.target.closest('.tab'));
+    if (currentIndex < 0) return;
+    event.preventDefault();
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+      : (currentIndex + (event.key === 'ArrowDown' ? 1 : -1) + tabs.length) % tabs.length;
+    setActiveTab(tabs[index].dataset.tab);
+    tabs[index].focus();
+  });
+  ['reminderCheckInterval', 'reminderAdvanceTime', 'enableSoundReminder', 'enableDesktopNotification'].forEach((id) => {
+    $(id)?.addEventListener('change', () => { $('functionsReminderSaveStatus').textContent = '有未保存的修改'; });
+  });
 
   document.addEventListener('click', async (event) => {
     const themeToggle = event.target.closest('#loginThemeToggle');
@@ -11427,6 +11855,19 @@ function initEventListeners() {
     if (dashboardUserTarget) { event.stopPropagation(); jumpToUserCalendar(dashboardUserTarget.dataset.dashboardUserId); return; }
     const dashboardRiskTarget = event.target.closest('.dashboard-risk-item[data-memo-id]');
     if (dashboardRiskTarget) { event.stopPropagation(); await openDashboardMemo(dashboardRiskTarget.dataset.memoId); return; }
+    const dashboardListTarget = event.target.closest('[data-dashboard-list-filter]');
+    if (dashboardListTarget) { openDashboardTaskList(dashboardListTarget.dataset.dashboardListFilter); return; }
+    const dashboardRiskFilter = event.target.closest('[data-dashboard-risk-filter]');
+    if (dashboardRiskFilter && canManageWorkspace() && dashboardRiskKinds.includes(dashboardRiskFilter.dataset.dashboardRiskFilter)) {
+      state.dashboardRiskFilter = dashboardRiskFilter.dataset.dashboardRiskFilter;
+      renderDashboardRisks();
+      $('dashboardRiskFilters').querySelector(`[data-dashboard-risk-filter="${state.dashboardRiskFilter}"]`)?.focus({ preventScroll: true });
+      return;
+    }
+    const dashboardTaskFilter = event.target.closest('[data-dashboard-task-filter]');
+    if (dashboardTaskFilter) { setDashboardTaskFilter(dashboardTaskFilter.dataset.dashboardTaskFilter); return; }
+    const dashboardTaskTarget = event.target.closest('[data-dashboard-memo-id]');
+    if (dashboardTaskTarget) { await openDashboardMemo(dashboardTaskTarget.dataset.dashboardMemoId); return; }
     const statusFilter = event.target.closest('[data-status-filter]');
     if (statusFilter) {
       event.stopPropagation();
@@ -11824,6 +12265,7 @@ async function saveReminderSettingsFromPanel() {
   updateDesktopNotificationStatus();
   startDueReminderTimer();
   dispatchPendingDueReminders();
+  if ($('functionsReminderSaveStatus')) $('functionsReminderSaveStatus').textContent = '设置已保存';
 
   if (settings.desktop && !systemEnabled) {
     showGlobalToast('提醒设置已保存；当前环境将使用页面提醒 + 声音。', 'info');
@@ -12064,6 +12506,9 @@ function decorateTablerUI() {
   modal.querySelector('.tabs')?.classList.add('nav', 'nav-pills');
   modal.querySelector('#taskAssigneeSummary')?.classList.add('badge', 'bg-blue-lt');
   modal.querySelectorAll('.tabs .tab[data-tab]').forEach((tab) => {
+    const panel = $(`${tab.dataset.tab}Tab`);
+    panel?.setAttribute('role', 'tabpanel');
+    panel?.setAttribute('aria-labelledby', tab.id);
     tab.classList.add('nav-link');
     if (tab.querySelector('.tabler-icon')) return;
     const icon = document.createElement('span');
