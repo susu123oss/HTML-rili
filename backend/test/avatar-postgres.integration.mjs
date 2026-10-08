@@ -40,8 +40,9 @@ try {
   const second = await json('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ displayName: '头像隔离验收乙', password, jobTitle: '测试工程师' }) }, 201);
   const admin = await json('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'admin', password: '0000' }) });
   const png = await sharp({ create: { width: 300, height: 500, channels: 3, background: '#36a4b3' } }).png().toBuffer();
-  async function upload(token, bytes = png, type = 'image/png', expected = 200) {
+  async function upload(token, bytes = png, type = 'image/png', expected = 200, crop) {
     const form = new FormData(); form.append('avatar', new Blob([bytes], { type }), '../avatar.png');
+    if (crop !== undefined) form.append('crop', JSON.stringify(crop));
     const data = await json('/api/users/me/avatar', { method: 'POST', headers: headers(token), body: form }, expected);
     if (data.user?.avatarUrl) keys.add(data.user.avatarUrl.split('/').at(-1));
     return data;
@@ -61,6 +62,14 @@ try {
   assert.equal(metadata.width, 256); assert.equal(metadata.height, 256); assert.equal(metadata.exif, undefined);
   await upload(first.token, Buffer.from('not a PNG'), 'image/png', 400);
   assert.equal((await json('/api/auth/me', { headers: headers(first.token) })).user.avatarUrl, uploaded.user.avatarUrl);
+  await upload(first.token, png, 'image/png', 400, { left: -1, top: 0, size: 100 });
+  assert.equal((await json('/api/auth/me', { headers: headers(first.token) })).user.avatarUrl, uploaded.user.avatarUrl);
+  const tall = await sharp(Buffer.from('<svg width="400" height="1200" xmlns="http://www.w3.org/2000/svg"><path fill="#e22" d="M0 0h400v800H0z"/><path fill="#26e" d="M0 800h400v400H0z"/></svg>')).png().toBuffer();
+  const cropped = await upload(first.token, tall, 'image/png', 200, { left: 0, top: 800, size: 400 });
+  const croppedResponse = await fetch(base + cropped.user.avatarUrl, { headers: headers(first.token) });
+  assert.equal(croppedResponse.status, 200);
+  const croppedPixel = await sharp(Buffer.from(await croppedResponse.arrayBuffer())).extract({ left: 128, top: 128, width: 1, height: 1 }).removeAlpha().raw().toBuffer();
+  assert(croppedPixel[2] > 220 && croppedPixel[0] < 50);
   const replaced = await Promise.all([upload(first.token), upload(first.token)]);
   const currentKey = (await pool.query('SELECT avatar_key FROM users WHERE id=$1', [first.user.id])).rows[0].avatar_key;
   assert(replaced.some(result => result.user.avatarUrl.endsWith(currentKey)));
@@ -71,7 +80,7 @@ try {
   const accountAvatar = await upload(second.token), accountKey = accountAvatar.user.avatarUrl.split('/').at(-1);
   await json('/api/users/' + second.user.id, { method: 'DELETE', headers: headers(admin.token) });
   await assert.rejects(stat(store.resourcePath('avatars', accountKey)), { code: 'ENOENT' });
-  console.log('PASS: real PostgreSQL migration, ordinary-staff multipart upload, actual data-disk file, login/me/team persistence, private reads, WebP processing, invalid-file retention, concurrent replacement, old-file cleanup, reset and account-deletion cleanup.');
+  console.log('PASS: real PostgreSQL migration, ordinary-staff multipart upload, selected crop pixels, invalid-crop retention, actual data-disk file, login/me/team persistence, private reads, WebP processing, invalid-file retention, concurrent replacement, old-file cleanup, reset and account-deletion cleanup.');
 } finally {
   if (server) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
   if (store) for (const key of keys) await store.remove('avatars', key).catch(() => {});

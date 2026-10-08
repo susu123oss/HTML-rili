@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20260930_duetime_tz_fix_v63" defer></script>
+    <script src="./app.js?v=20261008_weekly_current_v66" defer></script>
     <style>
         * {
             margin: 0;
@@ -3916,10 +3916,10 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20260930_duetime_tz_fix_v63" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <link rel="stylesheet" href="./functions-panel.css?v=20260930_duetime_tz_fix_v63">
-    <link rel="stylesheet" href="./dashboard-panel.css?v=20260930_duetime_tz_fix_v63">
-    <link rel="stylesheet" href="./avatar-profile.css?v=20260930_duetime_tz_fix_v63">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261008_weekly_current_v66" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link rel="stylesheet" href="./functions-panel.css?v=20261008_weekly_current_v66">
+    <link rel="stylesheet" href="./dashboard-panel.css?v=20261008_weekly_current_v66">
+    <link rel="stylesheet" href="./avatar-profile.css?v=20261008_weekly_current_v66">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4865,6 +4865,19 @@
             <div class="modal-body avatar-profile-body">
                 <div class="avatar-profile-preview" id="avatarProfilePreview">用</div>
                 <strong id="avatarProfileName"></strong>
+                <div class="avatar-crop-editor" id="avatarCropEditor" hidden>
+                    <div class="avatar-crop-stage">
+                        <canvas id="avatarCropCanvas" width="512" height="512" tabindex="0" role="img" aria-label="头像取景，拖动图片或用方向键调整位置"></canvas>
+                        <div class="avatar-crop-mask" aria-hidden="true"></div>
+                    </div>
+                    <p class="avatar-crop-hint" id="avatarCropHint" aria-live="polite">拖动图片调整位置，圆圈内为头像显示区域</p>
+                    <div class="avatar-crop-zoom">
+                        <label for="avatarCropZoom">缩放</label>
+                        <input id="avatarCropZoom" type="range" min="1" max="4" step="0.05" value="1.2">
+                        <output id="avatarCropZoomValue" for="avatarCropZoom">1.2×</output>
+                        <button class="btn btn-secondary" id="centerAvatarCrop" type="button">重置取景</button>
+                    </div>
+                </div>
                 <button class="btn btn-secondary" id="chooseAvatarFile" type="button"><i class="fas fa-camera"></i> 选择图片</button>
                 <input id="avatarFileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
                 <p class="avatar-profile-help">JPG、PNG 或 WebP，最多 5 MB</p>

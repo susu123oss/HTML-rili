@@ -11,7 +11,7 @@ export const profileAvatarRouter = express.Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: avatarMaxBytes, files: 1, fields: 0, parts: 1, fieldNameSize: 32 },
+  limits: { fileSize: avatarMaxBytes, files: 1, fields: 1, parts: 2, fieldNameSize: 32, fieldSize: 256 },
   fileFilter(req, file, callback) {
     callback(avatarMimeTypes.has(file.mimetype) ? null : Object.assign(new Error('头像仅支持 JPG、PNG 和 WebP 图片'), { status: 400 }), avatarMimeTypes.has(file.mimetype));
   }
@@ -25,7 +25,15 @@ profileAvatarRouter.post('/', (req, res, next) => upload(req, res, (error) => {
   let key = '';
   try {
     if (!req.file) return res.status(400).json({ message: '请选择要上传的头像图片' });
-    const encoded = await encodeAvatar(req.file.buffer);
+    if (Object.keys(req.body || {}).some(field => field !== 'crop')) return res.status(400).json({ message: '头像上传包含无效字段' });
+    let crop;
+    if (Object.hasOwn(req.body || {}, 'crop')) {
+      try {
+        if (typeof req.body.crop !== 'string') throw new Error('Invalid crop');
+        crop = JSON.parse(req.body.crop);
+      } catch { return res.status(400).json({ message: '头像取景无效，请重新调整取景' }); }
+    }
+    const encoded = await encodeAvatar(req.file.buffer, crop);
     key = await fileStorage.create('avatars', encoded);
     await replaceUserAvatar(req.user.id, key);
     return res.json({ user: toPublicUser({ ...req.user, avatarKey: key }) });

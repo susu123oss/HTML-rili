@@ -1,5 +1,5 @@
-html[data-theme] :is(.user-avatar, .item-avatar, .user-row-avatar, .wp-team-avatar, .avatar-profile-preview) { overflow: hidden; }
-html[data-theme] :is(.user-avatar, .item-avatar, .user-row-avatar, .wp-team-avatar, .avatar-profile-preview) img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+html[data-theme] :is(.user-avatar, .item-avatar, .user-row-avatar, .wp-team-avatar, .avatar-profile-preview) { position: relative; overflow: hidden; }
+html[data-theme] :is(.user-avatar, .item-avatar, .user-row-avatar, .wp-team-avatar, .avatar-profile-preview) img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; border-radius: inherit; }
 html[data-theme] button.user-avatar { padding: 0; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
 html[data-theme] button.user-avatar:hover { box-shadow: 0 0 0 3px var(--ui-accent-soft); }
 html[data-theme] button.user-avatar:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
@@ -11,6 +11,18 @@ html[data-theme] #avatarProfileModal .modal-title i { color: var(--ui-accent); }
 html[data-theme] #avatarProfileModal .close-modal { color: var(--ui-text-muted); font-size: 22px; }
 html[data-theme] #avatarProfileModal .avatar-profile-body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 20px 20px; }
 html[data-theme] #avatarProfileModal .avatar-profile-preview { display: grid; place-items: center; flex: 0 0 auto; width: 112px; height: 112px; border-radius: 50%; background: var(--ui-accent-soft); color: var(--ui-accent); font-size: 36px; font-weight: 700; }
+html[data-theme] #avatarProfileModal :is(.avatar-crop-editor, .avatar-profile-preview)[hidden] { display: none; }
+html[data-theme] #avatarProfileModal .avatar-crop-editor { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+html[data-theme] #avatarProfileModal .avatar-crop-stage { position: relative; width: min(256px, 100%); aspect-ratio: 1; flex: 0 0 auto; overflow: hidden; border-radius: 12px; background: var(--ui-bg); border: 1px solid var(--ui-border); }
+html[data-theme] #avatarCropCanvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+html[data-theme] #avatarCropCanvas.is-dragging { cursor: grabbing; }
+html[data-theme] #avatarCropCanvas:focus-visible { outline: 3px solid var(--ui-accent); outline-offset: -3px; }
+html[data-theme] #avatarProfileModal .avatar-crop-mask { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 100px rgb(0 0 0 / 48%); border: 2px solid rgb(255 255 255 / 90%); pointer-events: none; }
+html[data-theme] #avatarProfileModal .avatar-crop-hint { margin: 0; font-size: 12px; color: var(--ui-text-muted); text-align: center; }
+html[data-theme] #avatarProfileModal .avatar-crop-zoom { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 12px; }
+html[data-theme] #avatarCropZoom { min-width: 40px; width: 0; flex: 1; accent-color: var(--ui-accent); cursor: pointer; }
+html[data-theme] #avatarCropZoomValue { flex: 0 0 34px; text-align: right; font-variant-numeric: tabular-nums; }
+html[data-theme] #avatarProfileModal #centerAvatarCrop { font-size: 12px; padding: 6px 9px; white-space: nowrap; }
 html[data-theme] #avatarProfileModal .avatar-profile-help { color: var(--ui-text-muted); font-size: 12px; margin: -5px 0 0; }
 html[data-theme] #avatarProfileModal #avatarProfileFeedback { width: 100%; min-height: 36px; color: var(--ui-text-muted); font-size: 12px; text-align: center; line-height: 1.7; }
 html[data-theme] #avatarProfileModal #avatarProfileFeedback.is-error { color: #dc3545; }

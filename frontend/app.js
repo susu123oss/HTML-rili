@@ -240,9 +240,10 @@ async function request(path, options = {}) {
 
 const avatarImageCache = new Map();
 const avatarUrlPattern = /^\/api\/avatars\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/;
+const avatarDefaultCropZoom = 1.2;
 let avatarObserver = null;
 let avatarHydrationQueued = false;
-let avatarDraft = { file: null, previewUrl: '', busy: false, epoch: 0 };
+let avatarDraft = { file: null, previewUrl: '', crop: null, busy: false, epoch: 0 };
 
 function userAvatarAttributes(user) {
   const url = avatarUrlPattern.test(user?.avatarUrl || '') ? user.avatarUrl : '';
@@ -331,7 +332,8 @@ function avatarProfileFeedback(message, isError = false) {
 
 function setAvatarProfileBusy(busy) {
   avatarDraft.busy = busy;
-  ['avatarFileInput', 'chooseAvatarFile', 'saveAvatarProfile', 'resetAvatarProfile', 'closeAvatarProfile', 'cancelAvatarProfile'].forEach((id) => { if ($(id)) $(id).disabled = busy; });
+  ['avatarFileInput', 'chooseAvatarFile', 'saveAvatarProfile', 'resetAvatarProfile', 'closeAvatarProfile', 'cancelAvatarProfile', 'avatarCropZoom', 'centerAvatarCrop'].forEach((id) => { if ($(id)) $(id).disabled = busy; });
+  $('avatarCropCanvas').setAttribute('aria-disabled', String(busy));
   $('saveAvatarProfile').disabled = busy || !avatarDraft.file;
   $('resetAvatarProfile').disabled = busy || !state.user?.avatarUrl;
   $('saveAvatarProfile').textContent = busy ? '正在保存…' : '保存头像';
@@ -339,13 +341,66 @@ function setAvatarProfileBusy(busy) {
 
 function renderAvatarProfilePreview() {
   const preview = $('avatarProfilePreview');
+  const hasCrop = Boolean(avatarDraft.file && avatarDraft.crop);
+  preview.hidden = hasCrop;
+  $('avatarCropEditor').hidden = !hasCrop;
   preview.replaceChildren();
   preview.dataset.avatarInitial = (state.user?.displayName || '用').trim().charAt(0);
   preview.textContent = preview.dataset.avatarInitial;
-  preview.dataset.avatarUrl = avatarDraft.previewUrl ? '' : (state.user?.avatarUrl || '');
-  if (avatarDraft.previewUrl) {
-    const image = document.createElement('img'); image.alt = '新头像预览'; image.src = avatarDraft.previewUrl; preview.replaceChildren(image);
-  } else queueAvatarHydration();
+  preview.dataset.avatarUrl = hasCrop ? '' : (state.user?.avatarUrl || '');
+  if (hasCrop) drawAvatarCrop();
+  else queueAvatarHydration();
+}
+
+function avatarCropRectangle() {
+  const crop = avatarDraft.crop;
+  if (!crop) return null;
+  const size = Math.max(1, Math.floor(Math.min(crop.width, crop.height) / crop.zoom));
+  crop.centerX = Math.max(size / 2, Math.min(crop.width - size / 2, crop.centerX));
+  crop.centerY = Math.max(size / 2, Math.min(crop.height - size / 2, crop.centerY));
+  return { left: Math.round(crop.centerX - size / 2), top: Math.round(crop.centerY - size / 2), size };
+}
+
+function drawAvatarCrop() {
+  const crop = avatarDraft.crop, rect = avatarCropRectangle();
+  if (!crop || !rect) return;
+  const canvas = $('avatarCropCanvas'), ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(crop.image, rect.left, rect.top, rect.size, rect.size, 0, 0, canvas.width, canvas.height);
+  $('avatarCropZoom').value = String(crop.zoom);
+  $('avatarCropZoomValue').textContent = `${crop.zoom.toFixed(1)}×`;
+  const lockedX = rect.size === crop.width, lockedY = rect.size === crop.height;
+  const hint = !lockedX && !lockedY ? '拖动图片调整位置，圆圈内为头像显示区域'
+    : rect.size === 1 ? '图片像素过小，可更换更清晰的图片。'
+    : lockedX && lockedY ? '图片已铺满取景框，放大一点即可上下左右拖动。'
+    : lockedX ? '图片宽度已贴边，放大一点即可左右拖动。'
+    : '图片高度已贴边，放大一点即可上下拖动。';
+  if ($('avatarCropHint').textContent !== hint) $('avatarCropHint').textContent = hint;
+}
+
+function endAvatarCropDrag() {
+  const canvas = $('avatarCropCanvas'), drag = avatarDraft.crop?.drag;
+  if (drag && canvas.hasPointerCapture(drag.id)) canvas.releasePointerCapture(drag.id);
+  if (avatarDraft.crop) avatarDraft.crop.drag = null;
+  canvas.classList.remove('is-dragging');
+}
+
+function resetAvatarCrop() {
+  if (!avatarDraft.crop || avatarDraft.busy) return;
+  endAvatarCropDrag();
+  const crop = avatarDraft.crop;
+  crop.zoom = avatarDefaultCropZoom; crop.centerX = crop.width / 2; crop.centerY = crop.height / 2;
+  drawAvatarCrop();
+}
+
+function discardAvatarDraftImage() {
+  endAvatarCropDrag();
+  const canvas = $('avatarCropCanvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  if (avatarDraft.previewUrl) URL.revokeObjectURL(avatarDraft.previewUrl);
+  avatarDraft.previewUrl = ''; avatarDraft.file = null; avatarDraft.crop = null;
+  avatarDraft.epoch += 1;
 }
 
 function openAvatarProfile() {
@@ -354,7 +409,7 @@ function openAvatarProfile() {
   avatarDraft.epoch += 1;
   $('avatarProfileName').textContent = state.user.displayName || state.user.username;
   $('avatarFileInput').value = '';
-  avatarProfileFeedback('选择图片后可预览，保存后会更新你的头像。');
+  avatarProfileFeedback('选择图片后可拖动、缩放，调整好取景再保存。');
   renderAvatarProfilePreview();
   setAvatarProfileBusy(false);
   showDialog('avatarProfileModal', 'chooseAvatarFile');
@@ -362,8 +417,8 @@ function openAvatarProfile() {
 
 function closeAvatarProfile() {
   if (avatarDraft.busy) return;
-  if (avatarDraft.previewUrl) URL.revokeObjectURL(avatarDraft.previewUrl);
-  avatarDraft = { file: null, previewUrl: '', busy: false, epoch: avatarDraft.epoch + 1 };
+  discardAvatarDraftImage();
+  avatarDraft = { file: null, previewUrl: '', crop: null, busy: false, epoch: avatarDraft.epoch };
   hideDialog('avatarProfileModal');
 }
 
@@ -371,29 +426,31 @@ async function chooseAvatarPreview() {
   if (avatarDraft.busy) return;
   const file = $('avatarFileInput').files?.[0];
   if (!file) return;
+  discardAvatarDraftImage();
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-    if (avatarDraft.previewUrl) URL.revokeObjectURL(avatarDraft.previewUrl);
-    avatarDraft.previewUrl = ''; avatarDraft.file = null;
     renderAvatarProfilePreview(); setAvatarProfileBusy(false);
     avatarProfileFeedback('请选择不超过 5 MB 的 JPG、PNG 或 WebP 图片。', true); $('avatarFileInput').value = ''; return;
   }
-  if (avatarDraft.previewUrl) URL.revokeObjectURL(avatarDraft.previewUrl);
   avatarDraft.previewUrl = URL.createObjectURL(file);
-  avatarDraft.file = null;
-  const epoch = ++avatarDraft.epoch;
+  const epoch = avatarDraft.epoch;
+  renderAvatarProfilePreview();
   setAvatarProfileBusy(false);
+  avatarProfileFeedback('正在读取图片…');
   try {
     const image = new Image();
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = avatarDraft.previewUrl; });
     if (epoch !== avatarDraft.epoch) return;
     if (!image.naturalWidth || image.naturalWidth * image.naturalHeight > 25000000) throw new Error('Image too large');
     avatarDraft.file = file;
+    avatarDraft.crop = { image, width: image.naturalWidth, height: image.naturalHeight, centerX: image.naturalWidth / 2, centerY: image.naturalHeight / 2, zoom: avatarDefaultCropZoom, drag: null };
     renderAvatarProfilePreview();
-    avatarProfileFeedback('图片将裁成正方形，按上方效果保存。');
+    avatarProfileFeedback('保存后会使用当前取景。');
   } catch {
     if (epoch !== avatarDraft.epoch) return;
-    URL.revokeObjectURL(avatarDraft.previewUrl); avatarDraft.previewUrl = ''; avatarDraft.file = null;
+    discardAvatarDraftImage();
     renderAvatarProfilePreview(); avatarProfileFeedback('图片无法读取，请更换图片（不超过 2500 万像素）。', true);
+    $('avatarFileInput').value = '';
+    setAvatarProfileBusy(false);
   }
   if (epoch === avatarDraft.epoch) setAvatarProfileBusy(false);
 }
@@ -407,7 +464,10 @@ async function saveAvatarProfile(reset = false) {
   avatarProfileFeedback(reset ? '正在恢复默认头像…' : '正在上传头像…');
   try {
     const body = reset ? undefined : new FormData();
-    if (body) body.append('avatar', avatarDraft.file);
+    if (body) {
+      body.append('avatar', avatarDraft.file);
+      body.append('crop', JSON.stringify(avatarCropRectangle()));
+    }
     const data = await request('/users/me/avatar', { method: reset ? 'DELETE' : 'POST', body, signal: controller.signal });
     if (!isCurrentSession(sessionVersion)) return;
     const previous = state.user.avatarUrl;
@@ -437,6 +497,40 @@ function bindAvatarProfileUi() {
   $('avatarFileInput').addEventListener('change', chooseAvatarPreview);
   $('saveAvatarProfile').addEventListener('click', () => saveAvatarProfile(false));
   $('resetAvatarProfile').addEventListener('click', () => saveAvatarProfile(true));
+  $('centerAvatarCrop').addEventListener('click', resetAvatarCrop);
+  $('avatarCropZoom').addEventListener('input', (event) => {
+    if (!avatarDraft.crop || avatarDraft.busy) return;
+    endAvatarCropDrag();
+    avatarDraft.crop.zoom = Math.max(1, Math.min(4, Number(event.target.value) || 1));
+    drawAvatarCrop();
+  });
+  const cropCanvas = $('avatarCropCanvas');
+  cropCanvas.addEventListener('pointerdown', (event) => {
+    if (!avatarDraft.crop || avatarDraft.busy || event.button !== 0 || avatarDraft.crop.drag) return;
+    event.preventDefault(); cropCanvas.focus({ preventScroll: true });
+    const rect = avatarCropRectangle(), crop = avatarDraft.crop;
+    crop.drag = { id: event.pointerId, x: event.clientX, y: event.clientY, size: rect.size };
+    cropCanvas.setPointerCapture(event.pointerId); cropCanvas.classList.add('is-dragging');
+  });
+  cropCanvas.addEventListener('pointermove', (event) => {
+    const crop = avatarDraft.crop, drag = crop?.drag;
+    if (!drag || drag.id !== event.pointerId || avatarDraft.busy) return;
+    const bounds = cropCanvas.getBoundingClientRect();
+    crop.centerX -= (event.clientX - drag.x) * drag.size / bounds.width;
+    crop.centerY -= (event.clientY - drag.y) * drag.size / bounds.height;
+    drag.x = event.clientX; drag.y = event.clientY;
+    drawAvatarCrop();
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => cropCanvas.addEventListener(type, (event) => { if (avatarDraft.crop?.drag?.id === event.pointerId) endAvatarCropDrag(); }));
+  cropCanvas.addEventListener('keydown', (event) => {
+    const crop = avatarDraft.crop;
+    if (!crop || avatarDraft.busy || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+    event.preventDefault();
+    const step = Math.max(1, Math.round(avatarCropRectangle().size * (event.shiftKey ? 0.1 : 0.02)));
+    crop.centerX += event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+    crop.centerY += event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
+    drawAvatarCrop();
+  });
   ['closeAvatarProfile', 'cancelAvatarProfile'].forEach((id) => $(id).addEventListener('click', closeAvatarProfile));
   $('avatarProfileModal').addEventListener('click', (event) => { if (event.target.id === 'avatarProfileModal') closeAvatarProfile(); });
   avatarObserver = new MutationObserver(queueAvatarHydration);
@@ -4996,7 +5090,8 @@ function applyMainView() {
 
 function openWeeklyPlanPage(refDate) {
   state.activeView = 'weeklyPlan';
-  state.weeklyPlanDate = refDate ? new Date(refDate) : new Date(state.currentDate || new Date());
+  // Navigation opens this week; an explicit date still opens its requested week.
+  state.weeklyPlanDate = refDate ? new Date(refDate) : new Date();
   state.weeklyPlanView = state.weeklyPlanView || 'personal';
   state.weeklyMobileDay = null;
   closeFunctionsModal();

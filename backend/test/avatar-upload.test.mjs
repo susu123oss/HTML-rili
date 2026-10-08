@@ -41,9 +41,10 @@ test('real multipart avatar lifecycle, image validation, account ownership and a
   const base = `http://127.0.0.1:${server.address().port}`;
   const png = await sharp({ create: { width: 400, height: 600, channels: 3, background: '#2563eb' } }).withExif({ IFD0: { Artist: 'isolated-avatar-fixture' } }).png().toBuffer();
   assert((await sharp(png).metadata()).exif);
-  async function upload(bytes, mime = 'image/png', userId = 1, extra = false) {
+  async function upload(bytes, mime = 'image/png', userId = 1, extra = false, crop) {
     const form = new FormData(); form.append('avatar', new Blob([bytes], { type: mime }), '../../should-not-control-path.png');
     if (extra) form.append('userId', '2');
+    if (crop !== undefined) form.append('crop', typeof crop === 'string' ? crop : JSON.stringify(crop));
     return fetch(base + '/api/users/me/avatar', { method: 'POST', headers: userId ? { Authorization: `Bearer ${userId}` } : {}, body: form });
   }
   try {
@@ -68,8 +69,12 @@ test('real multipart avatar lifecycle, image validation, account ownership and a
     assert.equal((await upload(oversizedPixels)).status, 400);
     assert.equal((await upload(Buffer.alloc(avatarMaxBytes + 1))).status, 413);
     assert.equal((await upload(png, 'image/png', 1, true)).status, 400);
+    for (const crop of ['invalid json', null, { left: -1, top: 0, size: 100 }, { left: 0, top: 501, size: 100 }, { left: 0, top: 0, size: 100.5 }, { left: 0, top: 0, size: 100, userId: 2 }]) {
+      assert.equal((await upload(png, 'image/png', 1, false, crop)).status, 400);
+    }
+    assert.equal((await upload(png, 'image/png', 1, true, { left: 0, top: 0, size: 100 })).status, 400);
     assert.equal(users.get(1).avatarKey, key); // Invalid requests keep the existing avatar.
-    assert.equal((await upload(png)).status, 200);
+    assert.equal((await upload(png, 'image/png', 1, false, { left: 0, top: 100, size: 300 })).status, 200);
     await assert.rejects(stat(storage.resourcePath('avatars', key)), { code: 'ENOENT' });
     assert.equal((await fetch(base + '/api/avatars/' + key, { headers: { Authorization: 'Bearer 1' } })).status, 404);
     response = await fetch(base + '/api/users/me/avatar', { method: 'DELETE', headers: { Authorization: 'Bearer 1' } });
@@ -82,4 +87,20 @@ test('real multipart avatar lifecycle, image validation, account ownership and a
     server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('selected avatar region matches oriented portrait and landscape pixels', async () => {
+  const portrait = await sharp(Buffer.from('<svg width="400" height="1200" xmlns="http://www.w3.org/2000/svg"><path fill="#e22" d="M0 0h400v400H0z"/><path fill="#2b5" d="M0 400h400v400H0z"/><path fill="#26e" d="M0 800h400v400H0z"/></svg>')).png().toBuffer();
+  const oriented = await sharp(portrait).rotate(-90).withMetadata({ orientation: 6 }).jpeg({ quality: 95 }).toBuffer();
+  assert.equal((await sharp(oriented).metadata()).orientation, 6);
+  const landscape = await sharp(portrait).rotate(90).png().toBuffer();
+  for (const [input, crop] of [[portrait, { left: 0, top: 800, size: 400 }], [oriented, { left: 0, top: 800, size: 400 }], [landscape, { left: 0, top: 0, size: 400 }]]) {
+    const output = await encodeAvatar(input, crop);
+    const metadata = await sharp(output).metadata();
+    assert.equal(metadata.width, 256); assert.equal(metadata.height, 256); assert.equal(metadata.exif, undefined);
+    const pixel = await sharp(output).extract({ left: 128, top: 128, width: 1, height: 1 }).removeAlpha().raw().toBuffer();
+    assert(pixel[2] > 220 && pixel[0] < 50 && pixel[1] < 120, `Expected selected blue band; got ${[...pixel]}`);
+  }
+  const centerPixel = await sharp(await encodeAvatar(portrait)).extract({ left: 128, top: 128, width: 1, height: 1 }).removeAlpha().raw().toBuffer();
+  assert(centerPixel[1] > 160 && centerPixel[0] < 50 && centerPixel[2] < 100); // Existing clients retain centered cropping.
 });
