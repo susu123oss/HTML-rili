@@ -893,7 +893,7 @@ async function handleUpdateMemo(req, res, next) {
     if (!canEditMemo(req.user, memo.ownerId)) {
       return res.status(403).json({ message: '没有修改该记录的权限' });
     }
-    if (memo.rolloverToId) {
+    if (memo.rolloverToId && req.user.role !== 'admin') {
       return res.status(409).json({ message: '已顺延的原计划不能修改，请编辑顺延后的事项' });
     }
 

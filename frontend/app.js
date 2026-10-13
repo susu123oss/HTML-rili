@@ -7803,9 +7803,9 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
       || openingView !== state.activeView || navigationVersion !== editorNavigationVersion) return;
   state.detailDraftFromQuickAdd = Boolean(!memo && draft.fromQuickAdd);
 
-  // 权限控制：管理员或任务所有者可编辑，其他成员为只读查看
-  const canEdit = (!memo || canManageWorkspace() || Number(memo.ownerId) === Number(state.user?.id))
-    && !memo?.rolloverToId && !detailUnavailable;
+  // 权限控制：管理员可编辑所有事项；任务所有者可编辑未顺延事项，其他成员为只读查看
+  const canEdit = (!memo || canManageWorkspace() || (Number(memo.ownerId) === Number(state.user?.id) && !memo?.rolloverToId))
+    && !detailUnavailable;
 
   // 动态更新模态窗标题与只读状态及审阅/点赞印章
   const modalTitle = $('memoModal')?.querySelector('.modal-title');
@@ -7818,7 +7818,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
       modalTitle.innerHTML = `<i class="fas fa-eye"></i> 查看备忘录${memo?.ownerName ? `（所属：${escapeHtml(memo.ownerName)}）` : ''}${stampsHtml}`;
     } else {
       modalTitle.innerHTML = (memo
-        ? '<i class="fas fa-edit"></i> 编辑备忘录'
+        ? `<i class="fas fa-edit"></i> 编辑备忘录${memo?.ownerName && Number(memo.ownerId) !== Number(state.user?.id) ? `（所属：${escapeHtml(memo.ownerName)}）` : ''}`
         : '<i class="fas fa-plus-circle"></i> 添加详细备忘录') + stampsHtml;
     }
   }
