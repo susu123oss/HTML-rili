@@ -11101,4 +11101,206 @@ html[data-theme="dark"] .wp-target-user-select {
   color: #f1f5f9;
 }
 
+/* ========================================================
+   全局居中应用确认弹窗 (Global Centered Confirm Modal)
+   ======================================================== */
+.app-confirm-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  z-index: 10050 !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.app-confirm-modal.active {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+.app-confirm-modal .app-confirm-content {
+  width: min(480px, calc(100vw - 32px)) !important;
+  max-width: 480px !important;
+  margin: auto !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 1px solid var(--ui-border, rgba(0, 0, 0, 0.08)) !important;
+  transform: scale(0.96);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.app-confirm-modal.active .app-confirm-content {
+  transform: scale(1) !important;
+}
+
+.app-confirm-header {
+  padding: 16px 20px !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: transparent !important;
+  color: #1e293b !important;
+}
+
+.app-confirm-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+}
+
+.app-confirm-title i {
+  font-size: 1.25rem !important;
+  color: var(--primary-color, #4361ee) !important;
+}
+
+.app-confirm-title.is-danger i {
+  color: #ef4444 !important;
+}
+
+.app-confirm-title.is-warning i {
+  color: #f59e0b !important;
+}
+
+.app-confirm-title.is-success i {
+  color: #10b981 !important;
+}
+
+.app-confirm-body {
+  padding: 20px 22px !important;
+  font-size: 0.96rem !important;
+  line-height: 1.65 !important;
+  color: #334155 !important;
+  max-height: 60vh !important;
+  overflow-y: auto !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+}
+
+.app-confirm-footer {
+  padding: 14px 20px !important;
+  border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: #f8fafc !important;
+  flex-wrap: wrap !important;
+}
+
+.app-confirm-footer .btn {
+  min-height: 38px !important;
+  padding: 8px 18px !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1.4 !important;
+}
+
+.app-confirm-modal #appConfirmExtraBtn {
+  background: transparent !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+.app-confirm-modal #appConfirmExtraBtn:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #1e293b !important;
+}
+
+.app-confirm-modal .btn-success {
+  background: #10b981 !important;
+  border: 1px solid #059669 !important;
+  color: #ffffff !important;
+}
+
+.app-confirm-modal .btn-success:hover {
+  background: #059669 !important;
+  border-color: #047857 !important;
+}
+
+.app-confirm-modal .btn-danger {
+  background: #ef4444 !important;
+  border: 1px solid #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.app-confirm-modal .btn-danger:hover {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+}
+
+/* 深色模式适配 */
+html[data-theme='dark'] .app-confirm-modal .app-confirm-content {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme='dark'] .app-confirm-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme='dark'] .app-confirm-title {
+  color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .app-confirm-body {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .app-confirm-footer {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  background: #0f172a !important;
+}
+
+html[data-theme='dark'] .app-confirm-modal #appConfirmExtraBtn {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .app-confirm-modal #appConfirmExtraBtn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .app-confirm-modal .btn-secondary {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .app-confirm-modal .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+
+
 

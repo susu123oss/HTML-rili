@@ -327,9 +327,16 @@ function restoreEditorDraft(kind) {
   if (!session.storageError) setEditorDraftStatus(kind, '已恢复旧草稿，请核对最新内容后保存。');
 }
 
-function discardEditorDraft(kind) {
+async function discardEditorDraft(kind) {
   const session = editorDraftSessions[kind];
-  if (!editorDraftIsCurrent(session) || !confirm('舍弃未保存的草稿并恢复打开时的内容？')) return;
+  if (!editorDraftIsCurrent(session)) return;
+  const ok = await showAppConfirm('舍弃未保存的草稿并恢复打开时的内容？', {
+    title: '舍弃草稿确认',
+    icon: 'fas fa-undo-alt',
+    confirmText: '舍弃草稿',
+    isDanger: true
+  });
+  if (!ok) return;
   try {
     localStorage.removeItem(session.key);
   } catch (_) {
@@ -445,7 +452,8 @@ function handleDialogKeydown(event) {
     event.preventDefault();
     ({ memoModal: closeMemoModal, functionsModal: closeFunctionsModal,
       dailyDetailModal: closeDailyDetailModal, reminderModal: closeReminderModal,
-      dashboardTaskModal: closeDashboardTaskList, avatarProfileModal: closeAvatarProfile })[id]?.();
+      dashboardTaskModal: closeDashboardTaskList, avatarProfileModal: closeAvatarProfile,
+      appConfirmModal: () => hideAppConfirm(false) })[id]?.();
     return;
   }
   if (event.key !== 'Tab') return;
@@ -460,6 +468,156 @@ function handleDialogKeydown(event) {
     event.preventDefault();
     first.focus();
   }
+}
+
+let appConfirmPromiseResolve = null;
+let appConfirmInitialized = false;
+
+function initAppConfirmModal() {
+  if (appConfirmInitialized) return;
+  appConfirmInitialized = true;
+  $('appConfirmOkBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    hideAppConfirm('confirm');
+  });
+  $('appConfirmExtraBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    hideAppConfirm('extra');
+  });
+  $('appConfirmCancelBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    hideAppConfirm(false);
+  });
+  $('appConfirmCloseBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    hideAppConfirm(false);
+  });
+  $('appConfirmModal')?.addEventListener('click', (e) => {
+    if (e.target === $('appConfirmModal')) {
+      e.preventDefault();
+      hideAppConfirm(false);
+    }
+  });
+}
+
+function hideAppConfirm(result = false) {
+  const modal = $('appConfirmModal');
+  if (modal?.classList.contains('active')) {
+    hideDialog('appConfirmModal');
+  }
+  if (typeof appConfirmPromiseResolve === 'function') {
+    const resolve = appConfirmPromiseResolve;
+    appConfirmPromiseResolve = null;
+    resolve(result);
+  }
+}
+
+function showAppConfirm(message, options = {}) {
+  const modal = $('appConfirmModal');
+  if (!modal) {
+    return Promise.resolve(window.confirm(typeof message === 'string' ? message : ''));
+  }
+
+  initAppConfirmModal();
+
+  const {
+    title = '操作确认',
+    icon = 'fas fa-question-circle',
+    confirmText = '确定',
+    cancelText = '取消',
+    extraText = null,
+    isDanger = false,
+    confirmVariant = null,
+    showCancel = true
+  } = options;
+
+  const titleEl = $('appConfirmTitleText');
+  const iconEl = $('appConfirmIcon');
+  const msgEl = $('appConfirmMessage');
+  const okBtn = $('appConfirmOkBtn');
+  const cancelBtn = $('appConfirmCancelBtn');
+  const extraBtn = $('appConfirmExtraBtn');
+  const titleWrap = $('appConfirmTitle');
+
+  if (titleEl) titleEl.textContent = title;
+  if (iconEl) {
+    iconEl.className = icon || 'fas fa-question-circle';
+  }
+  if (titleWrap) {
+    titleWrap.classList.remove('is-danger', 'is-warning', 'is-success');
+    if (isDanger || confirmVariant === 'danger') {
+      titleWrap.classList.add('is-danger');
+    } else if (confirmVariant === 'success') {
+      titleWrap.classList.add('is-success');
+    } else if (confirmVariant === 'warning') {
+      titleWrap.classList.add('is-warning');
+    }
+  }
+
+  if (msgEl) {
+    if (typeof message === 'string') {
+      msgEl.textContent = message;
+    } else if (message instanceof Node) {
+      msgEl.innerHTML = '';
+      msgEl.appendChild(message);
+    } else {
+      msgEl.textContent = String(message || '');
+    }
+  }
+
+  if (okBtn) {
+    okBtn.textContent = confirmText;
+    okBtn.className = 'btn';
+    if (isDanger || confirmVariant === 'danger') {
+      okBtn.classList.add('btn-danger');
+    } else if (confirmVariant === 'success') {
+      okBtn.classList.add('btn-success');
+    } else {
+      okBtn.classList.add('btn-primary');
+    }
+  }
+
+  if (cancelBtn) {
+    cancelBtn.textContent = cancelText;
+    cancelBtn.style.display = showCancel ? 'inline-flex' : 'none';
+  }
+
+  if (extraBtn) {
+    if (extraText) {
+      extraBtn.textContent = extraText;
+      extraBtn.style.display = 'inline-flex';
+    } else {
+      extraBtn.style.display = 'none';
+    }
+  }
+
+  if (typeof appConfirmPromiseResolve === 'function') {
+    appConfirmPromiseResolve(false);
+    appConfirmPromiseResolve = null;
+  }
+
+  return new Promise((resolve) => {
+    appConfirmPromiseResolve = (res) => {
+      // 若没有提供 extraText，'confirm' 直接转为布尔值 true
+      if (!extraText && res === 'confirm') {
+        resolve(true);
+      } else {
+        resolve(res);
+      }
+    };
+    showDialog('appConfirmModal', 'appConfirmOkBtn');
+  });
+}
+
+function showAppAlert(message, options = {}) {
+  return showAppConfirm(message, {
+    title: options.title || '系统提示',
+    icon: options.icon || 'fas fa-info-circle',
+    confirmText: options.confirmText || '我知道了',
+    showCancel: false,
+    confirmVariant: options.confirmVariant || 'primary',
+    ...options
+  });
 }
 
 function setOperationFeedback(id, message) {
@@ -9136,7 +9294,7 @@ async function autoCarryOverYesterdayMemos(targetDateInput) {
   );
 
   if (!uncompleted.length) {
-    alert(`昨日 (${prevKey}) 没有未完成的事项，无需结转！`);
+    showGlobalToast(`昨日 (${prevKey}) 没有未完成的事项，无需结转！`, 'info');
     return;
   }
 
@@ -9144,7 +9302,12 @@ async function autoCarryOverYesterdayMemos(targetDateInput) {
     uncompleted.map((m, i) => `• ${m.title}`).join('\n') +
     `\n\n是否顺延至【${targetKey}】？完整正文与交付记录会保留，待验收事项将跳过。`;
   
-  if (!confirm(confirmMsg)) return;
+  const ok = await showAppConfirm(confirmMsg, {
+    title: '昨日事项顺延',
+    icon: 'fas fa-forward',
+    confirmText: '确认顺延'
+  });
+  if (!ok) return;
   state.dailyRolloverBusy = true;
   const failures = [];
   try {
@@ -9169,7 +9332,11 @@ async function autoCarryOverYesterdayMemos(targetDateInput) {
     loadDailyDetailMemos(state.dailyDetailDate);
   }
   await loadReminders();
-  alert(`已结转 ${successCount} 项至 ${targetKey}${failures.length ? `；跳过或失败 ${failures.length} 项\n${failures.slice(0, 8).join('\n')}` : ''}`);
+  if (failures.length) {
+    showAppAlert(`已结转 ${successCount} 项至 ${targetKey}；跳过或失败 ${failures.length} 项\n${failures.slice(0, 8).join('\n')}`, { title: '顺延结果' });
+  } else {
+    showGlobalToast(`已结转 ${successCount} 项至 ${targetKey}`, 'success');
+  }
   } finally { state.dailyRolloverBusy = false; }
 }
 
@@ -9213,23 +9380,51 @@ async function saveMemo() {
   const title = $('memoTitle').value.trim();
   const dueTime = $('memoDueTime').value;
   if (!title) {
-    alert('请输入标题');
+    showGlobalToast('请输入标题', 'warning');
+    $('memoTitle')?.focus();
     return;
   }
   if (!dueTime) {
-    alert('请添加截止时间后再保存');
+    showGlobalToast('请添加截止时间后再保存', 'warning');
     showMemoDuePickerPopup();
     return;
   }
   const originalMemo = state.memos.find(m => String(m.id) === String(state.selectedMemoId));
   const actualDeliverable = $('memoActualDeliverable')?.value.trim() || '';
   const isRoutine = isRoutineDeliverableChoice(actualDeliverable);
-  const isChecked = Boolean($('memoCompleted')?.checked);
+  let isChecked = Boolean($('memoCompleted')?.checked);
   const isAdmin = canManageWorkspace();
 
   if (!actualDeliverable) {
     remindSelectDeliverable();
     return;
+  }
+
+  // 当选择了交付物但未勾选已完成时，居中弹窗提醒是否自动勾选已完成
+  if (actualDeliverable && !isChecked) {
+    const promptChoice = await showAppConfirm(
+      `检测到您已选择成果交付物【${actualDeliverable}】，是否自动勾选【已完成】并保存？`,
+      {
+        title: '成果交付确认',
+        icon: 'fas fa-clipboard-check',
+        confirmText: '勾选已完成并保存',
+        extraText: '保持未完成直接保存',
+        cancelText: '返回编辑',
+        confirmVariant: 'success'
+      }
+    );
+
+    if (promptChoice === false) {
+      return;
+    }
+
+    if (promptChoice === 'confirm' || promptChoice === true) {
+      isChecked = true;
+      if ($('memoCompleted')) {
+        $('memoCompleted').checked = true;
+      }
+      syncMemoCompletedState();
+    }
   }
 
   let nextCompleted = isChecked;
@@ -9238,20 +9433,19 @@ async function saveMemo() {
     if (isChecked) {
       nextCompleted = true;
       nextDeliveryStatus = 'confirmed';
-    } else if (actualDeliverable && !isRoutine) {
-      nextCompleted = false;
-      nextDeliveryStatus = 'submitted';
     } else {
       nextCompleted = false;
       nextDeliveryStatus = 'in_progress';
     }
   } else {
-    if (actualDeliverable && !isRoutine) {
-      nextCompleted = false;
-      nextDeliveryStatus = 'submitted';
-    } else if (isRoutine) {
-      nextCompleted = isChecked;
-      nextDeliveryStatus = isChecked ? 'confirmed' : 'in_progress';
+    if (isChecked) {
+      if (isRoutine) {
+        nextCompleted = true;
+        nextDeliveryStatus = 'confirmed';
+      } else {
+        nextCompleted = false;
+        nextDeliveryStatus = 'submitted';
+      }
     } else {
       nextCompleted = false;
       nextDeliveryStatus = 'in_progress';
@@ -9387,7 +9581,14 @@ async function saveMemo() {
 }
 
 async function deleteMemo() {
-  if (!state.selectedMemoId || !confirm('确认删除这个备忘录？')) return;
+  if (!state.selectedMemoId) return;
+  const ok = await showAppConfirm('确认删除这个备忘录？', {
+    title: '删除备忘录',
+    icon: 'fas fa-trash-alt',
+    confirmText: '删除',
+    isDanger: true
+  });
+  if (!ok) return;
   const memoId = state.selectedMemoId;
   const draftSession = editorDraftSessions.memo;
   const sessionVersion = state.sessionVersion;
@@ -10167,13 +10368,20 @@ async function toggleMemoCompleteFromBoard(memoId, isCompleted) {
 }
 
 async function deleteMemoFromBoard(memoId) {
-  if (!confirm('确定要删除该事项吗？')) return;
+  const ok = await showAppConfirm('确定要删除该事项吗？', {
+    title: '删除事项',
+    icon: 'fas fa-trash-alt',
+    confirmText: '删除',
+    isDanger: true
+  });
+  if (!ok) return;
   try {
     await request(`/memos/${memoId}`, { method: 'DELETE' });
     removeMemosLocally(memoId);
     showWeeklyFeedback('已删除事项');
+    showGlobalToast('事项已删除', 'success');
   } catch (err) {
-    alert(`删除失败：${err.message}`);
+    showGlobalToast(`删除失败：${err.message}`, 'error');
   }
 }
 
@@ -10225,7 +10433,12 @@ async function rollOverAllPendingToNextWeek() {
     return;
   }
 
-  if (!confirm(`将 ${pending.length} 项逾期计划顺延至 ${targetDate}？原记录会保留供复盘。`)) return;
+  const ok = await showAppConfirm(`将 ${pending.length} 项逾期计划顺延至 ${targetDate}？原记录会保留供复盘。`, {
+    title: '批量顺延逾期计划',
+    icon: 'fas fa-calendar-plus',
+    confirmText: '确认顺延'
+  });
+  if (!ok) return;
   const reason = prompt('批量顺延原因（可留空）', '');
   if (reason === null) return;
 
@@ -10888,7 +11101,12 @@ async function publishTask() {
       dueTime: `${targetDate}T${taskDueTime}`
     });
   }
-  if (!confirm(`将向 ${assigneeIds.length} 人发布 ${targetDate} 的任务，共创建 ${tasks.length} 条记录。确认继续？`)) return;
+  const ok = await showAppConfirm(`将向 ${assigneeIds.length} 人发布 ${targetDate} 的任务，共创建 ${tasks.length} 条记录。确认继续？`, {
+    title: '批量发布任务',
+    icon: 'fas fa-paper-plane',
+    confirmText: '确认发布'
+  });
+  if (!ok) return;
   const button = $('publishTask');
   const originalLabel = button.innerHTML;
   state.taskPublishBusy = true;
@@ -11041,12 +11259,19 @@ async function saveUserById(userId) {
 async function deleteUserById(userId) {
   const user = state.users.find((item) => String(item.id) === String(userId));
   if (!user) return;
-  if (!confirm(`确定删除 ${user.displayName} 吗？该人员的备忘录也会一并删除。`)) return;
+  const ok = await showAppConfirm(`确定删除 ${user.displayName} 吗？该人员的备忘录也会一并删除。`, {
+    title: '删除成员',
+    icon: 'fas fa-user-times',
+    confirmText: '确认删除',
+    isDanger: true
+  });
+  if (!ok) return;
   await request(`/users/${user.id}`, { method: 'DELETE' });
   await loadUsers();
   await loadMemos();
   renderUserManagement();
   renderTaskAssignees();
+  showGlobalToast(`成员 ${user.displayName} 已删除`, 'success');
 }
 
 function dataManagementStats() {
@@ -11441,7 +11666,12 @@ async function batchCompleteReminders() {
     ? `确定要将勾选的 ${ids.length} 个事项一键标记为已完成吗？`
     : `确定要将当前分类下的全部 ${ids.length} 个事项一键标记为已完成吗？`;
 
-  if (!confirm(confirmMsg)) return;
+  const ok = await showAppConfirm(confirmMsg, {
+    title: '批量完成确认',
+    icon: 'fas fa-check-double',
+    confirmText: '批量完成'
+  });
+  if (!ok) return;
 
   const btn = $('reminderBatchCompleteBtn');
   const originalHtml = btn ? btn.innerHTML : '';
@@ -11494,7 +11724,12 @@ async function batchUrgeReminders() {
     ? `确定要向工程师客户端下发这 ${ids.length} 个任务的催办提醒通知吗？`
     : `确定要向工程师客户端下发全部 ${ids.length} 个逾期任务的催办提醒通知吗？`;
 
-  if (!confirm(confirmMsg)) return;
+  const okUrge = await showAppConfirm(confirmMsg, {
+    title: '下发催办通知',
+    icon: 'fas fa-bell',
+    confirmText: '确认下发'
+  });
+  if (!okUrge) return;
 
   const btn = $('reminderUrgeBtn');
   const originalHtml = btn ? btn.innerHTML : '';
@@ -11862,7 +12097,13 @@ async function openNotificationHistory() {
   };
   clear.onclick = async () => {
     if (busy || !notices.length || state.token !== token) return;
-    if (!confirm('清空当前账号的消息记录（包括未读消息）？')) return;
+    const ok = await showAppConfirm('清空当前账号的消息记录（包括未读消息）？', {
+      title: '清空通知消息',
+      icon: 'fas fa-trash-alt',
+      confirmText: '清空',
+      isDanger: true
+    });
+    if (!ok) return;
     const throughId = Math.max(...notices.map((notice) => Number(notice.id)));
     busy = true; updateControls();
     let cleared = false;
@@ -12152,7 +12393,12 @@ async function handleImportFile(event) {
       alert('导入文件里没有可导入记录');
       return;
     }
-    if (!confirm(`恢复 ${memos.length} 条事项及相关周总结？首次恢复会新增事项并保留完整正文、交付审核与结转关系，同一备份重复导入不会重复新增。账号按用户名匹配；任何错误会撤销整次导入。`)) return;
+    const ok = await showAppConfirm(`恢复 ${memos.length} 条事项及相关周总结？首次恢复会新增事项并保留完整正文、交付审核与结转关系，同一备份重复导入不会重复新增。账号按用户名匹配；任何错误会撤销整次导入。`, {
+      title: '数据恢复确认',
+      icon: 'fas fa-file-import',
+      confirmText: '开始恢复'
+    });
+    if (!ok) return;
     const result = await request('/backups/import', { method: 'POST', body: JSON.stringify(payload) });
     await syncMemoMutationOrReload({});
     alert(`${result.reused ? '此备份已恢复，未重复新增' : '恢复成功'}：${result.count} 条事项，新增 ${result.summaryCount} 份周总结。${result.warnings?.length ? `\n${result.warnings.join('\n')}` : ''}`);
@@ -12169,9 +12415,15 @@ function clearAllData() {
 async function completeAllMemosForMonth(month) {
   const allUncompleted = getVisibleMemos().filter((memo) => memo.date.startsWith(month) && !memo.completed && !memo.rolloverToId);
   if (!allUncompleted.length) return;
-  if (!confirm(canManageWorkspace()
+  const confirmMsg = canManageWorkspace()
     ? `确认验收 ${month} 的事项？只有已选择成果交付的任务会完成，其余保留待办。`
-    : `确认完成 ${month} 的日常事务？交付任务仍需管理员验收，其他事项会跳过。`)) return;
+    : `确认完成 ${month} 的日常事务？交付任务仍需管理员验收，其他事项会跳过。`;
+  const ok = await showAppConfirm(confirmMsg, {
+    title: '月度批量完成',
+    icon: 'fas fa-calendar-check',
+    confirmText: '确认执行'
+  });
+  if (!ok) return;
   try {
     const result = await request('/memos/batch-complete', {
       method: 'POST', body: JSON.stringify({ memoIds: allUncompleted.map((memo) => memo.id) })
@@ -12201,7 +12453,13 @@ async function toggleMemoCompletion(memoId) {
 }
 
 async function deleteMemoById(memoId) {
-  if (!confirm('确定要删除这个备忘录吗？此操作不可撤销。')) return;
+  const ok = await showAppConfirm('确定要删除这个备忘录吗？此操作不可撤销。', {
+    title: '删除备忘录',
+    icon: 'fas fa-trash-alt',
+    confirmText: '删除',
+    isDanger: true
+  });
+  if (!ok) return;
   try {
     await request(`/memos/${memoId}`, { method: 'DELETE' });
     removeMemosLocally(memoId);
@@ -12229,6 +12487,7 @@ function handleDayMemosWheel(event) {
 }
 
 function initEventListeners() {
+  initAppConfirmModal();
   document.addEventListener('keydown', handleDialogKeydown);
   document.addEventListener('keydown', (event) => {
     if ((event.key === 'Enter' || event.key === ' ') && event.target.matches?.('.day-number-text[role="button"]')) {
