@@ -5537,11 +5537,18 @@ html[data-theme='dark'] .wp-chip-name {
   flex-direction: column;
   gap: 12px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  transition: box-shadow 0.15s, transform 0.15s;
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
 }
 .wp-team-card:hover {
-  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 24px rgba(67, 97, 238, 0.14);
   transform: translateY(-2px);
+  border-color: var(--tblr-primary, #4361ee);
+}
+.wp-team-card:active {
+  transform: translateY(0);
 }
 .wp-team-card.wp-team-status-has-overdue {
   border-top: 3px solid #ef4444;
@@ -10980,4 +10987,118 @@ html[data-theme='dark'] #functionsModal .fn-stat-item {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+.editor-draft-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin: 0 0 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: rgba(37, 99, 235, .06);
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.editor-draft-status[hidden], .editor-draft-status button[hidden] { display: none !important; }
+.editor-draft-status span { flex: 1 1 180px; }
+.editor-draft-status button {
+    border: 0;
+    background: transparent;
+    color: #2563eb;
+    padding: 2px 0;
+    font: inherit;
+    cursor: pointer;
+}
+.editor-draft-status button:hover { text-decoration: underline; }
+.editor-draft-status.is-warning { background: rgba(245, 158, 11, .1); color: #a16207; }
+html[data-theme="dark"] .editor-draft-status { color: #a8b7cc; background: rgba(96, 165, 250, .09); }
+html[data-theme="dark"] .editor-draft-status button { color: #93c5fd; }
+html[data-theme="dark"] .editor-draft-status.is-warning { color: #facc15; }
+
+/* ── 周计划管理员切换成员与穿透 ── */
+.wp-target-user-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ui-surface, #ffffff);
+  border: 1px solid var(--ui-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 0.82rem;
+}
+.wp-target-user-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ui-text-muted, #64748b);
+  font-weight: 600;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.wp-target-user-select {
+  border: 1px solid var(--ui-border, #cbd5e1);
+  background: var(--ui-surface, #ffffff);
+  color: var(--ui-text, #1e293b);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 3px 24px 3px 8px;
+  cursor: pointer;
+  outline: none;
+}
+.wp-target-user-select:focus {
+  border-color: var(--tblr-primary, #4361ee);
+  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+}
+.wp-team-card-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--tblr-primary, #4361ee);
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(67, 97, 238, 0.08);
+  transition: all 0.15s ease;
+  margin-left: auto;
+}
+.wp-team-card:hover .wp-team-card-enter {
+  background: var(--tblr-primary, #4361ee);
+  color: #ffffff;
+  transform: translateX(2px);
+}
+.wp-team-pill {
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.wp-team-pill:hover {
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(0.95);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* 事项高亮脉冲动画 */
+@keyframes wpMemoHighlightPulse {
+  0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.7); border-color: #4361ee; transform: scale(1); }
+  50% { box-shadow: 0 0 0 6px rgba(67, 97, 238, 0); border-color: #2563eb; transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); transform: scale(1); }
+}
+.wp-memo-highlight {
+  animation: wpMemoHighlightPulse 1.2s ease-in-out 2;
+  border-color: #4361ee !important;
+}
+
+html[data-theme="dark"] .wp-target-user-bar {
+  background: var(--ui-surface, #1e293b);
+  border-color: var(--ui-border, #334155);
+}
+html[data-theme="dark"] .wp-target-user-select {
+  background: var(--ui-surface, #1e293b);
+  border-color: var(--ui-border, #334155);
+  color: #f1f5f9;
+}
+
 

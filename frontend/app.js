@@ -73,6 +73,8 @@ const state = {
   weeklyRequestVersion: 0,
   weeklyRequestController: null,
   weeklyPlanView: 'personal',
+  weeklyTargetUserId: null,
+  highlightWeeklyMemoId: null,
   weeklyMobileDay: null,
   weeklySummaryDrafts: {}
 };
@@ -95,6 +97,286 @@ const setElementVisible = (id, visible) => {
 const dialogFocusOrigins = new WeakMap();
 const dialogOrder = [];
 const dialogFocusable = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const editorDraftPrefix = 'calendarEditorDraftV1';
+const editorDraftSessions = { memo: null, weekly: null, report: null };
+let weeklyEditorOpenVersion = 0;
+let editorNavigationVersion = 0;
+let editorLastView = state.activeView;
+
+function memoEditorServerValues(memo) {
+  return {
+    title: memo.title || '', content: memo.content || '', date: memo.date,
+    dueTime: toLocalDateTimeInput(memo.dueTime), color: memo.color || colors[0],
+    completed: Boolean(memo.completed || (!canManageWorkspace() && memoDeliveryStatus(memo) === 'submitted')),
+    weeklyPlan: memo.planKind === 'plan', actualDeliverable: memo.actualDeliverable || ''
+  };
+}
+
+function memoEditorServerSource(memo) {
+  return { ...memoEditorServerValues(memo), ownerId: memo.ownerId,
+    completed: Boolean(memo.completed), deliveryStatus: memo.deliveryStatus,
+    rolloverToId: memo.rolloverToId || null };
+}
+
+function weeklyEditorServerValues(summary) {
+  return Object.fromEntries(['goals', 'deliverables', 'actual', 'risks'].map(field =>
+    [field, summary[field] || '']));
+}
+
+async function fetchWeeklyEditorSummary(ownerId, weekStart) {
+  const params = new URLSearchParams({ startWeek: weekStart, weeks: '1', userId: String(ownerId) });
+  const data = await request(`/memos/weekly-summaries?${params}`);
+  if (!Array.isArray(data.summaries)) throw new Error('周目标数据格式无效');
+  return data.summaries.find(s => Number(s.ownerId) === Number(ownerId) && s.weekStart === weekStart)
+    || { ownerId, weekStart, goals: '', deliverables: '', actual: '', risks: '' };
+}
+
+function markEditorSourceChanged(kind, session, latestValues, latestSource, submittedValues) {
+  const isActive = editorDraftIsCurrent(session) && editorDraftSessions[kind] === session;
+  const record = { version: 1, base: session.baseline,
+    values: isActive ? session.readValues() : submittedValues, savedAt: Date.now() };
+  try { localStorage.setItem(session.key, JSON.stringify(record)); } catch (_) {
+    if (isActive) showGlobalToast('本机草稿保存失败，请先复制当前内容。', 'warning');
+    return;
+  }
+  if (!isActive) return;
+  session.pending = record;
+  session.baseline = latestValues;
+  session.serverSource = latestSource;
+  session.restoring = true;
+  session.applyValues(latestValues);
+  session.restoring = false;
+  session.lastValues = null;
+  setEditorDraftStatus(kind, '服务器内容已有更新，你的草稿已保留，请恢复并核对后再保存。', true);
+}
+
+function readMemoEditorValues() {
+  return {
+    title: $('memoTitle').value,
+    content: $('memoContent').value,
+    date: $('memoDate').value,
+    dueTime: $('memoDueTime').value,
+    color: state.selectedMemoColor,
+    completed: $('memoCompleted').checked,
+    weeklyPlan: $('memoWeeklyPlan').checked,
+    actualDeliverable: $('memoActualDeliverable').value
+  };
+}
+
+function applyMemoEditorValues(values) {
+  $('memoTitle').value = values.title;
+  $('memoContent').value = values.content;
+  $('memoDate').value = values.date;
+  setMemoDuePickerValue(values.dueTime);
+  state.selectedMemoColor = values.color;
+  renderColorOptions(values.color, 'memo');
+  const select = $('memoActualDeliverable');
+  if (values.actualDeliverable && !Array.from(select.options).some(o => o.value === values.actualDeliverable)) {
+    const option = new Option(values.actualDeliverable, values.actualDeliverable);
+    option.dataset.custom = 'true';
+    select.add(option);
+  }
+  select.value = values.actualDeliverable;
+  $('memoDeliveryPanel')?.classList.toggle('has-value', Boolean(values.actualDeliverable));
+  renderCustomDeliveryOptions();
+  $('memoCompleted').checked = values.completed;
+  $('memoWeeklyPlan').checked = values.weeklyPlan;
+  syncMemoCompletedState();
+  updateMarkdownPreview();
+}
+
+function readWeeklyEditorValues() {
+  return Object.fromEntries(['Goals', 'Deliverables', 'Actual', 'Risks'].map(field =>
+    [field.toLowerCase(), $(`wpField${field}`).value]));
+}
+
+function applyWeeklyEditorValues(values) {
+  ['Goals', 'Deliverables', 'Actual', 'Risks'].forEach(field => {
+    $(`wpField${field}`).value = values[field.toLowerCase()];
+  });
+}
+
+function editorDraftIsCurrent(session) {
+  return session && session.actorId === String(state.user?.id || '')
+    && session.sessionVersion === state.sessionVersion;
+}
+
+function editorDraftValuesEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function readEditorDraft(session) {
+  try {
+    const record = JSON.parse(localStorage.getItem(session.key) || 'null');
+    const validValues = values => values && Object.keys(session.baseline).every(field =>
+      typeof values[field] === typeof session.baseline[field]);
+    if (!record || record.version !== 1 || !validValues(record.values) || !validValues(record.base)) return null;
+    if (record.pending && (!validValues(record.pending.values) || !validValues(record.pending.base))) return null;
+    return record;
+  } catch (_) {
+    return null;
+  }
+}
+
+function setEditorDraftStatus(kind, message, pending = false, error = false) {
+  const status = $(`${kind}DraftStatus`);
+  if (!status) return;
+  status.hidden = !message;
+  status.classList.toggle('is-warning', pending || error);
+  status.querySelector('[data-draft-message]').textContent = message;
+  status.querySelector('[data-draft-restore]').hidden = !pending;
+  status.querySelector('[data-draft-discard]').hidden = !message;
+}
+
+function startEditorDraft(kind, scope, ownerId, readValues, applyValues, hasServerSource = true) {
+  const session = {
+    actorId: String(state.user.id), sessionVersion: state.sessionVersion,
+    ownerId: Number(ownerId), key: `${editorDraftPrefix}:${state.user.id}:${kind}:${scope}`,
+    baseline: readValues(), readValues, applyValues, pending: null, lastValues: null
+  };
+  editorDraftSessions[kind] = session;
+  setEditorDraftStatus(kind, '');
+  let record = readEditorDraft(session);
+  if (record && editorDraftValuesEqual(record.values, session.baseline)) {
+    if (record.pending) record = record.pending;
+    else {
+      try { localStorage.removeItem(session.key); } catch (_) {}
+      return;
+    }
+  }
+  if (!record) return;
+  if (hasServerSource && !editorDraftValuesEqual(record.base, session.baseline)) {
+    session.pending = record;
+    setEditorDraftStatus(kind, '原内容已有更新，旧草稿仍保留，请选择是否恢复。', true);
+    return;
+  }
+  session.pending = record.pending || null;
+  session.restoring = true;
+  applyValues(record.values);
+  session.restoring = false;
+  session.lastValues = JSON.stringify(record.values);
+  setEditorDraftStatus(kind, session.pending
+    ? '已恢复最近编辑，另有旧草稿可恢复。'
+    : '已恢复未保存的草稿，仅保存在本机。', Boolean(session.pending));
+}
+
+function persistEditorDraft(kind) {
+  const session = editorDraftSessions[kind];
+  if (!editorDraftIsCurrent(session) || session.restoring) return;
+  const values = session.readValues();
+  if (editorDraftValuesEqual(values, session.baseline)) {
+    if (!session.pending) {
+      try { localStorage.removeItem(session.key); } catch (_) {}
+      session.lastValues = null;
+      setEditorDraftStatus(kind, '');
+    }
+    return;
+  }
+  const serialized = JSON.stringify(values);
+  if (session.lastValues === serialized) return;
+  try {
+    // Keep a conflicting old draft as well as any new typing until the user chooses.
+    localStorage.setItem(session.key, JSON.stringify({
+      version: 1, base: session.baseline, values, savedAt: Date.now(),
+      ...(session.pending ? { pending: session.pending } : {})
+    }));
+    session.lastValues = serialized;
+    session.storageError = false;
+    setEditorDraftStatus(kind, session.pending
+      ? '新编辑已保留在本机，旧草稿仍可恢复。'
+      : '草稿已自动保留在本机，尚未保存到服务器。', Boolean(session.pending));
+  } catch (_) {
+    setEditorDraftStatus(kind, '本机无法保存草稿，请及时保存或复制内容。', false, true);
+    if (!session.storageError) showGlobalToast('本机草稿保存失败，请及时保存或复制内容。', 'warning');
+    session.storageError = true;
+  }
+}
+
+function finishEditorDraft(kind) {
+  persistEditorDraft(kind);
+  editorDraftSessions[kind] = null;
+  setEditorDraftStatus(kind, '');
+}
+
+function completeEditorDraftSave(kind, session, submittedValues, submittedRecord, savedBaseline) {
+  if (!session) return true;
+  if (editorDraftIsCurrent(session) && editorDraftSessions[kind] === session
+      && !editorDraftValuesEqual(session.readValues(), submittedValues)) {
+    session.baseline = savedBaseline || submittedValues;
+    session.lastValues = null;
+    persistEditorDraft(kind);
+    return false;
+  }
+  try {
+    if (localStorage.getItem(session.key) === submittedRecord) localStorage.removeItem(session.key);
+  } catch (_) {}
+  if (editorDraftSessions[kind] === session) editorDraftSessions[kind] = null;
+  return true;
+}
+
+function restoreEditorDraft(kind) {
+  const session = editorDraftSessions[kind];
+  if (!editorDraftIsCurrent(session) || !session.pending) return;
+  const previous = session.pending;
+  session.pending = null;
+  session.restoring = true;
+  session.applyValues(previous.values);
+  session.restoring = false;
+  session.lastValues = null;
+  persistEditorDraft(kind);
+  if (!session.storageError) setEditorDraftStatus(kind, '已恢复旧草稿，请核对最新内容后保存。');
+}
+
+function discardEditorDraft(kind) {
+  const session = editorDraftSessions[kind];
+  if (!editorDraftIsCurrent(session) || !confirm('舍弃未保存的草稿并恢复打开时的内容？')) return;
+  try {
+    localStorage.removeItem(session.key);
+  } catch (_) {
+    showGlobalToast('无法清除本机草稿，请检查浏览器存储设置。', 'warning');
+    return;
+  }
+  session.pending = null;
+  session.restoring = true;
+  session.applyValues(session.baseline);
+  session.restoring = false;
+  session.lastValues = null;
+  setEditorDraftStatus(kind, '');
+}
+
+function persistAllEditorDrafts() {
+  Object.keys(editorDraftSessions).forEach(persistEditorDraft);
+}
+
+function closeEditorDraftsForSession() {
+  weeklyEditorOpenVersion += 1;
+  persistAllEditorDrafts();
+  hideDialog('memoModal');
+  ['weekly', 'report'].forEach(kind => {
+    finishEditorDraft(kind);
+    $(kind === 'weekly' ? 'wpSummaryDialog' : 'wpReportDialog')?.close();
+  });
+}
+
+function initEditorDrafts() {
+  ['input', 'change'].forEach(event => {
+    $('memoForm')?.addEventListener(event, () => persistEditorDraft('memo'));
+    $('wpSummaryDialog')?.addEventListener(event, () => persistEditorDraft('weekly'));
+    $('wpReportPreview')?.addEventListener(event, () => persistEditorDraft('report'));
+  });
+  ['weekly', 'report'].forEach(kind => {
+    const dialog = $(kind === 'weekly' ? 'wpSummaryDialog' : 'wpReportDialog');
+    dialog?.addEventListener('cancel', () => persistEditorDraft(kind));
+    dialog?.addEventListener('close', () => { if (!dialog.open) finishEditorDraft(kind); });
+  });
+  document.querySelectorAll('[data-editor-draft]').forEach(status => {
+    status.querySelector('[data-draft-restore]').addEventListener('click', () => restoreEditorDraft(status.dataset.editorDraft));
+    status.querySelector('[data-draft-discard]').addEventListener('click', () => discardEditorDraft(status.dataset.editorDraft));
+  });
+  window.addEventListener('pagehide', persistAllEditorDrafts);
+  window.addEventListener('beforeunload', persistAllEditorDrafts);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) persistAllEditorDrafts(); });
+}
 
 function showDialog(id, focusId) {
   const dialog = $(id);
@@ -135,6 +417,7 @@ function waitForWorkspaceStyles() {
 function hideDialog(id) {
   const dialog = $(id);
   if (!dialog?.classList.contains('active')) return;
+  if (id === 'memoModal') finishEditorDraft('memo');
   dialog.classList.remove('active');
   const index = dialogOrder.lastIndexOf(id);
   if (index !== -1) dialogOrder.splice(index, 1);
@@ -233,7 +516,10 @@ async function request(path, options = {}) {
       response.status === 404 ? '请求的内容不存在(404)' :
       '网络请求失败'
     );
-    throw new Error(errorMsg);
+    const error = new Error(errorMsg);
+    error.status = response.status;
+    error.code = data.code;
+    throw error;
   }
   return { ...data, etag: response.headers.get('etag') || data.etag || '' };
 }
@@ -5034,6 +5320,10 @@ function applyRoleScopedUi() {
 }
 
 function applyMainView() {
+  if (editorLastView !== state.activeView) {
+    editorNavigationVersion += 1;
+    editorLastView = state.activeView;
+  }
   const dashboardVisible = canManageWorkspace() && state.activeView === 'dashboard';
   const weeklyPlanVisible = state.activeView === 'weeklyPlan';
   const calendarVisible = !dashboardVisible && !weeklyPlanVisible;
@@ -5316,6 +5606,7 @@ function resetMemoSnapshot() {
 }
 
 function beginSession(user) {
+  closeEditorDraftsForSession();
   clearAvatarSession();
   state.sessionVersion += 1;
   state.initialLoadSessionVersion = null;
@@ -5549,6 +5840,7 @@ async function startApp(sessionVersion = state.sessionVersion) {
 }
 
 function logout() {
+  closeEditorDraftsForSession();
   clearAvatarSession();
   state.sessionVersion += 1;
   stopRealtimeRefresh();
@@ -7437,6 +7729,10 @@ function updateMemoDeliveryModalUI(memo = null, canEdit = true) {
 }
 
 async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
+  if (state.memoSaveBusy) return;
+  const navigationVersion = editorNavigationVersion;
+  const openingView = state.activeView;
+  finishEditorDraft('memo');
   hideMemoHoverTooltip();
   setOperationFeedback('memoSaveFeedback', '');
   state.selectedMemoId = memoId;
@@ -7448,8 +7744,10 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
 
   // 若本地缓存中已包含完整内容，则无需再次发起网络请求
   const hasFullContent = memo && Object.prototype.hasOwnProperty.call(memo, 'content') && memo.content !== undefined;
+  let hasStoredDraft = false;
+  try { hasStoredDraft = Boolean(memoId && localStorage.getItem(`${editorDraftPrefix}:${state.user.id}:memo:edit:${memoId}`)); } catch (_) {}
 
-  if (memoId && !hasFullContent) {
+  if (memoId && (!hasFullContent || hasStoredDraft)) {
     try {
       const data = await request(`/memos/${memoId}`);
       if (requestVersion !== state.memoDetailRequestVersion || String(state.selectedMemoId) !== String(memoId)) return;
@@ -7477,7 +7775,8 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
     }
   }
 
-  if (requestVersion !== state.memoDetailRequestVersion || String(state.selectedMemoId) !== String(memoId)) return;
+  if (requestVersion !== state.memoDetailRequestVersion || String(state.selectedMemoId) !== String(memoId)
+      || openingView !== state.activeView || navigationVersion !== editorNavigationVersion) return;
   state.detailDraftFromQuickAdd = Boolean(!memo && draft.fromQuickAdd);
 
   // 权限控制：管理员或任务所有者可编辑，其他成员为只读查看
@@ -7567,6 +7866,12 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   });
   updateMarkdownPreview();
   if (detailUnavailable) setOperationFeedback('memoSaveFeedback', '正文读取失败，当前仅显示摘要。请重新打开事项后再编辑，避免覆盖完整内容。', 'error');
+  if (canEdit) {
+    const ownerId = memo?.ownerId || (state.selectedUserId !== 'all' ? state.selectedUserId : state.user.id);
+    startEditorDraft('memo', memo ? `edit:${memo.id}` : `new:${ownerId}`, ownerId,
+      readMemoEditorValues, applyMemoEditorValues, Boolean(memo));
+    if (memo) editorDraftSessions.memo.serverSource = memoEditorServerSource(memo);
+  }
   showDialog('memoModal', canEdit ? 'memoTitle' : null);
 }
 
@@ -7781,6 +8086,7 @@ function setMemoDuePickerValue(datetimeLocalStr) {
     if (hidden) hidden.value = '';
     if (display) display.value = '';
     memoDuePickerState.selectedDate = '';
+    persistEditorDraft('memo');
     return;
   }
   if (hidden) hidden.value = datetimeLocalStr;
@@ -7794,6 +8100,7 @@ function setMemoDuePickerValue(datetimeLocalStr) {
   if (display && datePart) {
     display.value = `${datePart} ${pad(parseInt(hh,10))}:${pad(parseInt(mm,10))}`;
   }
+  persistEditorDraft('memo');
 }
 
 function hideMemoCalendarDuePopup() {
@@ -8675,6 +8982,7 @@ function handleMemoTextToolbarClick(event) {
   if (!button) return;
   event.preventDefault();
   applyMemoTextFormat(button.dataset.format);
+  persistEditorDraft('memo');
 }
 
 function applyMemoTemplate(type) {
@@ -8721,6 +9029,7 @@ function applyMemoTemplate(type) {
   textarea.value = curVal ? `${curVal}\n\n${tpl}` : tpl;
   textarea.focus();
   updateMarkdownPreview();
+  persistEditorDraft('memo');
 }
 
 function carryOverYesterdayMemos() {
@@ -8865,10 +9174,17 @@ function continueOrderedMemoLine(event) {
   const replacement = `\n${nextMarker}`;
   const cursorAfterMarker = cursor + replacement.length;
   replaceMemoContentRange(textarea, cursor, cursor, replacement, cursorAfterMarker, cursorAfterMarker);
+  persistEditorDraft('memo');
 }
 
 async function saveMemo() {
   if (state.memoSaveBusy) return;
+  persistEditorDraft('memo');
+  const draftSession = editorDraftSessions.memo;
+  const submittedValues = readMemoEditorValues();
+  let submittedRecord;
+  try { submittedRecord = draftSession && localStorage.getItem(draftSession.key); } catch (_) {}
+  const sessionVersion = state.sessionVersion;
   const title = $('memoTitle').value.trim();
   const dueTime = $('memoDueTime').value;
   if (!title) {
@@ -8927,7 +9243,7 @@ async function saveMemo() {
   }
 
   const payload = {
-    ownerId: state.selectedUserId !== 'all' ? Number(state.selectedUserId) : state.user.id,
+    ownerId: draftSession?.ownerId || (state.selectedUserId !== 'all' ? Number(state.selectedUserId) : state.user.id),
     date: $('memoDate').value,
     title,
     content: $('memoContent').value,
@@ -8939,6 +9255,7 @@ async function saveMemo() {
     deliveryStatus: nextDeliveryStatus
   };
   const isNewMemo = !state.selectedMemoId;
+  const editingMemoId = state.selectedMemoId;
   const shouldClearQuickDraft = isNewMemo && state.detailDraftFromQuickAdd;
   const button = $('saveMemo');
   state.memoSaveBusy = true;
@@ -8955,10 +9272,33 @@ async function saveMemo() {
 
   let data;
   try {
-    data = state.selectedMemoId
-      ? await request(`/memos/${state.selectedMemoId}`, { method: 'PATCH', body: JSON.stringify(payload) })
+    if (!isNewMemo && draftSession) {
+      const fresh = await request(`/memos/${editingMemoId}`);
+      if (!isCurrentSession(sessionVersion)) return;
+      if (!fresh?.memo) throw new Error('未能核对事项最新内容');
+      const source = memoEditorServerSource(fresh.memo);
+      if (!editorDraftValuesEqual(source, draftSession.serverSource)) {
+        syncMemosLocally(fresh.memo);
+        markEditorSourceChanged('memo', draftSession, memoEditorServerValues(fresh.memo), source, submittedValues);
+        setOperationFeedback('memoSaveFeedback', '事项已有新更新，本次尚未提交。请核对最新内容与保留的草稿。');
+        return;
+      }
+      if (!fresh.memo.revision) throw new Error('未能核对事项版本，请刷新页面后重试');
+      payload.expectedRevision = fresh.memo.revision;
+    }
+    data = editingMemoId
+      ? await request(`/memos/${editingMemoId}`, { method: 'PATCH', body: JSON.stringify(payload) })
       : await request('/memos', { method: 'POST', body: JSON.stringify(payload) });
   } catch (error) {
+    if (error.code === 'EDITOR_VERSION_CONFLICT' && draftSession && isCurrentSession(sessionVersion)) {
+      try {
+        const fresh = await request(`/memos/${editingMemoId}`);
+        if (fresh?.memo && isCurrentSession(sessionVersion)) {
+          syncMemosLocally(fresh.memo);
+          markEditorSourceChanged('memo', draftSession, memoEditorServerValues(fresh.memo), memoEditorServerSource(fresh.memo), submittedValues);
+        }
+      } catch (_) {}
+    }
     setOperationFeedback('memoSaveFeedback', `保存失败：${error.message}`);
     return;
   } finally {
@@ -8976,7 +9316,25 @@ async function saveMemo() {
       localStorage.removeItem('calendarDraftDeliverable');
     }
   } catch (_) {}
-  closeMemoModal();
+  const shouldClose = completeEditorDraftSave('memo', draftSession, submittedValues, submittedRecord,
+    data?.memo && memoEditorServerValues(data.memo));
+  if (!isCurrentSession(sessionVersion)) return;
+  if (shouldClose) closeMemoModal();
+  else {
+    if (isNewMemo && data?.memo?.id) {
+      state.selectedMemoId = data.memo.id;
+      const oldKey = draftSession.key;
+      draftSession.key = `${editorDraftPrefix}:${draftSession.actorId}:memo:edit:${data.memo.id}`;
+      draftSession.lastValues = null;
+      persistEditorDraft('memo');
+      if (!draftSession.storageError) {
+        try { localStorage.removeItem(oldKey); } catch (_) {}
+      }
+      $('deleteMemo').style.display = 'inline-flex';
+    }
+    if (data?.memo) draftSession.serverSource = memoEditorServerSource(data.memo);
+    setOperationFeedback('memoSaveFeedback', '已保存提交时的内容，后续修改仍保留在草稿中。');
+  }
   if (!isAdmin && nextDeliveryStatus === 'submitted') {
     showGlobalToast('📦 实际成果已提交，等待管理员确认归档', 'success');
   }
@@ -9006,6 +9364,8 @@ async function saveMemo() {
 async function deleteMemo() {
   if (!state.selectedMemoId || !confirm('确认删除这个备忘录？')) return;
   const memoId = state.selectedMemoId;
+  const draftSession = editorDraftSessions.memo;
+  const sessionVersion = state.sessionVersion;
   const memo = state.memos.find((item) => String(item.id) === String(memoId));
   const targetDateKey = memo?.date;
   const dayMemosEl = targetDateKey ? $(`dayMemos-${targetDateKey}`) : null;
@@ -9014,7 +9374,12 @@ async function deleteMemo() {
   const pageScrollY = window.scrollY ?? window.pageYOffset ?? 0;
 
   await request(`/memos/${memoId}`, { method: 'DELETE' });
-  closeMemoModal();
+  if (draftSession) {
+    try { localStorage.removeItem(draftSession.key); } catch (_) {}
+    if (editorDraftSessions.memo === draftSession) editorDraftSessions.memo = null;
+  }
+  if (!isCurrentSession(sessionVersion)) return;
+  if (String(state.selectedMemoId) === String(memoId)) closeMemoModal();
   removeMemosLocally(memoId);
 
   const restoreScroll = () => {
@@ -9191,10 +9556,22 @@ function showWeeklyFeedback(message, type = 'success') {
 }
 
 function getWeeklyTargetUserId() {
-  // “个人计划”必须始终属于当前登录用户。
-  // state.selectedUserId 是日历/研发大屏的成员筛选状态；管理端从大屏打开
-  // 某位成员的风险事项时会临时修改它，不能让这个临时筛选串到周计划里。
+  if (canManageWorkspace() && state.weeklyTargetUserId) {
+    const exists = (state.users || []).some(u => Number(u.id) === Number(state.weeklyTargetUserId));
+    if (exists) return Number(state.weeklyTargetUserId);
+  }
   return Number(state.user?.id);
+}
+
+function setWeeklyTargetUserId(userId) {
+  if (!canManageWorkspace()) return;
+  state.weeklyTargetUserId = userId ? Number(userId) : null;
+}
+
+function viewMyWeeklyPlan() {
+  state.weeklyTargetUserId = Number(state.user?.id);
+  state.weeklyPlanView = 'personal';
+  renderWeeklyPlanPage();
 }
 
 function weeklySummaryFor(ownerId, weekStart) {
@@ -9245,17 +9622,44 @@ function renderWeeklyMilestoneBar(ownerId, weekStart) {
     </div>`;
 }
 
-function openWeeklySummaryDialog() {
+async function openWeeklySummaryDialog() {
+  finishEditorDraft('weekly');
   const targetUserId = getWeeklyTargetUserId();
   const { monday, sunday } = getWeekRange(state.weeklyPlanDate);
   const monKey = dateKey(monday);
   const sunKey = dateKey(sunday);
   const weekInfo = getWeekInfo(monday);
-  const summary = weeklySummaryFor(targetUserId, monKey);
+  const openVersion = ++weeklyEditorOpenVersion;
+  const navigationVersion = editorNavigationVersion;
+  const sessionVersion = state.sessionVersion;
+  let summary;
+  try {
+    summary = await fetchWeeklyEditorSummary(targetUserId, monKey);
+  } catch (error) {
+    if (isCurrentSession(sessionVersion) && openVersion === weeklyEditorOpenVersion) {
+      showGlobalToast(`未能读取最新周目标：${error.message}，本机草稿仍保留。`, 'warning');
+    }
+    return;
+  }
+  if (!isCurrentSession(sessionVersion) || state.activeView !== 'weeklyPlan' || openVersion !== weeklyEditorOpenVersion
+      || navigationVersion !== editorNavigationVersion
+      || monKey !== dateKey(getWeekRange(state.weeklyPlanDate).monday)) return;
+  state.weeklySummaries = state.weeklySummaries.filter(s =>
+    !(Number(s.ownerId) === Number(targetUserId) && s.weekStart === monKey));
+  state.weeklySummaries.push(summary);
 
   const periodElem = $('wpSummaryPeriod');
   if (periodElem) {
     periodElem.textContent = `${weekInfo.year}年 第${weekInfo.number}周 (${monKey} ~ ${sunKey})`;
+  }
+  const titleElem = $('wpSummaryTitle');
+  if (titleElem) {
+    const isOtherUser = canManageWorkspace() && targetUserId !== Number(state.user?.id);
+    const targetUser = isOtherUser ? (state.users || []).find(u => Number(u.id) === targetUserId) : null;
+    const targetName = targetUser?.displayName || targetUser?.username || '';
+    titleElem.innerHTML = targetName
+      ? `<i class="fas fa-bullseye text-primary"></i> 【${escapeHtml(targetName)}】本周目标与复盘`
+      : '<i class="fas fa-bullseye text-primary"></i> 本周目标与复盘';
   }
   const fGoals = $('wpFieldGoals');
   const fDeliv = $('wpFieldDeliverables');
@@ -9269,15 +9673,24 @@ function openWeeklySummaryDialog() {
   const dialog = $('wpSummaryDialog');
   if (dialog) {
     setupDialogBackdropClose('wpSummaryDialog');
+    startEditorDraft('weekly', `${targetUserId}:${monKey}`, targetUserId, readWeeklyEditorValues, applyWeeklyEditorValues);
+    editorDraftSessions.weekly.weekStart = monKey;
+    editorDraftSessions.weekly.serverSource = weeklyEditorServerValues(summary);
     dialog.showModal();
     fGoals?.focus();
   }
 }
 
 async function saveWeeklySummaryFromDialog() {
-  const targetUserId = getWeeklyTargetUserId();
-  const { monday } = getWeekRange(state.weeklyPlanDate);
-  const monKey = dateKey(monday);
+  if ($('wpSaveSummaryBtn')?.disabled) return;
+  persistEditorDraft('weekly');
+  const draftSession = editorDraftSessions.weekly;
+  const submittedValues = readWeeklyEditorValues();
+  let submittedRecord;
+  try { submittedRecord = draftSession && localStorage.getItem(draftSession.key); } catch (_) {}
+  const sessionVersion = state.sessionVersion;
+  const targetUserId = draftSession?.ownerId || getWeeklyTargetUserId();
+  const monKey = draftSession?.weekStart || dateKey(getWeekRange(state.weeklyPlanDate).monday);
   const payload = {
     ownerId: targetUserId,
     goals: $('wpFieldGoals')?.value.trim() || '',
@@ -9294,17 +9707,43 @@ async function saveWeeklySummaryFromDialog() {
   }
 
   try {
+    const fresh = await fetchWeeklyEditorSummary(targetUserId, monKey);
+    if (!isCurrentSession(sessionVersion)) return;
+    const source = weeklyEditorServerValues(fresh);
+    if (draftSession && !editorDraftValuesEqual(source, draftSession.serverSource)) {
+      state.weeklySummaries = state.weeklySummaries.filter(s =>
+        !(Number(s.ownerId) === Number(targetUserId) && s.weekStart === monKey));
+      state.weeklySummaries.push(fresh);
+      markEditorSourceChanged('weekly', draftSession, source, source, submittedValues);
+      showWeeklyFeedback('周目标已有新更新，本次尚未提交。草稿已保留，请核对后再保存。', 'warning');
+      return;
+    }
+    payload.expectedRevision = fresh.revision || 'new';
     const data = await request(`/memos/weekly-summaries/${monKey}`, {
       method: 'PUT',
       body: JSON.stringify(payload)
     });
+    const wasCurrentEditor = editorDraftSessions.weekly === draftSession;
+    const shouldClose = completeEditorDraftSave('weekly', draftSession, submittedValues, submittedRecord,
+      data?.summary && weeklyEditorServerValues(data.summary));
+    if (!isCurrentSession(sessionVersion)) return;
     state.weeklySummaries = state.weeklySummaries.filter(s =>
       !(Number(s.ownerId) === Number(targetUserId) && s.weekStart === monKey));
     state.weeklySummaries.push(data.summary);
-    $('wpSummaryDialog')?.close();
+    if (shouldClose && wasCurrentEditor) $('wpSummaryDialog')?.close();
+    if (!shouldClose && draftSession) draftSession.serverSource = weeklyEditorServerValues(data.summary);
     renderWeeklyPlanPage();
-    showWeeklyFeedback('本周目标与复盘已保存');
+    showWeeklyFeedback(shouldClose ? '本周目标与复盘已保存' : '已保存提交时的内容，后续修改仍保留在草稿中。');
   } catch (err) {
+    if (err.code === 'EDITOR_VERSION_CONFLICT' && draftSession && isCurrentSession(sessionVersion)) {
+      try {
+        const fresh = await fetchWeeklyEditorSummary(targetUserId, monKey);
+        if (isCurrentSession(sessionVersion)) {
+          const source = weeklyEditorServerValues(fresh);
+          markEditorSourceChanged('weekly', draftSession, source, source, submittedValues);
+        }
+      } catch (_) {}
+    }
     alert(`保存失败：${err.message}`);
   } finally {
     if (saveBtn) {
@@ -9334,6 +9773,33 @@ function renderWeeklyPlanPage() {
   const weekLabel = $('wpPageWeekLabel');
   if (weekLabel) {
     weekLabel.textContent = `${weekInfo.year}年 第${weekInfo.number}周 (${monday.getMonth() + 1}/${monday.getDate()} ~ ${sunday.getMonth() + 1}/${sunday.getDate()})`;
+  }
+
+  const targetUserId = getWeeklyTargetUserId();
+  const targetUserBar = $('wpTargetUserBar');
+  const targetUserSelect = $('wpTargetUserSelect');
+  const viewMyPlanBtn = $('wpViewMyPlanBtn');
+  if (targetUserBar && targetUserSelect) {
+    if (canManageWorkspace() && state.weeklyPlanView === 'personal') {
+      targetUserBar.style.display = 'inline-flex';
+      const users = state.users || [];
+      const currentSelected = String(targetUserId);
+      targetUserSelect.innerHTML = users.map(u => {
+        const isSelf = Number(u.id) === Number(state.user?.id);
+        const name = u.displayName || u.username;
+        return `<option value="${u.id}" ${String(u.id) === currentSelected ? 'selected' : ''}>${escapeHtml(name)}${isSelf ? ' (我)' : ''}</option>`;
+      }).join('');
+      targetUserSelect.onchange = (e) => {
+        state.weeklyTargetUserId = Number(e.target.value);
+        renderWeeklyPlanPage();
+      };
+      if (viewMyPlanBtn) {
+        viewMyPlanBtn.style.display = (targetUserId !== Number(state.user?.id)) ? 'inline-flex' : 'none';
+        viewMyPlanBtn.onclick = () => viewMyWeeklyPlan();
+      }
+    } else {
+      targetUserBar.style.display = 'none';
+    }
   }
 
   const viewToggle = $('wpPageViewToggle');
@@ -9384,7 +9850,6 @@ function renderWeeklyPlanPage() {
     state.weeklyMemos = state.memos.filter(m => m.date >= start && m.date <= end);
   }
 
-  const targetUserId = getWeeklyTargetUserId();
   const teamView = state.weeklyPlanView === 'team' && canManageWorkspace();
   const userMemos = state.weeklyMemos.filter(m => Number(m.ownerId) === targetUserId);
   const scopedMemos = teamView ? state.weeklyMemos : userMemos;
@@ -9510,7 +9975,7 @@ function renderWeeklyPlanPage() {
             <div class="wp-day-task-list" id="wpDayList-${day.dateKey}">
               ${day.memos.length === 0 ? '<div class="wp-day-empty"><i class="far fa-calendar-plus"></i> 暂无事项<small class="wp-drop-sub">支持拖拽其他日卡片至此改期</small></div>' : ''}
               ${day.memos.map(m => `
-                <div class="wp-day-task-card ${m.completed ? 'completed' : ''} ${m.rolloverToId ? 'rolled-over' : ''}" style="border-left-color: ${m.color || '#4361ee'};" draggable="${m.rolloverToId ? 'false' : 'true'}" ondragstart="onWeeklyCardDragStart(event, '${m.id}', '${day.dateKey}')" ondragend="onWeeklyCardDragEnd(event)" title="可拖拽至其他日期列改期">
+                <div class="wp-day-task-card ${m.completed ? 'completed' : ''} ${m.rolloverToId ? 'rolled-over' : ''}" data-memo-id="${m.id}" style="border-left-color: ${m.color || '#4361ee'};" draggable="${m.rolloverToId ? 'false' : 'true'}" ondragstart="onWeeklyCardDragStart(event, '${m.id}', '${day.dateKey}')" ondragend="onWeeklyCardDragEnd(event)" title="可拖拽至其他日期列改期">
                   <div class="wp-day-card-top">
                     <input type="checkbox" class="wp-day-checkbox" ${m.completed ? 'checked' : ''} ${m.rolloverToId ? 'disabled' : ''} onchange="toggleMemoCompleteFromBoard('${m.id}', this.checked)" title="标记完成状态">
                     <span class="wp-day-card-title ${m.completed ? 'completed' : ''}" onclick="openMemoModal('${m.id}')" title="点击查看编辑">${escapeHtml(m.title)}</span>
@@ -9538,6 +10003,19 @@ function renderWeeklyPlanPage() {
       </div>
     </div>
   `;
+
+  if (state.highlightWeeklyMemoId) {
+    const targetMemoId = state.highlightWeeklyMemoId;
+    state.highlightWeeklyMemoId = null;
+    window.requestAnimationFrame(() => {
+      const card = workspaceBody.querySelector(`[data-memo-id="${targetMemoId}"]`);
+      if (card) {
+        card.classList.add('wp-memo-highlight');
+        try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+        setTimeout(() => card.classList.remove('wp-memo-highlight'), 2600);
+      }
+    });
+  }
 }
 
 let weeklyDraggedMemoId = null;
@@ -9888,11 +10366,16 @@ async function copyTextToClipboard(text, targetElement = null) {
 }
 
 function copyWeeklyReportMarkdown() {
+  finishEditorDraft('report');
   const dialog = $('wpReportDialog');
   const preview = $('wpReportPreview');
   if (!dialog || !preview) return;
   setupDialogBackdropClose('wpReportDialog');
   preview.value = buildWeeklyReportMarkdown();
+  const targetUserId = getWeeklyTargetUserId();
+  const monKey = dateKey(getWeekRange(state.weeklyPlanDate).monday);
+  startEditorDraft('report', `${targetUserId}:${monKey}`, targetUserId,
+    () => ({ content: preview.value }), values => { preview.value = values.content; });
   dialog.showModal();
   preview.focus();
 }
@@ -10016,7 +10499,7 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
         const statusIcon = !hasGoal ? 'fa-minus-circle' : overdueCount ? 'fa-exclamation-circle' : done === total && total > 0 ? 'fa-check-circle' : 'fa-spinner';
 
         return `
-          <div class="wp-team-card wp-team-status-${statusClass}">
+          <div class="wp-team-card wp-team-status-${statusClass}" data-user-id="${u.id}" tabindex="0" role="button" aria-label="查看 ${escapeHtml(u.displayName || u.username)} 的周计划" title="点击进入查看 ${escapeHtml(u.displayName || u.username)} 的完整周计划">
             <div class="wp-team-card-head">
               <div class="wp-team-avatar" style="background:${color}" ${userAvatarAttributes(u)}>${getInitials(u)}</div>
               <div class="wp-team-user-info">
@@ -10026,6 +10509,7 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
               <div class="wp-team-status-badge wp-team-status-${statusClass}">
                 <i class="fas ${statusIcon}"></i> ${statusLabel}
               </div>
+              <span class="wp-team-card-enter"><i class="fas fa-calendar-alt"></i> 查看周计划 <i class="fas fa-chevron-right"></i></span>
             </div>
 
             ${hasGoal ? `
@@ -10056,7 +10540,7 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
                     const icon = m.completed ? 'fa-check' : m.rolloverToId ? 'fa-share' : cls === 'overdue' ? 'fa-exclamation' : 'fa-circle';
                     const kind = m.planKind === 'plan' ? 'plan' : 'calendar';
                     const kindLabel = kind === 'plan' ? '周计划' : '日历';
-                    return `<span class="wp-team-pill wp-team-pill-${cls}" title="${escapeHtml(m.title)} · ${kindLabel} · ${m.date}">
+                    return `<span class="wp-team-pill wp-team-pill-${cls}" data-memo-id="${m.id}" data-user-id="${u.id}" title="${escapeHtml(m.title)} · ${kindLabel} · ${m.date}（点击进入并定位）">
                       <span class="wp-team-kind-tag wp-team-kind-${kind}">${kindLabel}</span>
                       <i class="fas ${icon}"></i>
                       <span class="wp-team-pill-title">${escapeHtml(m.title.length > 18 ? m.title.slice(0, 18) + '…' : m.title)}</span>
@@ -10069,6 +10553,33 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
       }).join('')}
     </div>
   `;
+
+  container.querySelectorAll('.wp-team-card').forEach(card => {
+    card.addEventListener('click', (event) => {
+      const pill = event.target.closest('.wp-team-pill');
+      const userId = Number(card.dataset.userId);
+      if (!userId) return;
+      state.weeklyTargetUserId = userId;
+      state.weeklyPlanView = 'personal';
+      if (pill && pill.dataset.memoId) {
+        state.highlightWeeklyMemoId = Number(pill.dataset.memoId);
+      } else {
+        state.highlightWeeklyMemoId = null;
+      }
+      renderWeeklyPlanPage();
+    });
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        const userId = Number(card.dataset.userId);
+        if (!userId) return;
+        state.weeklyTargetUserId = userId;
+        state.weeklyPlanView = 'personal';
+        state.highlightWeeklyMemoId = null;
+        renderWeeklyPlanPage();
+      }
+    });
+  });
 }
 
 
@@ -10089,6 +10600,8 @@ window.openWeeklySummaryDialog = openWeeklySummaryDialog;
 window.saveWeeklySummaryFromDialog = saveWeeklySummaryFromDialog;
 window.selectWeeklyMobileDay = selectWeeklyMobileDay;
 window.loadWeeklyPlanData = loadWeeklyPlanData;
+window.setWeeklyTargetUserId = setWeeklyTargetUserId;
+window.viewMyWeeklyPlan = viewMyWeeklyPlan;
 
 function getCountdown(memo) {
   if (!memo.dueTime || memo.completed) return '';
@@ -10695,7 +11208,13 @@ function reminderMemoTitle(memo) {
 
 function updateReminderBadge() {
   const now = new Date();
-  const count = reminderMemos().filter((memo) => isOverdueMemo(memo, now) || isDueSoonMemo(memo, now) || memo.isUrged).length;
+  const settings = readReminderSettings();
+  const count = state.reminders.filter((memo) => {
+    if (!memo || memo.completed) return false;
+    if (settings.scope !== 'all' && Number(memo.ownerId) !== Number(state.user?.id)) return false;
+    if (memo.planKind === 'plan' && !settings.includeWeeklyPlans && !memo.isUrged) return false;
+    return isOverdueMemo(memo, now) || isDueSoonMemo(memo, now) || memo.isUrged;
+  }).length;
   const badge = $('reminderBadge');
   const bell = $('floatingReminder');
   if (!badge || !bell) return;
@@ -11784,6 +12303,21 @@ function initEventListeners() {
           syncMemosLocally(res.memo);
           if (String(state.selectedMemoId) === String(memoId)) {
             updateMemoDeliveryModalUI(res.memo, !$('memoActualDeliverable')?.disabled);
+            const draftSession = editorDraftSessions.memo;
+            if (editorDraftIsCurrent(draftSession) && draftSession.serverSource) {
+              const source = memoEditorServerSource(res.memo);
+              const deliveryFields = ['actualDeliverable', 'completed', 'deliveryStatus'];
+              const sameContent = Object.keys(source).filter(field => !deliveryFields.includes(field))
+                .every(field => source[field] === draftSession.serverSource[field]);
+              if (sameContent) {
+                draftSession.serverSource = source;
+                const values = memoEditorServerValues(res.memo);
+                draftSession.baseline.actualDeliverable = values.actualDeliverable;
+                draftSession.baseline.completed = values.completed;
+                draftSession.lastValues = null;
+                persistEditorDraft('memo');
+              }
+            }
           }
         }
       } catch (_) {}
@@ -11936,7 +12470,7 @@ function initEventListeners() {
     setActiveTab(tabs[index].dataset.tab);
     tabs[index].focus();
   });
-  ['reminderCheckInterval', 'reminderAdvanceTime', 'enableSoundReminder', 'enableDesktopNotification'].forEach((id) => {
+  ['reminderCheckInterval', 'reminderAdvanceTime', 'enableSoundReminder', 'enableDesktopNotification', 'reminderScope', 'reminderIncludeWeeklyPlans'].forEach((id) => {
     $(id)?.addEventListener('change', () => { $('functionsReminderSaveStatus').textContent = '有未保存的修改'; });
   });
 
@@ -11952,6 +12486,7 @@ function initEventListeners() {
       if (color.dataset.target === 'task') state.selectedTaskColor = color.dataset.color;
       else state.selectedMemoColor = color.dataset.color;
       renderColorOptions(color.dataset.color, color.dataset.target);
+      if (color.dataset.target !== 'task') persistEditorDraft('memo');
       return;
     }
     const assigneeMode = event.target.closest('.task-assignee-mode');
@@ -12140,14 +12675,16 @@ function initEventListeners() {
 }
 
 function readReminderSettings() {
-  const defaults = { checkInterval: 5, advanceMinutes: 60, sound: true, desktop: false };
+  const defaults = { checkInterval: 5, advanceMinutes: 60, sound: true, desktop: false, scope: 'mine', includeWeeklyPlans: false };
   try {
     const saved = JSON.parse(localStorage.getItem(reminderSettingsKey) || '{}');
     return {
       checkInterval: Math.max(1, Number(saved.checkInterval || defaults.checkInterval)),
       advanceMinutes: Math.max(0, Number(saved.advanceMinutes ?? defaults.advanceMinutes)),
       sound: saved.sound !== false,
-      desktop: Boolean(saved.desktop)
+      desktop: Boolean(saved.desktop),
+      scope: saved.scope === 'all' ? 'all' : 'mine',
+      includeWeeklyPlans: Boolean(saved.includeWeeklyPlans)
     };
   } catch (_) {
     return defaults;
@@ -12212,6 +12749,9 @@ function syncReminderSettingsForm() {
   if ($('reminderAdvanceTime')) $('reminderAdvanceTime').value = String(settings.advanceMinutes);
   if ($('enableSoundReminder')) $('enableSoundReminder').checked = settings.sound;
   if ($('enableDesktopNotification')) $('enableDesktopNotification').checked = settings.desktop;
+  if ($('reminderScope')) $('reminderScope').value = settings.scope;
+  if ($('reminderIncludeWeeklyPlans')) $('reminderIncludeWeeklyPlans').checked = settings.includeWeeklyPlans;
+  if ($('reminderScopeField')) $('reminderScopeField').style.display = canManageWorkspace() ? 'flex' : 'none';
   updateDesktopNotificationStatus();
 }
 
@@ -12292,6 +12832,8 @@ function dispatchPendingDueReminders() {
 
   for (const memo of state.reminders) {
     if (!memo?.id || memo.completed || !memo.dueTime) continue;
+    if (memo.planKind === 'plan' && !settings.includeWeeklyPlans) continue;
+    if (settings.scope !== 'all' && Number(memo.ownerId) !== Number(state.user?.id)) continue;
     const dueMs = new Date(memo.dueTime).getTime();
     if (Number.isNaN(dueMs) || now < dueMs - advanceMs) continue;
     const signature = reminderFireSignature(memo, settings);
@@ -12363,13 +12905,16 @@ async function saveReminderSettingsFromPanel() {
     checkInterval: Math.max(1, Number($('reminderCheckInterval')?.value || 5)),
     advanceMinutes: Math.max(0, Number($('reminderAdvanceTime')?.value || 0)),
     sound: Boolean($('enableSoundReminder')?.checked),
-    desktop: Boolean($('enableDesktopNotification')?.checked)
+    desktop: Boolean($('enableDesktopNotification')?.checked),
+    scope: $('reminderScope')?.value === 'all' && canManageWorkspace() ? 'all' : 'mine',
+    includeWeeklyPlans: Boolean($('reminderIncludeWeeklyPlans')?.checked)
   };
   saveReminderSettingsLocal(settings);
 
   let systemEnabled = false;
   if (settings.desktop) systemEnabled = await ensureDesktopNotificationPermission();
   updateDesktopNotificationStatus();
+  updateReminderBadge();
   startDueReminderTimer();
   dispatchPendingDueReminders();
   if ($('functionsReminderSaveStatus')) $('functionsReminderSaveStatus').textContent = '设置已保存';
@@ -12385,7 +12930,9 @@ async function testReminderFromPanel() {
   const settings = {
     ...readReminderSettings(),
     sound: Boolean($('enableSoundReminder')?.checked),
-    desktop: Boolean($('enableDesktopNotification')?.checked)
+    desktop: Boolean($('enableDesktopNotification')?.checked),
+    scope: $('reminderScope')?.value === 'all' && canManageWorkspace() ? 'all' : 'mine',
+    includeWeeklyPlans: Boolean($('reminderIncludeWeeklyPlans')?.checked)
   };
   if (settings.sound) playReminderSound();
   showGlobalToast('🔔 测试提醒：事项提醒功能正常', 'info');
@@ -12768,6 +13315,7 @@ decorateTablerUI();
 initSystemThemeListener();
 initSidebarLayout();
 initEventListeners();
+initEditorDrafts();
 initCustomDropdowns();
 initMemoDatePicker();
 initMemoDuePicker();

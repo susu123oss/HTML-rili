@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20261008_weekly_current_v66" defer></script>
+    <script src="./app.js?v=20261013_weekly_member_view_v68" defer></script>
     <style>
         * {
             margin: 0;
@@ -3916,10 +3916,10 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261008_weekly_current_v66" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <link rel="stylesheet" href="./functions-panel.css?v=20261008_weekly_current_v66">
-    <link rel="stylesheet" href="./dashboard-panel.css?v=20261008_weekly_current_v66">
-    <link rel="stylesheet" href="./avatar-profile.css?v=20261008_weekly_current_v66">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261013_weekly_member_view_v68" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link rel="stylesheet" href="./functions-panel.css?v=20261013_weekly_member_view_v68">
+    <link rel="stylesheet" href="./dashboard-panel.css?v=20261013_weekly_member_view_v68">
+    <link rel="stylesheet" href="./avatar-profile.css?v=20261013_weekly_member_view_v68">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
@@ -4194,6 +4194,11 @@
                 </div>
 
                 <div class="wp-hero-right">
+                    <div class="wp-target-user-bar" id="wpTargetUserBar" style="display: none;">
+                        <span class="wp-target-user-label"><i class="fas fa-user-circle"></i> 查看成员：</span>
+                        <select class="form-select form-select-sm wp-target-user-select" id="wpTargetUserSelect" aria-label="选择查看成员周计划"></select>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="wpViewMyPlanBtn" title="切换回查看自己的周计划" style="display: none;"><i class="fas fa-user"></i> 我的计划</button>
+                    </div>
                     <div class="wp-view-toggle-wrap" id="wpPageViewToggle" style="display: none;">
                         <button type="button" class="btn btn-sm active" id="wpPageViewPersonalBtn"><i class="fas fa-user"></i> 个人计划</button>
                         <button type="button" class="btn btn-sm" id="wpPageViewTeamBtn"><i class="fas fa-users"></i> 全员看板</button>
@@ -4225,6 +4230,11 @@
                 </div>
                 <button type="button" class="btn btn-icon btn-secondary" onclick="document.getElementById('wpSummaryDialog').close()" aria-label="关闭"><i class="fas fa-times"></i></button>
             </div>
+            <div class="editor-draft-status" id="weeklyDraftStatus" data-editor-draft="weekly" role="status" hidden>
+                <span data-draft-message></span>
+                <button type="button" data-draft-restore hidden>恢复旧草稿</button>
+                <button type="button" data-draft-discard>舍弃草稿</button>
+            </div>
             <div class="wp-summary-fields-grid">
                 <div class="wp-field-item">
                     <label for="wpFieldGoals"><i class="fas fa-flag text-primary"></i> 本周核心目标</label>
@@ -4255,6 +4265,11 @@
                 <button type="button" class="btn btn-icon btn-secondary" onclick="document.getElementById('wpReportDialog').close()" aria-label="关闭"><i class="fas fa-times"></i></button>
             </div>
             <p>核对计划、实际进展和风险后，可直接在下方编辑修改，再点击下方按钮一键复制。</p>
+            <div class="editor-draft-status" id="reportDraftStatus" data-editor-draft="report" role="status" hidden>
+                <span data-draft-message></span>
+                <button type="button" data-draft-restore hidden>恢复旧草稿</button>
+                <button type="button" data-draft-discard>舍弃草稿</button>
+            </div>
             <textarea id="wpReportPreview" aria-label="可编辑的周报内容"></textarea>
             <div class="wp-report-actions">
                 <button type="button" class="btn btn-primary" id="wpConfirmCopyBtn" onclick="confirmCopyWeeklyReport()"><i class="fas fa-copy"></i> 复制周报</button>
@@ -4395,6 +4410,11 @@
             </div>
             <div class="modal-body memo-modal-body">
                 <form id="memoForm" autocomplete="off">
+                    <div class="editor-draft-status" id="memoDraftStatus" data-editor-draft="memo" role="status" hidden>
+                        <span data-draft-message></span>
+                        <button type="button" data-draft-restore hidden>恢复旧草稿</button>
+                        <button type="button" data-draft-discard>舍弃草稿</button>
+                    </div>
                     <div class="memo-title-row-compact">
                         <div class="memo-title-field">
                             <input type="text" class="form-control memo-title-input" id="memoTitle" placeholder="输入备忘录或日志标题..." autocomplete="off" required>
@@ -4770,6 +4790,20 @@
 
                 <!-- 提醒设置选项卡 -->
                 <div class="tab-content" id="reminderSettingsTab">
+                    <section class="fn-settings-section" aria-labelledby="fnReminderScopeTitle">
+                    <h3 id="fnReminderScopeTitle">提醒对象与范围</h3>
+                    <div class="fn-settings-grid">
+                        <div class="fn-field-card" id="reminderScopeField">
+                            <label for="reminderScope"><i class="fas fa-user-shield"></i> 提醒对象范围</label>
+                            <select class="form-control" id="reminderScope">
+                                <option value="mine">仅提醒我的事项（推荐）</option>
+                                <option value="all">提醒全员事项（管理员）</option>
+                            </select>
+                            <span class="fn-field-hint">默认仅在本人负责的事项到期时提醒，避免被其他成员日常打扰</span>
+                        </div>
+                    </div>
+                    </section>
+
                     <section class="fn-settings-section" aria-labelledby="fnReminderTimingTitle">
                     <h3 id="fnReminderTimingTitle">提醒时机</h3>
                     <div class="fn-settings-grid">
@@ -4801,7 +4835,7 @@
                     </section>
                     
                     <section class="fn-settings-section" aria-labelledby="fnReminderMethodTitle">
-                    <h3 id="fnReminderMethodTitle">提醒方式</h3>
+                    <h3 id="fnReminderMethodTitle">提醒方式与类型</h3>
                     <div class="fn-switch-grid">
                         <label class="fn-switch-card" for="enableSoundReminder">
                             <div class="fn-switch-icon"><i class="fas fa-volume-up"></i></div>
@@ -4819,6 +4853,15 @@
                                 <span id="desktopNotificationStatus">支持时同步弹出操作系统级通知横幅</span>
                             </div>
                             <input type="checkbox" id="enableDesktopNotification" role="switch">
+                        </label>
+
+                        <label class="fn-switch-card" for="reminderIncludeWeeklyPlans">
+                            <div class="fn-switch-icon"><i class="fas fa-tasks"></i></div>
+                            <div class="fn-switch-info">
+                                <strong>周计划到期提醒</strong>
+                                <span>默认关闭（周计划为宏观规划免打扰，仅提醒普通备忘与日程）</span>
+                            </div>
+                            <input type="checkbox" id="reminderIncludeWeeklyPlans" role="switch">
                         </label>
                     </div>
                     </section>

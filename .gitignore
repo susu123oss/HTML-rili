@@ -13,3 +13,4 @@ scripts/deploy.py
 *.exe
 *.csv
 .agents/
+/index.html

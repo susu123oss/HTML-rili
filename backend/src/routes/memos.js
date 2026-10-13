@@ -77,7 +77,8 @@ const rowToMemo = (row, includeContent = false) => {
     submittedAt: row.submittedAt || null,
     confirmedAt: row.confirmedAt || null,
     createdAt: row.createdAt,
-    updatedAt: row.updatedAt
+    updatedAt: row.updatedAt,
+    revision: row.revision
   };
 };
 
@@ -95,7 +96,8 @@ const memoDetailSql = `
          memos.review_comment AS "reviewComment",
          memos.submitted_at AS "submittedAt",
          memos.confirmed_at AS "confirmedAt",
-         memos.created_at AS "createdAt", memos.updated_at AS "updatedAt"
+         memos.created_at AS "createdAt", memos.updated_at AS "updatedAt",
+         concat(memos.xmin::text, ':', memos.updated_at::text) AS revision
   FROM memos
   JOIN users ON users.id = memos.owner_id
   LEFT JOIN departments ON departments.id = users.department_id
@@ -454,7 +456,8 @@ memosRouter.get('/weekly-summaries', authRequired, async (req, res, next) => {
     const ownerWhere = scope.ownerId ? ` AND owner_id = $${params.push(scope.ownerId)}` : '';
     const result = await query(
       `SELECT owner_id AS "ownerId", to_char(week_start, 'YYYY-MM-DD') AS "weekStart",
-              goals, deliverables, actual, risks, updated_at AS "updatedAt"
+              goals, deliverables, actual, risks, updated_at AS "updatedAt",
+              concat(xmin::text, ':', updated_at::text) AS revision
        FROM weekly_summaries
        WHERE week_start >= $1::date AND week_start < ($1::date + $2::int * 7)${ownerWhere}
        ORDER BY week_start, owner_id`,
@@ -480,6 +483,23 @@ memosRouter.put('/weekly-summaries/:weekStart', authRequired, async (req, res, n
     if (fields.some((value) => value.length > 5000)) {
       return res.status(400).json({ message: '每项内容最多 5000 字' });
     }
+    const expectedRevision = req.body?.expectedRevision;
+    if (expectedRevision !== undefined && (typeof expectedRevision !== 'string' || !expectedRevision || expectedRevision.length > 200)) {
+      return res.status(400).json({ message: '周目标版本无效，请重新打开后保存' });
+    }
+    const returning = `RETURNING owner_id AS "ownerId", to_char(week_start, 'YYYY-MM-DD') AS "weekStart",
+      goals, deliverables, actual, risks, updated_at AS "updatedAt", concat(xmin::text, ':', updated_at::text) AS revision`;
+    if (expectedRevision !== undefined) {
+      const result = expectedRevision === 'new'
+        ? await query(`INSERT INTO weekly_summaries(owner_id, week_start, goals, deliverables, actual, risks)
+            VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT(owner_id, week_start) DO NOTHING ${returning}`,
+          [ownerId, weekStart, ...fields])
+        : await query(`UPDATE weekly_summaries SET goals=$3, deliverables=$4, actual=$5, risks=$6, updated_at=NOW()
+            WHERE owner_id=$1 AND week_start=$2 AND concat(xmin::text, ':', updated_at::text)=$7 ${returning}`,
+          [ownerId, weekStart, ...fields, expectedRevision]);
+      if (!result.rowCount) return res.status(409).json({ code: 'EDITOR_VERSION_CONFLICT', message: '周目标已被更新，请核对最新内容后保存' });
+      return res.json({ summary: result.rows[0] });
+    }
     const result = await query(
       `INSERT INTO weekly_summaries(owner_id, week_start, goals, deliverables, actual, risks)
        VALUES($1, $2, $3, $4, $5, $6)
@@ -487,7 +507,8 @@ memosRouter.put('/weekly-summaries/:weekStart', authRequired, async (req, res, n
        SET goals = EXCLUDED.goals, deliverables = EXCLUDED.deliverables,
            actual = EXCLUDED.actual, risks = EXCLUDED.risks, updated_at = NOW()
        RETURNING owner_id AS "ownerId", to_char(week_start, 'YYYY-MM-DD') AS "weekStart",
-                 goals, deliverables, actual, risks, updated_at AS "updatedAt"`,
+                 goals, deliverables, actual, risks, updated_at AS "updatedAt",
+                 concat(xmin::text, ':', updated_at::text) AS revision`,
       [ownerId, weekStart, ...fields]
     );
     return res.json({ summary: result.rows[0] });
@@ -838,6 +859,10 @@ memosRouter.post('/', authRequired, async (req, res, next) => {
 
 async function handleUpdateMemo(req, res, next) {
   try {
+    const expectedRevision = req.body?.expectedRevision;
+    if (expectedRevision !== undefined && (typeof expectedRevision !== 'string' || !expectedRevision || expectedRevision.length > 200)) {
+      return res.status(400).json({ message: '事项版本无效，请重新打开后保存' });
+    }
     const numId = Number(req.params.id);
     if (!Number.isInteger(numId) || numId <= 0) {
       return res.status(404).json({ message: '记录不存在' });
@@ -982,7 +1007,7 @@ async function handleUpdateMemo(req, res, next) {
       }
     }
 
-    await query(
+    const updateResult = await query(
       `
       UPDATE memos
       SET date = COALESCE($2, date),
@@ -1000,7 +1025,7 @@ async function handleUpdateMemo(req, res, next) {
           confirmed_at = CASE WHEN $15 THEN NOW() WHEN NOT $6 THEN NULL ELSE confirmed_at END,
           is_reviewed = CASE WHEN $15 THEN TRUE WHEN $14 THEN FALSE ELSE is_reviewed END,
           updated_at = NOW()
-      WHERE id = $1
+      WHERE id = $1 AND ($16::text IS NULL OR concat(xmin::text, ':', updated_at::text) = $16)
       `,
       [
         numId,
@@ -1017,9 +1042,14 @@ async function handleUpdateMemo(req, res, next) {
         nextDeliveryStatus,
         nextComment,
         markSubmittedNow,
-        markConfirmedNow
+        markConfirmedNow,
+        expectedRevision ?? null
       ]
     );
+
+    if (!updateResult.rowCount) {
+      return res.status(409).json({ code: 'EDITOR_VERSION_CONFLICT', message: '事项已被更新，请核对最新内容后保存' });
+    }
 
     if (markSubmittedNow && req.user.role !== 'admin') {
       const adminsRes = await query(`SELECT id FROM users WHERE role = 'admin'`);
