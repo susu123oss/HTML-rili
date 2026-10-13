@@ -6117,8 +6117,32 @@ function syncMemosLocally(memos) {
 function removeMemosLocally(memoIds) {
   const ids = new Set((Array.isArray(memoIds) ? memoIds : [memoIds]).map(String));
   if (!ids.size) return;
-  state.memos = state.memos.filter((memo) => !ids.has(String(memo.id)));
-  state.weeklyMemos = state.weeklyMemos.filter((memo) => !ids.has(String(memo.id)));
+  state.memos = state.memos.filter((memo) => !ids.has(String(memo.id))).map((memo) => {
+    let changed = false;
+    let next = { ...memo };
+    if (memo.rolloverToId && ids.has(String(memo.rolloverToId))) {
+      next.rolloverToId = null;
+      changed = true;
+    }
+    if (memo.rolloverFromId && ids.has(String(memo.rolloverFromId))) {
+      next.rolloverFromId = null;
+      changed = true;
+    }
+    return changed ? next : memo;
+  });
+  state.weeklyMemos = state.weeklyMemos.filter((memo) => !ids.has(String(memo.id))).map((memo) => {
+    let changed = false;
+    let next = { ...memo };
+    if (memo.rolloverToId && ids.has(String(memo.rolloverToId))) {
+      next.rolloverToId = null;
+      changed = true;
+    }
+    if (memo.rolloverFromId && ids.has(String(memo.rolloverFromId))) {
+      next.rolloverFromId = null;
+      changed = true;
+    }
+    return changed ? next : memo;
+  });
   state.memoEtag = '';
   refreshMemoViews();
   void loadReminders();
@@ -7855,7 +7879,8 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   syncMemoCompletedState();
 
   if (saveBtn) saveBtn.style.display = canEdit ? 'inline-flex' : 'none';
-  if (deleteBtn) deleteBtn.style.display = (memo && canEdit) ? 'inline-flex' : 'none';
+  const canDelete = Boolean(memo && (canEdit || canManageWorkspace() || Number(memo?.ownerId) === Number(state.user?.id)));
+  if (deleteBtn) deleteBtn.style.display = canDelete ? 'inline-flex' : 'none';
 
   state.selectedMemoColor = memo?.color || randomMemoColor(latestMemoColor());
   renderColorOptions(state.selectedMemoColor, 'memo');
@@ -9373,29 +9398,34 @@ async function deleteMemo() {
   const pageScrollX = window.scrollX ?? window.pageXOffset ?? 0;
   const pageScrollY = window.scrollY ?? window.pageYOffset ?? 0;
 
-  await request(`/memos/${memoId}`, { method: 'DELETE' });
-  if (draftSession) {
-    try { localStorage.removeItem(draftSession.key); } catch (_) {}
-    if (editorDraftSessions.memo === draftSession) editorDraftSessions.memo = null;
-  }
-  if (!isCurrentSession(sessionVersion)) return;
-  if (String(state.selectedMemoId) === String(memoId)) closeMemoModal();
-  removeMemosLocally(memoId);
+  try {
+    await request(`/memos/${memoId}`, { method: 'DELETE' });
+    if (draftSession) {
+      try { localStorage.removeItem(draftSession.key); } catch (_) {}
+      if (editorDraftSessions.memo === draftSession) editorDraftSessions.memo = null;
+    }
+    if (!isCurrentSession(sessionVersion)) return;
+    if (String(state.selectedMemoId) === String(memoId)) closeMemoModal();
+    removeMemosLocally(memoId);
+    showGlobalToast('备忘录已删除', 'success');
 
-  const restoreScroll = () => {
-    if (targetDateKey) {
-      const updatedDayMemosEl = $(`dayMemos-${targetDateKey}`);
-      if (updatedDayMemosEl && dayMemosScrollTop > 0) {
-        updatedDayMemosEl.scrollTop = dayMemosScrollTop;
+    const restoreScroll = () => {
+      if (targetDateKey) {
+        const updatedDayMemosEl = $(`dayMemos-${targetDateKey}`);
+        if (updatedDayMemosEl && dayMemosScrollTop > 0) {
+          updatedDayMemosEl.scrollTop = dayMemosScrollTop;
+        }
       }
-    }
-    if ((window.scrollY ?? window.pageYOffset ?? 0) !== pageScrollY || (window.scrollX ?? window.pageXOffset ?? 0) !== pageScrollX) {
-      window.scrollTo({ left: pageScrollX, top: pageScrollY, behavior: 'instant' });
-    }
-  };
-  restoreScroll();
-  window.requestAnimationFrame(restoreScroll);
-  setTimeout(restoreScroll, 50);
+      if ((window.scrollY ?? window.pageYOffset ?? 0) !== pageScrollY || (window.scrollX ?? window.pageXOffset ?? 0) !== pageScrollX) {
+        window.scrollTo({ left: pageScrollX, top: pageScrollY, behavior: 'instant' });
+      }
+    };
+    restoreScroll();
+    window.requestAnimationFrame(restoreScroll);
+    setTimeout(restoreScroll, 50);
+  } catch (error) {
+    showGlobalToast(`删除失败：${error.message || '网络请求异常'}`, 'error');
+  }
 }
 
 function openDailyDetailModal(date) {
@@ -9991,7 +10021,7 @@ function renderWeeklyPlanPage() {
                     <span class="wp-day-card-due"><i class="far fa-clock"></i> ${formatMemoDue(m)}</span>
                     <div class="wp-card-actions">
                       <button type="button" class="wp-icon-btn" onclick="openMemoModal('${m.id}')" title="编辑详情"><i class="fas fa-edit"></i></button>
-                      ${m.rolloverToId || m.rolloverFromId ? '' : `<button type="button" class="wp-icon-btn text-danger" onclick="deleteMemoFromBoard('${m.id}')" title="删除"><i class="fas fa-trash-alt"></i></button>`}
+                      <button type="button" class="wp-icon-btn text-danger" onclick="deleteMemoFromBoard('${m.id}')" title="删除"><i class="fas fa-trash-alt"></i></button>
                     </div>
                   </div>
                 </div>
@@ -12172,8 +12202,13 @@ async function toggleMemoCompletion(memoId) {
 
 async function deleteMemoById(memoId) {
   if (!confirm('确定要删除这个备忘录吗？此操作不可撤销。')) return;
-  await request(`/memos/${memoId}`, { method: 'DELETE' });
-  removeMemosLocally(memoId);
+  try {
+    await request(`/memos/${memoId}`, { method: 'DELETE' });
+    removeMemosLocally(memoId);
+    showGlobalToast('备忘录已删除', 'success');
+  } catch (error) {
+    showGlobalToast(`删除失败：${error.message || '网络请求异常'}`, 'error');
+  }
 }
 
 function handleDayMemosWheel(event) {

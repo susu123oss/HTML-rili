@@ -1106,9 +1106,6 @@ memosRouter.delete('/:id', authRequired, async (req, res, next) => {
     if (!canEditMemo(req.user, memo.ownerId)) {
       return res.status(403).json({ message: '没有删除该记录的权限' });
     }
-    if (memo.rolloverToId || memo.rolloverFromId) {
-      return res.status(409).json({ message: '顺延链中的计划需保留以供复盘' });
-    }
 
     await query('DELETE FROM memos WHERE id = $1', [numId]);
     return res.json({ ok: true, id: numId });
