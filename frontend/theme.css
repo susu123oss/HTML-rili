@@ -11110,7 +11110,6 @@ html[data-theme="dark"] .wp-target-user-select {
   width: 100vw !important;
   height: 100% !important;
   height: 100dvh !important;
-  display: none !important;
   align-items: center !important;
   justify-content: center !important;
   background: rgba(15, 23, 42, 0.65) !important;
@@ -11119,13 +11118,18 @@ html[data-theme="dark"] .wp-target-user-select {
   z-index: 10050 !important;
   padding: 16px !important;
   box-sizing: border-box !important;
-  opacity: 0;
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.app-confirm-modal:not(.active) {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .app-confirm-modal.active {
   display: flex !important;
   opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .app-confirm-modal .app-confirm-content {

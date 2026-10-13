@@ -474,9 +474,11 @@ let appConfirmPromiseResolve = null;
 let appConfirmInitialized = false;
 
 function initAppConfirmModal() {
+  const okBtn = $('appConfirmOkBtn');
+  if (!okBtn) return;
   if (appConfirmInitialized) return;
   appConfirmInitialized = true;
-  $('appConfirmOkBtn')?.addEventListener('click', (e) => {
+  okBtn.addEventListener('click', (e) => {
     e.preventDefault();
     hideAppConfirm('confirm');
   });
