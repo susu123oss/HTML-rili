@@ -8027,8 +8027,7 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   updateMemoDeliveryModalUI(memo, canEdit);
   if (completedCheckbox) {
     const dStatus = memoDeliveryStatus(memo);
-    const currentActualVal = String($('memoActualDeliverable')?.value || '').trim();
-    completedCheckbox.checked = Boolean(memo?.completed || (!canManageWorkspace() && dStatus === 'submitted') || (!memo && currentActualVal));
+    completedCheckbox.checked = Boolean(memo ? (memo.completed || (!canManageWorkspace() && dStatus === 'submitted')) : false);
     completedCheckbox.disabled = !canEdit;
   }
   const weeklyPlanCheckbox = $('memoWeeklyPlan');
@@ -12541,9 +12540,7 @@ function initEventListeners() {
   $('memoActualDeliverable')?.addEventListener('change', async () => {
     const actualVal = String($('memoActualDeliverable')?.value || '').trim();
     const cb = $('memoCompleted');
-    if (actualVal && cb && !cb.checked) {
-      cb.checked = true;
-    } else if (!actualVal && cb && cb.checked) {
+    if (!actualVal && cb && cb.checked) {
       cb.checked = false;
     }
     $('memoDeliveryPanel')?.classList.remove('is-attention');
