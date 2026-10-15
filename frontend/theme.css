@@ -11104,32 +11104,48 @@ html[data-theme="dark"] .wp-target-user-select {
 /* ========================================================
    全局居中应用确认弹窗 (Global Centered Confirm Modal)
    ======================================================== */
-.app-confirm-modal {
+.app-confirm-modal,
+dialog.app-confirm-modal {
   position: fixed !important;
   inset: 0 !important;
   width: 100vw !important;
   height: 100% !important;
   height: 100dvh !important;
-  align-items: center !important;
-  justify-content: center !important;
+  max-width: 100vw !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  border: none !important;
+  outline: none !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
   background: rgba(15, 23, 42, 0.65) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
-  z-index: 10050 !important;
-  padding: 16px !important;
-  box-sizing: border-box !important;
+  z-index: 2147483647 !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-.app-confirm-modal:not(.active) {
+.app-confirm-modal:not(.active):not([open]),
+dialog.app-confirm-modal:not(.active):not([open]) {
   display: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
-.app-confirm-modal.active {
+.app-confirm-modal.active,
+.app-confirm-modal[open],
+dialog.app-confirm-modal.active,
+dialog.app-confirm-modal[open] {
   display: flex !important;
   opacity: 1 !important;
   pointer-events: auto !important;
+}
+
+dialog.app-confirm-modal::backdrop {
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 .app-confirm-modal .app-confirm-content {
@@ -11148,7 +11164,10 @@ html[data-theme="dark"] .wp-target-user-select {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.app-confirm-modal.active .app-confirm-content {
+.app-confirm-modal.active .app-confirm-content,
+.app-confirm-modal[open] .app-confirm-content,
+dialog.app-confirm-modal.active .app-confirm-content,
+dialog.app-confirm-modal[open] .app-confirm-content {
   transform: scale(1) !important;
 }
 
@@ -11223,6 +11242,13 @@ html[data-theme="dark"] .wp-target-user-select {
   align-items: center !important;
   justify-content: center !important;
   line-height: 1.4 !important;
+}
+
+.app-confirm-footer #appConfirmExtraBtn[hidden],
+.app-confirm-footer #appConfirmCancelBtn[hidden],
+.app-confirm-footer .btn[hidden],
+.app-confirm-footer .btn.is-hidden {
+  display: none !important;
 }
 
 .app-confirm-modal #appConfirmExtraBtn {

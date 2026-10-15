@@ -474,8 +474,9 @@ let appConfirmPromiseResolve = null;
 let appConfirmInitialized = false;
 
 function initAppConfirmModal() {
+  const modal = $('appConfirmModal');
   const okBtn = $('appConfirmOkBtn');
-  if (!okBtn) return;
+  if (!okBtn || !modal) return;
   if (appConfirmInitialized) return;
   appConfirmInitialized = true;
   okBtn.addEventListener('click', (e) => {
@@ -494,18 +495,31 @@ function initAppConfirmModal() {
     e.preventDefault();
     hideAppConfirm(false);
   });
-  $('appConfirmModal')?.addEventListener('click', (e) => {
-    if (e.target === $('appConfirmModal')) {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
       e.preventDefault();
       hideAppConfirm(false);
     }
+  });
+  modal.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    hideAppConfirm(false);
   });
 }
 
 function hideAppConfirm(result = false) {
   const modal = $('appConfirmModal');
-  if (modal?.classList.contains('active')) {
-    hideDialog('appConfirmModal');
+  if (modal) {
+    if (typeof modal.close === 'function' && modal.open) {
+      try {
+        modal.close();
+      } catch (e) {
+        // 忽略已关闭异常
+      }
+    }
+    if (modal.classList.contains('active')) {
+      hideDialog('appConfirmModal');
+    }
   }
   if (typeof appConfirmPromiseResolve === 'function') {
     const resolve = appConfirmPromiseResolve;
@@ -581,15 +595,21 @@ function showAppConfirm(message, options = {}) {
 
   if (cancelBtn) {
     cancelBtn.textContent = cancelText;
-    cancelBtn.style.display = showCancel ? 'inline-flex' : 'none';
+    cancelBtn.hidden = !showCancel;
+    cancelBtn.classList.toggle('is-hidden', !showCancel);
+    cancelBtn.style.setProperty('display', showCancel ? 'inline-flex' : 'none', 'important');
   }
 
   if (extraBtn) {
     if (extraText) {
       extraBtn.textContent = extraText;
-      extraBtn.style.display = 'inline-flex';
+      extraBtn.hidden = false;
+      extraBtn.classList.remove('is-hidden');
+      extraBtn.style.setProperty('display', 'inline-flex', 'important');
     } else {
-      extraBtn.style.display = 'none';
+      extraBtn.hidden = true;
+      extraBtn.classList.add('is-hidden');
+      extraBtn.style.setProperty('display', 'none', 'important');
     }
   }
 
@@ -607,6 +627,13 @@ function showAppConfirm(message, options = {}) {
         resolve(res);
       }
     };
+    if (typeof modal.showModal === 'function' && !modal.open) {
+      try {
+        modal.showModal();
+      } catch (e) {
+        console.warn('showModal fallback:', e);
+      }
+    }
     showDialog('appConfirmModal', 'appConfirmOkBtn');
   });
 }
