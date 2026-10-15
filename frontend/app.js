@@ -1594,7 +1594,7 @@ function renderCustomMemberOptions() {
   if (!memberList || !memberText) return;
 
   const currentVal = String(state.selectedUserId || 'all');
-  let selectedName = '全部成员';
+  let selectedName = currentVal === 'all' ? '全部成员' : '';
 
   const items = [];
   if (canManageWorkspace()) {
@@ -1635,9 +1635,14 @@ function renderCustomMemberOptions() {
     `);
   });
 
-  memberText.textContent = selectedName;
+  if (!selectedName && currentVal !== 'all') {
+    const fallbackUser = (state.memos || []).find((m) => String(m.ownerId) === currentVal && m.ownerName);
+    selectedName = fallbackUser?.ownerName || `成员 (${currentVal})`;
+  }
+
+  memberText.textContent = selectedName || '全部成员';
   if (memberBtn) {
-    memberBtn.title = `切换查看人员 (当前: ${selectedName})`;
+    memberBtn.title = `切换查看人员 (当前: ${selectedName || '全部成员'})`;
   }
   memberList.innerHTML = items.join('');
 
@@ -11897,6 +11902,19 @@ async function navigateToAndHighlightMemos(memoIds) {
   state.selectedUserId = String(memo.ownerId);
   state.calendarStatusFilter = 'all';
   if ($('searchInput')) $('searchInput').value = '';
+
+  // 同步联动顶部人员选择下拉框 (原生 select 与 自定义 dropdown)
+  if (canManageWorkspace()) {
+    if (!state.users || !state.users.some((u) => String(u.id) === state.selectedUserId)) {
+      try {
+        await loadUsers();
+      } catch (_) {}
+    }
+  }
+  const memberSelect = $('serverMemberSelect');
+  if (memberSelect) memberSelect.value = state.selectedUserId;
+  renderCustomMemberOptions();
+
   await loadMemos({ force: true });
   syncMemosLocally(memo);
   const memoIdStrs = memoIds.map(String);
@@ -12925,7 +12943,7 @@ function initEventListeners() {
     if (notifItem && notifItem.dataset.memoId) {
       event.stopPropagation();
       closeReminderModal();
-      await openMemoModal(notifItem.dataset.memoId);
+      await navigateToAndHighlightMemos([notifItem.dataset.memoId]);
       return;
     }
     const reminderCb = event.target.closest('.reminder-item-checkbox');
