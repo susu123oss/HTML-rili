@@ -6441,10 +6441,14 @@ function setCalendarStatusFilter(filter) {
 }
 
 function latestMemoColor() {
-  return [...state.memos]
-    .filter((memo) => memo.color)
+  const allMemos = [
+    ...(Array.isArray(state.weeklyMemos) ? state.weeklyMemos : []),
+    ...(Array.isArray(state.memos) ? state.memos : [])
+  ];
+  return allMemos
+    .filter((memo) => memo && memo.color)
     .sort((a, b) => {
-      const timeDiff = new Date(b.updatedAt || b.createdAt || b.date) - new Date(a.updatedAt || a.createdAt || a.date);
+      const timeDiff = new Date(b.updatedAt || b.createdAt || b.date || 0) - new Date(a.updatedAt || a.createdAt || a.date || 0);
       return timeDiff || Number(b.id || 0) - Number(a.id || 0);
     })[0]?.color || '';
 }
@@ -8073,7 +8077,9 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
   const canDelete = Boolean(memo && (canEdit || canManageWorkspace() || Number(memo?.ownerId) === Number(state.user?.id)));
   if (deleteBtn) deleteBtn.style.display = canDelete ? 'inline-flex' : 'none';
 
-  state.selectedMemoColor = memo?.color || randomMemoColor(latestMemoColor());
+  state.selectedMemoColor = (memo?.color && colors.includes(memo.color))
+    ? memo.color
+    : randomMemoColor(latestMemoColor());
   renderColorOptions(state.selectedMemoColor, 'memo');
   switchMemoContentTab('edit');
   document.querySelectorAll('.quick-due-chip').forEach(c => {
@@ -10353,6 +10359,7 @@ async function addPlanForSpecificDate(dateStr, inputElem) {
   if (!title) return;
 
   const targetUserId = getWeeklyTargetUserId();
+  const planColor = randomMemoColor(latestMemoColor());
 
   try {
     const res = await request('/memos', {
@@ -10362,7 +10369,7 @@ async function addPlanForSpecificDate(dateStr, inputElem) {
         date: dateStr,
         ownerId: targetUserId,
         dueTime: `${dateStr}T18:00:00`,
-        color: '#206bc4',
+        color: planColor,
         planKind: 'plan'
       })
     });
