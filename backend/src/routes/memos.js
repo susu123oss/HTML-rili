@@ -338,6 +338,14 @@ memosRouter.post('/batch-complete', authRequired, async (req, res, next) => {
       );
     }
     const updatedIds = result.rows.map((r) => r.id);
+    if (updatedIds.length) {
+      await client.query(
+        `UPDATE notifications
+         SET is_read = TRUE
+         WHERE memo_id = ANY($1::int[]) AND type IN ('submit', 'urge') AND is_read = FALSE`,
+        [updatedIds]
+      );
+    }
     if (req.user.role === 'admin' && updatedIds.length) {
       await client.query(
         `INSERT INTO notifications(user_id, memo_id, type, title, content, sender_id, sender_name)
@@ -598,6 +606,13 @@ memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
          WHERE id = $2`,
         [comment, memoId]
       );
+      // 成果已确认：自动将该事项的待确认提醒(submit)及催办提醒(urge)标记为已读
+      await query(
+        `UPDATE notifications
+         SET is_read = TRUE
+         WHERE memo_id = $1 AND (type IN ('submit', 'urge') OR user_id = $2) AND is_read = FALSE`,
+        [memoId, req.user.id]
+      );
       if (Number(memo.ownerId) !== Number(req.user.id)) {
         await query(
           `INSERT INTO notifications(user_id, memo_id, type, title, content, sender_id, sender_name)
@@ -622,6 +637,13 @@ memosRouter.post('/:id/react', authRequired, async (req, res, next) => {
              updated_at = NOW()
          WHERE id = $2`,
         [comment, memoId]
+      );
+      // 成果已退回：管理员已处理该提交审核，自动将待确认提醒(submit)标记为已读
+      await query(
+        `UPDATE notifications
+         SET is_read = TRUE
+         WHERE memo_id = $1 AND (type = 'submit' OR user_id = $2) AND is_read = FALSE`,
+        [memoId, req.user.id]
       );
       if (Number(memo.ownerId) !== Number(req.user.id)) {
         await query(
@@ -1051,6 +1073,15 @@ async function handleUpdateMemo(req, res, next) {
       return res.status(409).json({ code: 'EDITOR_VERSION_CONFLICT', message: '事项已被更新，请核对最新内容后保存' });
     }
 
+    if (nextDeliveryStatus === 'confirmed' || nextCompleted) {
+      await query(
+        `UPDATE notifications
+         SET is_read = TRUE
+         WHERE memo_id = $1 AND (type IN ('submit', 'urge') OR user_id = $2) AND is_read = FALSE`,
+        [numId, req.user.id]
+      );
+    }
+
     if (markSubmittedNow && req.user.role !== 'admin') {
       const adminsRes = await query(`SELECT id FROM users WHERE role = 'admin'`);
       const ownerLabel = memo.ownerName || req.user.displayName || req.user.username || '成员';
@@ -1108,6 +1139,12 @@ memosRouter.delete('/:id', authRequired, async (req, res, next) => {
     }
 
     await query('DELETE FROM memos WHERE id = $1', [numId]);
+    await query(
+      `UPDATE notifications
+       SET is_read = TRUE, cleared_at = NOW()
+       WHERE memo_id = $1 AND is_read = FALSE`,
+      [numId]
+    );
     return res.json({ ok: true, id: numId });
   } catch (error) {
     return next(error);

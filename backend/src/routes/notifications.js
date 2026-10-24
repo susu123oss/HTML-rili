@@ -37,6 +37,21 @@ notificationsRouter.post('/clear', authRequired, async (req, res, next) => {
 // 获取当前登录用户的所有未读消息提醒
 notificationsRouter.get('/', authRequired, async (req, res, next) => {
   try {
+    // 自动清理/标读已归档或已确认完成事项的待确认(submit)与催办(urge)提醒，避免过时重复提醒
+    await query(
+      `
+      UPDATE notifications
+      SET is_read = TRUE
+      FROM memos
+      WHERE notifications.memo_id = memos.id
+        AND notifications.user_id = $1
+        AND notifications.is_read = FALSE
+        AND (memos.completed = TRUE OR memos.delivery_status = 'confirmed')
+        AND notifications.type IN ('submit', 'urge')
+      `,
+      [req.user.id]
+    );
+
     const result = await query(
       `
       SELECT id, memo_id AS "memoId", type, title, content,

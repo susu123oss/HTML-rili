@@ -8094,6 +8094,22 @@ async function openMemoModal(memoId = null, date = new Date(), draft = {}) {
       readMemoEditorValues, applyMemoEditorValues, Boolean(memo));
     if (memo) editorDraftSessions.memo.serverSource = memoEditorServerSource(memo);
   }
+  // 打开事项弹窗时，若当前存在针对该事项的顶部未读提醒，自动标为已读并更新/隐藏顶部消息
+  if (memoId && Array.isArray(state.engineerNotifications) && state.engineerNotifications.length) {
+    const numMemoId = Number(memoId);
+    const matchingNotices = state.engineerNotifications.filter((n) => Number(n.memoId) === numMemoId);
+    if (matchingNotices.length) {
+      markNotificationsRead(matchingNotices).then(() => {
+        state.engineerNotifications = (state.engineerNotifications || []).filter((n) => Number(n.memoId) !== numMemoId);
+        if (state.engineerNotifications.length) {
+          showEngineerUrgeBanner(state.engineerNotifications);
+        } else {
+          dismissEngineerUrgeBanner();
+        }
+        updateReminderBadge();
+      }).catch(() => {});
+    }
+  }
   showDialog('memoModal', canEdit ? 'memoTitle' : null);
 }
 
@@ -8590,6 +8606,20 @@ async function handleAdminDeliveryReview(memoId, action) {
       await loadMemos({ force: true });
     }
     setMemoReactions(memoId, { isRead: res.isReviewed, isLiked: res.isLiked });
+
+    // 成果确认或退回后，前端立即移除该事项在顶部消息条的通知并隐藏气泡
+    const numMemoId = Number(memoId);
+    state.engineerNotifications = (state.engineerNotifications || []).filter(
+      (n) => Number(n.memoId) !== numMemoId
+    );
+    if (state.engineerNotifications.length) {
+      showEngineerUrgeBanner(state.engineerNotifications);
+    } else {
+      dismissEngineerUrgeBanner();
+    }
+    updateReminderBadge();
+    void checkEngineerNotifications();
+
     showGlobalToast(action === 'confirm-delivery' ? '✓ 成果已确认归档，任务正式计入完成！' : '↩ 已退回修改并通知任务负责人', 'success');
     return true;
   }
@@ -8890,6 +8920,19 @@ function initMemoHoverTooltip() {
         } else {
           if (targetMemo) targetMemo.completed = nextCompleted;
           renderCalendar();
+        }
+        if (nextCompleted) {
+          const numMemoId = Number(memoId);
+          state.engineerNotifications = (state.engineerNotifications || []).filter(
+            (n) => Number(n.memoId) !== numMemoId
+          );
+          if (state.engineerNotifications.length) {
+            showEngineerUrgeBanner(state.engineerNotifications);
+          } else {
+            dismissEngineerUrgeBanner();
+          }
+          updateReminderBadge();
+          void checkEngineerNotifications();
         }
         hideMemoHoverTooltip();
         showGlobalToast(nextCompleted ? '✔ 已标记为完成' : '↺ 已重新设为待办', 'success');
@@ -9596,6 +9639,20 @@ async function saveMemo() {
   if (!isAdmin && nextDeliveryStatus === 'submitted') {
     showGlobalToast('📦 实际成果已提交，等待管理员确认归档', 'success');
   }
+  const savedMemoId = data?.memo?.id || state.selectedMemoId;
+  if (savedMemoId && (nextCompleted || nextDeliveryStatus === 'confirmed')) {
+    const numMemoId = Number(savedMemoId);
+    state.engineerNotifications = (state.engineerNotifications || []).filter(
+      (n) => Number(n.memoId) !== numMemoId
+    );
+    if (state.engineerNotifications.length) {
+      showEngineerUrgeBanner(state.engineerNotifications);
+    } else {
+      dismissEngineerUrgeBanner();
+    }
+    updateReminderBadge();
+    void checkEngineerNotifications();
+  }
   try {
     await syncMemoMutationOrReload(data);
   } catch (error) {
@@ -9646,6 +9703,18 @@ async function deleteMemo() {
     }
     if (!isCurrentSession(sessionVersion)) return;
     if (String(state.selectedMemoId) === String(memoId)) closeMemoModal();
+    const numMemoId = Number(memoId);
+    state.engineerNotifications = (state.engineerNotifications || []).filter(
+      (n) => Number(n.memoId) !== numMemoId
+    );
+    if (state.engineerNotifications.length) {
+      showEngineerUrgeBanner(state.engineerNotifications);
+    } else {
+      dismissEngineerUrgeBanner();
+    }
+    updateReminderBadge();
+    void checkEngineerNotifications();
+
     removeMemosLocally(memoId);
     showGlobalToast('备忘录已删除', 'success');
 
