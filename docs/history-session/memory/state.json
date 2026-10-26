@@ -1,28 +1,63 @@
 {
   "version": 2,
-  "state_revision": 60,
-  "archive_revision": "sha256:88f1bf63189a3e44d5d9a094c525e04023a289697910b0321605487d458eeeab",
-  "generated_at": "unix:1791599060",
+  "state_revision": 75,
+  "archive_revision": "sha256:716a06265f84125aaf46714a26ed6fa17e25c94d9f16853cb1136cbdfdd0b205",
+  "generated_at": "unix:1792810555",
   "current_session": {
-    "number": 4,
-    "path": "docs/history-session/4.md",
+    "number": 8,
+    "path": "docs/history-session/8.md",
     "reason": "当前 ChatGPT 会话档案"
   },
-  "current_focus": "全员看板点击穿透成员周计划大看板、到期提醒免打扰及草稿恢复已全部就绪",
+  "current_focus": "[$coding-tools-mcp-wind](app://asdk_app_6a8e3df0039081918da79e83173199d7) 那就修复添加一个吧在网页大屏上",
   "recent_changes": [
-    "周计划全员看板支持点击成员卡片与具体任务标签无缝穿透切入成员 7 天周日程大看板（与个人计划界面完全一致）。",
-    "周计划个人视图顶部增加成员切换选择器与一键'我的计划'返回按钮，支持管理员代审阅本周目标与复盘。",
-    "提醒设置增加'提醒对象范围'（默认仅提醒我的事项）及'周计划到期提醒'（默认关闭免打扰），消除全员闹钟骚扰。",
-    "静态资源缓存戳更新至 v=20261013_weekly_member_view_v68，并通过 Playwright 端到端全链路验证与审计截图。",
-    "修复日历卡片工作日志/备忘录删除无响应且无报错问题：移除后端对顺延链事项删除的 409 阻断限制（数据库已自带 ON DELETE SET NULL 级联解绑）；完善前端 deleteMemo、deleteMemoById 异常捕获与 Toast 全局提示；优化周计划看板与只读状态下所有者/管理员的删除可用性；版本戳升级至 v69。",
-    "确立管理员对顺延事项的完全编辑与保存权限：此前因张梁辉该卡片被标记为顺延前身，导致前端一刀切锁定为只读查看（无保存按钮）且后端拦截 409；现已解除管理员受限，管理员对全员任何卡片均享有完整的编辑、保存和删除操作；版本戳升级至 v70。"
+    "index.html（当前 Wind 工作区挂载副本）",
+    "环境诊断放入“功能模块”，不新增单独分类卡片，保持大屏布局紧凑。",
+    "复用现有 environment key，与 MT 客户端 MTLogger logEnvironment / MTRiskControl environment 开关保持一致。",
+    "不绕过 connector 的 workspace 写保护去修改 F 盘原文件。",
+    "F:/MemoryTool_App/Backend/dashboard/index.html",
+    "Codex 总量、10分钟在线、24小时活跃统一改按 device_group_id 去重，缺失 group ID 时才回退 anonymous_id。",
+    "设备管理表隐藏操作列和移动端操作按钮，保留底层 toggleDeviceGroupBanAt/黑名单能力。",
+    "设备表不再展示“x 个客户端 ID”，避免历史 ID 数造成重复设备错觉；国家代码通过现有 countryNames/countryFlags 显示为旗帜+中文名。",
+    "F:/MemoryTool_App/Backend/cloudflare-workers/worker.js",
+    "版本管理拆成 MT 内存工具和 MT 智能体两张子卡。",
+    "MT 内存工具沿用 min_version；MT 智能体改用 codex_min_version。",
+    "Dashboard rcAdminCall 和 Cloudflare worker 都增加 set_app_min_version，保持直连 Supabase 与 Worker 两条管理链一致。"
   ],
   "open_items": [
-    "事项回收站：误删事项后可以恢复（PostgreSQL 软删除 deleted_at + 气泡一键撤销 + 回收站列表管理）",
-    "全局历史搜索：跨月份/跨年份全文查找完整内容并一键穿透定位至目标日期与格子",
-    "周报统计统一：统一本周任务统计口径，个人周看板、Markdown 周报与全员 Excel 导出的数量、完成率完全对应"
+    "真正作为原始大屏源文件的 F:\\MemoryTool_App\\Backend\\dashboard\\index.html 尚未写入本次改动，因为当前 Wind workspace 固定在 C:\\Users\\Administrator\\Desktop\\智能网页工作日历备忘录-服务器版，跨 workspace 写入被策略阻止。",
+    "若要直接修改 F 盘原文件，需要把 coding-tools-mcp-wind 的工作区切换/挂载到 F:\\MemoryTool_App（或 Backend/dashboard）；然后应用同一处两行改动即可。",
+    "未改动源码，未测试。",
+    "用户回到当前会话直接重试即可；若服务端后续 Astra 也临时满载，可再动态切换到当时实测可用的模型。",
+    "不建议继续使用 gpt-6.1-sol Max 作为当前会话设置，因为同一时刻实测 high/max 都返回 serverOverloaded。",
+    "用户可直接在已重启的 Codex Desktop 中继续发送；若某个模型显示 at capacity，切换其他可用模型即可，该问题已与 10061 分离。",
+    "后续如需处理 DNS 污染，可单独做 v2rayN/DoH 路由优化，不建议把公共 DNS 直接改成 1.1.1.1/8.8.8.8，因为当前网络下这些 UDP DNS 查询也被污染。",
+    "建议切换模型、新建会话验证；检查 VPN/代理、WebSocket 及会话链路，必要时进一步抓日志。",
+    "旧 Codex heartbeat country 仍为空，只有客户端升级并发出新心跳后才会逐步补齐。",
+    "全球用户分布仍保持原先 MT 心跳统计口径，本轮未擅自改成多应用混合口径。",
+    "刷新/部署网页大屏后验证 Codex 顶部统计与设备管理列表口径一致。",
+    "新版 Codex 客户端上线后观察 country 字段逐步填充。"
   ],
   "references": [
+    {
+      "number": 7,
+      "path": "docs/history-session/7.md",
+      "reason": "最近历史档案；可按需读取原文"
+    },
+    {
+      "number": 6,
+      "path": "docs/history-session/6.md",
+      "reason": "最近历史档案；可按需读取原文"
+    },
+    {
+      "number": 5,
+      "path": "docs/history-session/5.md",
+      "reason": "最近历史档案；可按需读取原文"
+    },
+    {
+      "number": 4,
+      "path": "docs/history-session/4.md",
+      "reason": "最近历史档案；可按需读取原文"
+    },
     {
       "number": 3,
       "path": "docs/history-session/3.md",

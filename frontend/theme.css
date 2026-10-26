@@ -3610,61 +3610,146 @@ html[data-theme='light'] .memo-calendar-popup {
 }
 
 /* ========================================================
-   提醒中心：多选、一键完成、催办下发现代化交互样式
+   提醒中心：头部、分类标签栏、任务列表与底栏统一弹性盒布局
    ======================================================== */
+#reminderModal .reminder-content,
+.reminder-content {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: min(86vh, 720px) !important;
+  max-height: min(86dvh, 720px) !important;
+  overflow: hidden !important;
+}
+
+#reminderModal .reminder-header,
+.reminder-header {
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+}
+
+#reminderModal .reminder-body,
+.reminder-body {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 14px 18px 8px 18px !important;
+  gap: 0 !important;
+  background: var(--ui-surface) !important;
+}
+
+#reminderFilterTabs,
 .reminder-filter-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  -webkit-overflow-scrolling: touch;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  gap: 8px !important;
+  margin: 0 0 12px 0 !important;
+  padding: 2px 2px 4px 2px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
+  background: var(--ui-surface) !important;
+  position: relative !important;
+  z-index: 2 !important;
+  scrollbar-width: thin !important;
 }
 
 .reminder-tab {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid var(--ui-border);
-  background: var(--ui-surface-soft);
-  color: var(--ui-text-muted);
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  transition: all 0.2s ease;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
+  border-radius: 17px !important;
+  border: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface-soft) !important;
+  color: var(--ui-text-muted) !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  outline: none !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .reminder-tab:hover {
-  background: var(--ui-surface-hover);
-  color: var(--ui-text);
+  background: var(--ui-surface-hover) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-border-strong, var(--ui-border)) !important;
+  transform: translateY(-1px) !important;
+}
+
+.reminder-tab:active {
+  transform: translateY(0) !important;
 }
 
 .reminder-tab.active {
-  background: var(--ui-accent);
-  color: #fff;
-  border-color: var(--ui-accent);
+  background: var(--ui-accent) !important;
+  color: #ffffff !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28) !important;
 }
 
 .reminder-tab .tab-count {
-  padding: 1px 7px;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.08);
-  font-size: 0.75rem;
-  font-weight: 600;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  padding: 0 6px !important;
+  border-radius: 9px !important;
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: inherit !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme='dark'] .reminder-tab:not(.active) .tab-count {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: var(--ui-text) !important;
 }
 
 .reminder-tab.active .tab-count {
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.26) !important;
+  color: #ffffff !important;
 }
 
+#reminderList,
 .reminder-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  gap: 8px !important;
+  padding-right: 4px !important;
+  padding-bottom: 6px !important;
+  box-sizing: border-box !important;
+}
+
+#reminderModal .reminder-actions,
+.reminder-actions {
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
 }
 
 .reminder-item-row {
@@ -7339,22 +7424,29 @@ html[data-theme='dark'] .complete-all-btn.empty-disabled {
 
 /* 5. 移动端专属微调：提醒中心分类标签与弹窗底栏 */
 @media (max-width: 600px) {
+  #reminderFilterTabs,
   .reminder-filter-tabs {
-    gap: 5px !important;
-    padding-bottom: 4px !important;
-    justify-content: space-between !important;
+    gap: 6px !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding-bottom: 2px !important;
+    justify-content: flex-start !important;
+    flex-shrink: 0 !important;
   }
   .reminder-tab {
-    padding: 5px 8px !important;
-    font-size: 0.78rem !important;
-    flex: 1 1 auto !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 0.8rem !important;
+    flex: 0 0 auto !important;
     text-align: center !important;
     justify-content: center !important;
     gap: 4px !important;
-    min-width: 0 !important;
   }
   .reminder-tab .tab-count {
-    padding: 1px 5px !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    padding: 0 5px !important;
     font-size: 0.7rem !important;
   }
   .color-options {

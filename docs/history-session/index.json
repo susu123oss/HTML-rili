@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "latest_number": 4,
+  "latest_number": 8,
   "sessions": {
     "v1/2IfiYN8n1Fsn6wsxkL33GijIanQp9OqjciKE8SpQjAmvTZi6D6flbWinmMUxyem92jywV0mIScB6": {
       "number": 1,
@@ -14,11 +14,35 @@
       "created_at": "unix:1791597916",
       "updated_at": "unix:1791599060"
     },
+    "v1/37YJmh3i3Q4C9IyUpWVwNei3o3n3eoKMmR6pfljNJLUVkigPxt68LFd1FfJSWJstbCzia8fE6fwu": {
+      "number": 7,
+      "path": "docs/history-session/7.md",
+      "created_at": "unix:1792653195",
+      "updated_at": "unix:1792653282"
+    },
     "v1/3SnpkP6iGS1obuMgMaGuZ9u7eK4GJWoJ46DRMNhhWGtJHFwTYi93l4iiMTQklxNj5U30tw1SBs2h": {
       "number": 3,
       "path": "docs/history-session/3.md",
       "created_at": "unix:1790727209",
       "updated_at": "unix:1790729134"
+    },
+    "v1/3iniJBl30zdC3qwGTXJGe01GvOdMg86hxleD5lIM2k8pRfvJ0Uy4VMmW1zdM9L8dnr4IpFJK5Duu": {
+      "number": 6,
+      "path": "docs/history-session/6.md",
+      "created_at": "unix:1792627417",
+      "updated_at": "unix:1792628575"
+    },
+    "v1/4L1omAvT6ukt6eGGJfHtFHeQhLocN5kAzKkgEUjTuJlRJsIP2enV2Jd2jXf3gYs6JhanZ5plHYHW": {
+      "number": 8,
+      "path": "docs/history-session/8.md",
+      "created_at": "unix:1792810416",
+      "updated_at": "unix:1792810555"
+    },
+    "v1/4hQccbp3qz2aramitCgTrsAH1Q8Ls8Nqxpf2ubI8Y9G3SYyJc1wXjwxxM50XNAoNdu0EilAiz6wS": {
+      "number": 5,
+      "path": "docs/history-session/5.md",
+      "created_at": "unix:1792480617",
+      "updated_at": "unix:1792486081"
     },
     "v1/58Ocm3v5XMHX4YIo4jIl1MDsy6kAzDbyFAsHESrCPswj6GjiGyydlT6SOqpC82b7ygYatD5Mdgj8": {
       "number": 2,

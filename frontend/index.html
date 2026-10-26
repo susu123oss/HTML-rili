@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20261024_notification_auto_dismiss_v80" defer></script>
+    <script src="./app.js?v=20261026_reminder_filter_tabs_visible_v81" defer></script>
     <style>
         * {
             margin: 0;
@@ -1068,12 +1068,12 @@
         }
 
         .reminder-body {
-            padding: 20px;
+            padding: 14px 18px 8px 18px;
             max-height: 56vh;
-            overflow-y: auto;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 0;
         }
 
         .reminder-section-title {
@@ -1106,6 +1106,9 @@
         .reminder-list {
             display: flex;
             flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
             gap: 12px;
         }
 
@@ -3916,10 +3919,10 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261024_notification_auto_dismiss_v80" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <link rel="stylesheet" href="./functions-panel.css?v=20261024_notification_auto_dismiss_v80">
-    <link rel="stylesheet" href="./dashboard-panel.css?v=20261024_notification_auto_dismiss_v80">
-    <link rel="stylesheet" href="./avatar-profile.css?v=20261024_notification_auto_dismiss_v80">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261026_reminder_filter_tabs_visible_v81" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link rel="stylesheet" href="./functions-panel.css?v=20261026_reminder_filter_tabs_visible_v81">
+    <link rel="stylesheet" href="./dashboard-panel.css?v=20261026_reminder_filter_tabs_visible_v81">
+    <link rel="stylesheet" href="./avatar-profile.css?v=20261026_reminder_filter_tabs_visible_v81">
 </head>
 <body>
     <div id="serverSessionOverlay" data-loading>
