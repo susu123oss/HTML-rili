@@ -1,6 +1,7 @@
 import express from 'express';
 import { query } from '../db/pool.js';
 import { authRequired } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/async-handler.js';
 import { buildWeeklyReport, parseReportWeek } from '../services/weekly-report.js';
 
 export const exportsRouter = express.Router();
@@ -222,7 +223,7 @@ const workbookXml = (worksheets) => `<?xml version="1.0" encoding="UTF-8"?>
   ${worksheets.join('')}
 </Workbook>`;
 
-exportsRouter.get('/calendar', authRequired, async (req, res) => {
+exportsRouter.get('/calendar', authRequired, asyncHandler(async (req, res) => {
   const isStaff = req.user.role !== 'admin';
   const startMonth = parseStartMonth(req.query.startMonth);
   const monthCount = parseMonthCount(req.query.months);
@@ -292,4 +293,4 @@ exportsRouter.get('/calendar', authRequired, async (req, res) => {
   res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
   return res.send(content);
-});
+}));

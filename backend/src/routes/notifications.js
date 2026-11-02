@@ -1,6 +1,7 @@
 import express from 'express';
 import { query } from '../db/pool.js';
 import { authRequired } from '../middleware/auth.js';
+import { buildWeakEtag, isNotModified } from '../utils/http-etag.js';
 
 export const notificationsRouter = express.Router();
 
@@ -34,38 +35,54 @@ notificationsRouter.post('/clear', authRequired, async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
-// 获取当前登录用户的所有未读消息提醒
+// 获取当前登录用户的所有未读消息提醒（读优先 + 按需惰性清理已完成事项通知 + ETag 304）
 notificationsRouter.get('/', authRequired, async (req, res, next) => {
   try {
-    // 自动清理/标读已归档或已确认完成事项的待确认(submit)与催办(urge)提醒，避免过时重复提醒
-    await query(
-      `
-      UPDATE notifications
-      SET is_read = TRUE
-      FROM memos
-      WHERE notifications.memo_id = memos.id
-        AND notifications.user_id = $1
-        AND notifications.is_read = FALSE
-        AND (memos.completed = TRUE OR memos.delivery_status = 'confirmed')
-        AND notifications.type IN ('submit', 'urge')
-      `,
-      [req.user.id]
-    );
-
     const result = await query(
       `
-      SELECT id, memo_id AS "memoId", type, title, content,
-             sender_name AS "senderName", is_read AS "isRead",
-             created_at AS "createdAt"
-      FROM notifications
-      WHERE user_id = $1 AND is_read = FALSE AND cleared_at IS NULL
-      ORDER BY created_at DESC
-      LIMIT 50
+      SELECT n.id, n.memo_id AS "memoId", n.type, n.title, n.content,
+             n.sender_name AS "senderName", n.is_read AS "isRead",
+             n.created_at AS "createdAt",
+             (
+               n.type IN ('submit', 'urge')
+               AND m.id IS NOT NULL
+               AND (m.completed = TRUE OR m.delivery_status = 'confirmed')
+             ) AS "staleCompleted"
+      FROM notifications n
+      LEFT JOIN memos m ON m.id = n.memo_id
+      WHERE n.user_id = $1 AND n.is_read = FALSE AND n.cleared_at IS NULL
+      ORDER BY n.created_at DESC
+      LIMIT 60
       `,
       [req.user.id]
     );
 
-    return res.json({ notifications: result.rows });
+    const staleIds = [];
+    const notifications = [];
+    for (const row of result.rows) {
+      if (row.staleCompleted) {
+        staleIds.push(row.id);
+      } else if (notifications.length < 50) {
+        const { staleCompleted, ...cleanRow } = row;
+        notifications.push(cleanRow);
+      }
+    }
+
+    if (staleIds.length > 0) {
+      await query(
+        `UPDATE notifications
+         SET is_read = TRUE
+         WHERE user_id = $1 AND id = ANY($2::int[]) AND is_read = FALSE`,
+        [req.user.id, staleIds]
+      );
+    }
+
+    const etag = buildWeakEtag(`notif-${req.user.id}`, notifications.map((n) => `${n.id}:${n.isRead ? 1 : 0}`).join(','));
+    if (isNotModified(req, res, etag)) {
+      return res.status(304).end();
+    }
+
+    return res.json({ notifications });
   } catch (error) {
     return next(error);
   }

@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
 import { query } from '../db/pool.js';
-import { authRequired } from '../middleware/auth.js';
+import { authRequired, invalidateUserAuthCache } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/async-handler.js';
 import { toPublicUser } from '../services/user-profile.js';
 
 export const authRouter = express.Router();
@@ -18,7 +19,7 @@ const jobTitles = [
   '储备干部'
 ];
 
-authRouter.post('/register', async (req, res) => {
+authRouter.post('/register', asyncHandler(async (req, res) => {
   const { username, password, displayName, jobTitle } = req.body || {};
   const cleanDisplayName = String(displayName || username || '').trim();
   const cleanUsername = cleanDisplayName;
@@ -58,18 +59,23 @@ authRouter.post('/register', async (req, res) => {
     SELECT $1, $2, $3, $4, $5, departments.id
     FROM departments
     WHERE departments.name = $6
+    ON CONFLICT(username) DO NOTHING
     RETURNING id, username, display_name AS "displayName", role, job_title AS "jobTitle",
-              department_id AS "departmentId"
+              department_id AS "departmentId", avatar_key AS "avatarKey"
     `,
     [cleanUsername, passwordHash, cleanDisplayName, systemRole, cleanJobTitle, '研发部']
   );
 
+  if (result.rowCount === 0) {
+    return res.status(409).json({ message: '该姓名已注册' });
+  }
+
   const user = { ...result.rows[0], departmentName: '研发部' };
   const token = jwt.sign({ userId: user.id }, config.jwtSecret, { expiresIn: '7d' });
   return res.status(201).json({ token, user: toPublicUser(user) });
-});
+}));
 
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
 
   if (!username || !password) {
@@ -94,7 +100,7 @@ authRouter.post('/login', async (req, res) => {
   }
 
   const user = result.rows[0];
-  const ok = await bcrypt.compare(password, user.passwordHash);
+  const ok = await bcrypt.compare(String(password), user.passwordHash);
 
   if (!ok) {
     return res.status(401).json({ message: '用户名或密码错误' });
@@ -102,9 +108,9 @@ authRouter.post('/login', async (req, res) => {
 
   const token = jwt.sign({ userId: user.id }, config.jwtSecret, { expiresIn: '7d' });
   return res.json({ token, user: toPublicUser(user) });
-});
+}));
 
-authRouter.post('/change-password', async (req, res) => {
+authRouter.post('/change-password', asyncHandler(async (req, res) => {
   const { username, oldPassword, newPassword } = req.body || {};
   const cleanUsername = String(username || '').trim();
 
@@ -137,8 +143,9 @@ authRouter.post('/change-password', async (req, res) => {
 
   const passwordHash = await bcrypt.hash(String(newPassword), 10);
   await query('UPDATE users SET password_hash = $2 WHERE id = $1', [user.id, passwordHash]);
+  invalidateUserAuthCache(user.id);
   return res.json({ ok: true });
-});
+}));
 
 authRouter.get('/me', authRequired, (req, res) => {
   return res.json({ user: toPublicUser(req.user) });

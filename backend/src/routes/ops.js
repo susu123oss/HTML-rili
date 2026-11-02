@@ -3,6 +3,7 @@ import os from 'os';
 import process from 'process';
 import { query, poolStatus } from '../db/pool.js';
 import { authRequired } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/async-handler.js';
 import { storageStatus } from '../services/ops-storage.js';
 
 export const opsRouter = express.Router();
@@ -75,7 +76,7 @@ function overallLevel(runtime, disks) {
   return 'normal';
 }
 
-opsRouter.get('/status', authRequired, async (req, res) => {
+opsRouter.get('/status', authRequired, asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: '只有管理员可以查看运维监控' });
   }
@@ -96,4 +97,4 @@ opsRouter.get('/status', authRequired, async (req, res) => {
     database,
     notes: storage.notes
   });
-});
+}));

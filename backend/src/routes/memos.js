@@ -1,7 +1,8 @@
 import express from 'express';
-import { createHash } from 'crypto';
 import { pool, query } from '../db/pool.js';
 import { authRequired, canAccessUser, canViewMemo, canEditMemo } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/async-handler.js';
+import { buildWeakEtag, isNotModified } from '../utils/http-etag.js';
 
 export const memosRouter = express.Router();
 
@@ -160,7 +161,7 @@ function memoQueryScope(range, scope) {
 }
 
 function memoEtag(range, scope, includeContent, version) {
-  const fingerprint = JSON.stringify({
+  return buildWeakEtag('memos', {
     range: [range.start, range.end],
     ownerId: scope.ownerId || 'all',
     includeContent,
@@ -168,10 +169,9 @@ function memoEtag(range, scope, includeContent, version) {
     updatedAt: version.updatedAt || '',
     lastId: Number(version.lastId || 0)
   });
-  return `"${createHash('sha1').update(fingerprint).digest('hex')}"`;
 }
 
-memosRouter.get('/', authRequired, async (req, res) => {
+memosRouter.get('/', authRequired, asyncHandler(async (req, res) => {
   const range = memoRange(req.query);
   if (!range) {
     return res.status(400).json({ message: '请传入 month=YYYY-MM，或 startMonth=YYYY-MM 与 months=1-12' });
@@ -201,9 +201,7 @@ memosRouter.get('/', authRequired, async (req, res) => {
     params
   );
   const etag = memoEtag(range, scope, includeContent, versionResult.rows[0] || {});
-  res.setHeader('ETag', etag);
-  res.setHeader('Cache-Control', 'private, no-cache');
-  if (req.get('if-none-match') === etag) {
+  if (isNotModified(req, res, etag)) {
     return res.status(304).end();
   }
 
@@ -239,7 +237,7 @@ memosRouter.get('/', authRequired, async (req, res) => {
     range: { startMonth: range.startMonth, months: range.months },
     memos: result.rows.map((row) => rowToMemo(row, includeContent))
   });
-});
+}));
 
 // Reminder data is independent of the calendar's visible month and search filter.
 memosRouter.get('/reminders', authRequired, async (req, res, next) => {
@@ -247,6 +245,35 @@ memosRouter.get('/reminders', authRequired, async (req, res, next) => {
     const scope = await resolveMemoScope(req.user, null);
     const params = scope.ownerId ? [scope.ownerId] : [];
     const ownerWhere = scope.ownerId ? ' AND memos.owner_id = $1' : '';
+    const versionResult = await query(
+      `
+      SELECT count(*) AS count,
+             COALESCE(max(memos.updated_at)::text, '') AS "updatedAt",
+             COALESCE(max(memos.id), 0) AS "lastId",
+             (
+               SELECT COALESCE(max(n.id), 0)
+               FROM notifications n
+               JOIN memos m2 ON m2.id = n.memo_id
+               WHERE n.type = 'urge'
+                 AND m2.completed = FALSE
+                 AND m2.rollover_to_id IS NULL${scope.ownerId ? ' AND m2.owner_id = $1' : ''}
+             ) AS "lastUrgeId"
+      FROM memos
+      WHERE memos.completed = FALSE AND memos.rollover_to_id IS NULL${ownerWhere}
+      `,
+      params
+    );
+    const ver = versionResult.rows[0] || {};
+    const etag = buildWeakEtag(`rem-${scope.ownerId || 'all'}`, {
+      count: Number(ver.count || 0),
+      updatedAt: ver.updatedAt || '',
+      lastId: Number(ver.lastId || 0),
+      lastUrgeId: Number(ver.lastUrgeId || 0)
+    });
+    if (isNotModified(req, res, etag)) {
+      return res.status(304).end();
+    }
+
     const result = await query(
       `
       SELECT memos.id, memos.owner_id AS "ownerId", users.display_name AS "ownerName",
@@ -279,7 +306,6 @@ memosRouter.get('/reminders', authRequired, async (req, res, next) => {
       `,
       params
     );
-    res.setHeader('Cache-Control', 'private, no-store');
     return res.json({ memos: result.rows.map((row) => rowToMemo(row)) });
   } catch (error) {
     return next(error);
@@ -471,6 +497,15 @@ memosRouter.get('/weekly-summaries', authRequired, async (req, res, next) => {
        ORDER BY week_start, owner_id`,
       params
     );
+    const etag = buildWeakEtag('weekly-sum', {
+      startWeek,
+      weeks,
+      ownerId: scope.ownerId || 'all',
+      revisions: result.rows.map((r) => `${r.ownerId}:${r.weekStart}:${r.revision}`)
+    });
+    if (isNotModified(req, res, etag)) {
+      return res.status(304).end();
+    }
     return res.json({ summaries: result.rows });
   } catch (error) {
     return next(error);

@@ -1,7 +1,8 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../db/pool.js';
-import { authRequired } from '../middleware/auth.js';
+import { authRequired, invalidateUserAuthCache } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/async-handler.js';
 import { toPublicUser } from '../services/user-profile.js';
 import { removeUnreferencedAvatar } from '../services/avatar.js';
 
@@ -21,7 +22,7 @@ const editableJobTitles = new Set([
 
 const normalizeText = (value) => String(value ?? '').trim();
 
-usersRouter.get('/', authRequired, async (req, res) => {
+usersRouter.get('/', authRequired, asyncHandler(async (req, res) => {
   if (!canManageUsers(req.user)) {
     return res.status(403).json({ message: '没有人员管理权限' });
   }
@@ -38,9 +39,9 @@ usersRouter.get('/', authRequired, async (req, res) => {
   );
 
   return res.json({ users: result.rows.map(toPublicUser) });
-});
+}));
 
-usersRouter.patch('/:id', authRequired, async (req, res) => {
+usersRouter.patch('/:id', authRequired, asyncHandler(async (req, res) => {
   if (!canManageUsers(req.user)) {
     return res.status(403).json({ message: '没有人员管理权限' });
   }
@@ -114,10 +115,11 @@ usersRouter.patch('/:id', authRequired, async (req, res) => {
     [targetId, role, jobTitle, departmentName, passwordHash]
   );
 
+  invalidateUserAuthCache(targetId);
   return res.json({ ok: true });
-});
+}));
 
-usersRouter.delete('/:id', authRequired, async (req, res) => {
+usersRouter.delete('/:id', authRequired, asyncHandler(async (req, res) => {
   if (!canManageUsers(req.user)) {
     return res.status(403).json({ message: '没有人员管理权限' });
   }
@@ -146,6 +148,7 @@ usersRouter.delete('/:id', authRequired, async (req, res) => {
   }
 
   const deleted = await query('DELETE FROM users WHERE id = $1 RETURNING avatar_key AS "avatarKey"', [targetId]);
+  invalidateUserAuthCache(targetId);
   await removeUnreferencedAvatar(deleted.rows[0]?.avatarKey);
   return res.json({ ok: true });
-});
+}));

@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { query } from '../db/pool.js';
-import { authRequired } from '../middleware/auth.js';
+import { authRequired, invalidateUserAuthCache } from '../middleware/auth.js';
 import { fileStorage } from '../services/file-storage.js';
 import { avatarMaxBytes, avatarMimeTypes, encodeAvatar, replaceUserAvatar, removeUnreferencedAvatar } from '../services/avatar.js';
 import { avatarKeyPattern, toPublicUser } from '../services/user-profile.js';
@@ -36,6 +36,7 @@ profileAvatarRouter.post('/', (req, res, next) => upload(req, res, (error) => {
     const encoded = await encodeAvatar(req.file.buffer, crop);
     key = await fileStorage.create('avatars', encoded);
     await replaceUserAvatar(req.user.id, key);
+    invalidateUserAuthCache(req.user.id);
     return res.json({ user: toPublicUser({ ...req.user, avatarKey: key }) });
   } catch (error) {
     await removeUnreferencedAvatar(key);
@@ -46,6 +47,7 @@ profileAvatarRouter.post('/', (req, res, next) => upload(req, res, (error) => {
 profileAvatarRouter.delete('/', async (req, res, next) => {
   try {
     await replaceUserAvatar(req.user.id, '');
+    invalidateUserAuthCache(req.user.id);
     return res.json({ user: toPublicUser({ ...req.user, avatarKey: '' }) });
   } catch (error) { return next(error); }
 });

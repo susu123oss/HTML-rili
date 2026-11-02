@@ -29,6 +29,13 @@ const state = {
   reminderFilter: 'all',
   selectedReminderIds: new Set(),
   engineerNotifications: [],
+  notificationEtag: '',
+  notificationIdsKey: '',
+  notificationEtagToken: '',
+  notificationPollBusy: false,
+  reminderEtag: '',
+  weeklyMemosEtag: '',
+  weeklySummariesEtag: '',
   memoEtag: '',
   memoRangeKey: '',
   sessionVersion: 0,
@@ -5783,6 +5790,12 @@ function resetMemoSnapshot() {
   state.memos = [];
   state.reminders = [];
   state.reminderError = '';
+  state.reminderEtag = '';
+  state.weeklyMemosEtag = '';
+  state.weeklySummariesEtag = '';
+  state.notificationEtag = '';
+  state.notificationIdsKey = '';
+  state.notificationEtagToken = '';
   state.memoEtag = '';
   state.memoRangeKey = '';
   state.dashboardRiskFilter = 'risk';
@@ -6220,22 +6233,32 @@ async function loadMemos({ force = false, sessionVersion = state.sessionVersion 
   }
 }
 
-async function loadReminders(sessionVersion = state.sessionVersion) {
+async function loadReminders(sessionVersion = state.sessionVersion, { force = false } = {}) {
   if (!isCurrentSession(sessionVersion)) return false;
   const requestVersion = ++state.reminderRequestVersion;
+  const headers = !force && state.reminderEtag && !state.reminderError
+    ? { 'If-None-Match': state.reminderEtag }
+    : {};
+  let changed = false;
   try {
-    const data = await request('/memos/reminders');
+    const data = await request('/memos/reminders', { headers });
     if (!isCurrentSession(sessionVersion) || requestVersion !== state.reminderRequestVersion) return false;
+    if (data.notModified) {
+      state.reminderError = '';
+      return true;
+    }
     if (!Array.isArray(data.memos)) throw new Error('提醒数据格式无效');
     state.reminders = data.memos;
+    state.reminderEtag = data.etag || '';
     state.reminderError = '';
+    changed = true;
   } catch (error) {
     if (!isCurrentSession(sessionVersion) || requestVersion !== state.reminderRequestVersion) return false;
     state.reminderError = error.message || '提醒读取失败';
   }
   updateReminderBadge();
   if ($('reminderModal')?.classList.contains('active')) renderReminderList();
-  if (state.user?.role !== 'admin') checkEngineerNotifications();
+  if (changed && state.user?.role !== 'admin') checkEngineerNotifications();
   return !state.reminderError;
 }
 
@@ -6302,6 +6325,8 @@ function syncMemosLocally(memos) {
       (memo) => memo.date >= start && memo.date <= end);
   }
   state.memoEtag = '';
+  state.weeklyMemosEtag = '';
+  state.reminderEtag = '';
   refreshMemoViews();
   return true;
 }
@@ -6336,6 +6361,8 @@ function removeMemosLocally(memoIds) {
     return changed ? next : memo;
   });
   state.memoEtag = '';
+  state.weeklyMemosEtag = '';
+  state.reminderEtag = '';
   refreshMemoViews();
   void loadReminders();
 }
@@ -9814,48 +9841,60 @@ function weeklyDataRequest() {
     key: `${dateKey(monday)}:${startMonth}:${months}:${userId}` };
 }
 
-async function loadWeeklyPlanData({ force = false } = {}) {
+async function loadWeeklyPlanData({ force = false, silent = false } = {}) {
   if (state.activeView !== 'weeklyPlan') return;
   const { monday, startMonth, months, userId, key } = weeklyDataRequest();
-    if (!force && (state.weeklyDataRangeKey === key || state.weeklyDataLoadingKey === key || state.weeklyDataErrorKey === key)) return;
+  if (!force && (state.weeklyDataRangeKey === key || state.weeklyDataLoadingKey === key || state.weeklyDataErrorKey === key)) return;
+  const canConditional = Boolean(silent && state.weeklyDataRangeKey === key && !state.weeklyDataError);
   const version = ++state.weeklyRequestVersion;
   state.weeklyRequestController?.abort();
   const controller = new AbortController();
   state.weeklyRequestController = controller;
   let timedOut = false;
+  let shouldRender = !silent;
   const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 20000);
-  state.weeklyDataLoadingKey = key;
+  if (!silent) state.weeklyDataLoadingKey = key;
   state.weeklyDataErrorKey = '';
   state.weeklyDataError = '';
   const refreshIcon = $('wpPageRefreshBtn')?.querySelector('i');
-  if (refreshIcon) refreshIcon.classList.add('fa-spin');
+  if (refreshIcon && !silent) refreshIcon.classList.add('fa-spin');
   try {
     const params = new URLSearchParams({ startMonth, months: String(months), userId });
     const summariesParams = new URLSearchParams({
       startWeek: dateKey(monday), weeks: '2', userId
     });
+    const memoHeaders = canConditional && state.weeklyMemosEtag ? { 'If-None-Match': state.weeklyMemosEtag } : {};
+    const summaryHeaders = canConditional && state.weeklySummariesEtag ? { 'If-None-Match': state.weeklySummariesEtag } : {};
     const [memoData, summaryData] = await Promise.all([
-      request(`/memos?${params}`, { signal: controller.signal }),
-      request(`/memos/weekly-summaries?${summariesParams}`, { signal: controller.signal })
+      request(`/memos?${params}`, { headers: memoHeaders, signal: controller.signal }),
+      request(`/memos/weekly-summaries?${summariesParams}`, { headers: summaryHeaders, signal: controller.signal })
     ]);
     if (version !== state.weeklyRequestVersion || state.activeView !== 'weeklyPlan') return;
-    if (!Array.isArray(memoData.memos) || !Array.isArray(summaryData.summaries)) {
-      throw new Error('周计划数据格式无效');
+    if (!memoData.notModified) {
+      if (!Array.isArray(memoData.memos)) throw new Error('周计划数据格式无效');
+      state.weeklyMemos = sortMemosForCalendar(memoData.memos);
+      state.weeklyMemosEtag = memoData.etag || '';
+      shouldRender = true;
     }
-    state.weeklyMemos = sortMemosForCalendar(memoData.memos);
-    state.weeklySummaries = summaryData.summaries;
+    if (!summaryData.notModified) {
+      if (!Array.isArray(summaryData.summaries)) throw new Error('周计划数据格式无效');
+      state.weeklySummaries = summaryData.summaries;
+      state.weeklySummariesEtag = summaryData.etag || '';
+      shouldRender = true;
+    }
     state.weeklyDataRangeKey = key;
   } catch (error) {
     if ((error.name === 'AbortError' && !timedOut) || version !== state.weeklyRequestVersion) return;
     state.weeklyDataErrorKey = key;
     state.weeklyDataError = timedOut ? '请求超时，请检查网络后重试' : (error.message || '加载失败');
+    shouldRender = true;
   } finally {
     window.clearTimeout(timeout);
     if (version === state.weeklyRequestVersion) {
       state.weeklyDataLoadingKey = '';
       state.weeklyRequestController = null;
       if (refreshIcon) refreshIcon.classList.remove('fa-spin');
-      renderWeeklyPlanPage();
+      if (shouldRender) renderWeeklyPlanPage();
     }
   }
 }
@@ -10069,6 +10108,7 @@ async function saveWeeklySummaryFromDialog() {
     state.weeklySummaries = state.weeklySummaries.filter(s =>
       !(Number(s.ownerId) === Number(targetUserId) && s.weekStart === monKey));
     state.weeklySummaries.push(data.summary);
+    state.weeklySummariesEtag = '';
     if (shouldClose && wasCurrentEditor) $('wpSummaryDialog')?.close();
     if (!shouldClose && draftSession) draftSession.serverSource = weeklyEditorServerValues(data.summary);
     renderWeeklyPlanPage();
@@ -12265,23 +12305,41 @@ function dismissEngineerUrgeBanner() {
   }
 }
 
-async function checkEngineerNotifications() {
+async function checkEngineerNotifications({ fromTimer = false } = {}) {
   if (!state.token) return;
+  if (fromTimer && (document.hidden || state.notificationPollBusy)) return;
   const token = state.token;
   const version = state.notificationChangeVersion || 0;
+  const currentList = Array.isArray(state.engineerNotifications) ? state.engineerNotifications : [];
+  const currentIdsKey = currentList.map((n) => `${n.id}:${n.isRead ? 1 : 0}`).join(',');
+  const bannerConsistent = currentList.length === 0 ? !$('engineerUrgeBanner') : Boolean($('engineerUrgeBanner'));
+  const canUseEtag = Boolean(
+    state.notificationEtag
+    && state.notificationEtagToken === token
+    && state.notificationIdsKey === currentIdsKey
+    && bannerConsistent
+  );
+  const headers = canUseEtag ? { 'If-None-Match': state.notificationEtag } : {};
+  state.notificationPollBusy = true;
   try {
-    const res = await request('/notifications');
+    const res = await request('/notifications', { headers });
     if (state.token !== token || version !== (state.notificationChangeVersion || 0)) return;
-    if (Array.isArray(res.notifications) && res.notifications.length) {
-      state.engineerNotifications = res.notifications;
-      showEngineerUrgeBanner(res.notifications);
+    if (res.notModified) return;
+    const nextList = Array.isArray(res.notifications) ? res.notifications : [];
+    state.engineerNotifications = nextList;
+    state.notificationIdsKey = nextList.map((n) => `${n.id}:${n.isRead ? 1 : 0}`).join(',');
+    state.notificationEtag = res.etag || '';
+    state.notificationEtagToken = token;
+    if (nextList.length) {
+      showEngineerUrgeBanner(nextList);
     } else {
-      state.engineerNotifications = [];
       dismissEngineerUrgeBanner();
     }
     updateReminderBadge();
   } catch (e) {
     // 忽略静默网络异常
+  } finally {
+    state.notificationPollBusy = false;
   }
 }
 
@@ -13743,6 +13801,6 @@ if (window.innerWidth <= 768 && 'scrollRestoration' in history) {
 // 事项提醒后台心跳轮询与标签页聚焦激活
 window.addEventListener('focus', () => { if (state.token) checkEngineerNotifications(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && state.token) checkEngineerNotifications(); });
-window.setInterval(() => { if (state.token) checkEngineerNotifications(); }, 8000);
+window.setInterval(() => { if (!document.hidden && state.token) checkEngineerNotifications({ fromTimer: true }); }, 8000);
 
 restoreSession();

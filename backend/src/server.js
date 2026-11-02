@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { patchExpressAsync } from './middleware/async-handler.js';
 import { config } from './config.js';
 import { initDatabase } from './db/schema.js';
 import { authRouter } from './routes/auth.js';
@@ -10,6 +11,16 @@ import { opsRouter } from './routes/ops.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { backupsRouter } from './routes/backups.js';
 import { avatarsRouter, profileAvatarRouter } from './routes/avatars.js';
+
+patchExpressAsync();
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[process] Unhandled Promise Rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[process] Uncaught Exception:', error);
+});
 
 const app = express();
 
@@ -31,8 +42,17 @@ app.use('/api/ops', opsRouter);
 app.use('/api/notifications', notificationsRouter);
 
 app.use((error, req, res, next) => {
-  console.error(error);
-  res.status(error.status || 500).json({ message: error.message || '服务器内部错误' });
+  if (res.headersSent) {
+    return next(error);
+  }
+  if (error?.type === 'entity.parse.failed') {
+    return res.status(400).json({ message: '请求数据格式不正确' });
+  }
+  if (error?.code === '23505') {
+    return res.status(409).json({ message: '数据已存在，请勿重复提交' });
+  }
+  console.error(`[api-error] ${req.method} ${req.originalUrl}:`, error);
+  return res.status(error?.status || 500).json({ message: error?.status ? error.message : '服务器内部错误' });
 });
 
 await initDatabase();
