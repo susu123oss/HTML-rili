@@ -147,6 +147,13 @@ usersRouter.delete('/:id', authRequired, asyncHandler(async (req, res) => {
     return res.status(400).json({ message: '不能删除系统管理员' });
   }
 
+  await query(
+    `UPDATE notifications
+     SET is_read = TRUE
+     WHERE is_read = FALSE
+       AND memo_id IN (SELECT id FROM memos WHERE owner_id = $1)`,
+    [targetId]
+  );
   const deleted = await query('DELETE FROM users WHERE id = $1 RETURNING avatar_key AS "avatarKey"', [targetId]);
   invalidateUserAuthCache(targetId);
   await removeUnreferencedAvatar(deleted.rows[0]?.avatarKey);

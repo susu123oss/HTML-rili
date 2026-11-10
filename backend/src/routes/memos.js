@@ -1173,13 +1173,13 @@ memosRouter.delete('/:id', authRequired, async (req, res, next) => {
       return res.status(403).json({ message: '没有删除该记录的权限' });
     }
 
-    await query('DELETE FROM memos WHERE id = $1', [numId]);
     await query(
       `UPDATE notifications
-       SET is_read = TRUE, cleared_at = NOW()
+       SET is_read = TRUE
        WHERE memo_id = $1 AND is_read = FALSE`,
       [numId]
     );
+    await query('DELETE FROM memos WHERE id = $1', [numId]);
     return res.json({ ok: true, id: numId });
   } catch (error) {
     return next(error);

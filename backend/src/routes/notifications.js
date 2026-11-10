@@ -44,9 +44,12 @@ notificationsRouter.get('/', authRequired, async (req, res, next) => {
              n.sender_name AS "senderName", n.is_read AS "isRead",
              n.created_at AS "createdAt",
              (
-               n.type IN ('submit', 'urge')
-               AND m.id IS NOT NULL
-               AND (m.completed = TRUE OR m.delivery_status = 'confirmed')
+               n.memo_id IS NULL
+               OR (
+                 n.type IN ('submit', 'urge')
+                 AND m.id IS NOT NULL
+                 AND (m.completed = TRUE OR m.delivery_status = 'confirmed')
+               )
              ) AS "staleCompleted"
       FROM notifications n
       LEFT JOIN memos m ON m.id = n.memo_id

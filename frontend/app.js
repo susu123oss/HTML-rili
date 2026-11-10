@@ -6334,6 +6334,20 @@ function syncMemosLocally(memos) {
 function removeMemosLocally(memoIds) {
   const ids = new Set((Array.isArray(memoIds) ? memoIds : [memoIds]).map(String));
   if (!ids.size) return;
+  if (Array.isArray(state.engineerNotifications) && state.engineerNotifications.length) {
+    const nextNotifications = state.engineerNotifications.filter(
+      (n) => n.memoId != null && !ids.has(String(n.memoId))
+    );
+    if (nextNotifications.length !== state.engineerNotifications.length) {
+      state.engineerNotifications = nextNotifications;
+      state.notificationsEtag = '';
+      if (state.engineerNotifications.length) {
+        showEngineerUrgeBanner(state.engineerNotifications);
+      } else {
+        dismissEngineerUrgeBanner();
+      }
+    }
+  }
   state.memos = state.memos.filter((memo) => !ids.has(String(memo.id))).map((memo) => {
     let changed = false;
     let next = { ...memo };

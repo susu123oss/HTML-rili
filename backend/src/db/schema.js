@@ -133,7 +133,7 @@ export async function initDatabase() {
   await query('CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read, created_at)');
   await query('CREATE INDEX IF NOT EXISTS idx_notifications_memo_id ON notifications(memo_id)');
 
-  // 启动时自动将已完成或已确认事项的历史残留未读通知（待确认与催办）标记为已读
+  // 启动时自动将已完成、已确认或关联事项已删除的历史残留未读通知标记为已读
   await query(`
     UPDATE notifications
     SET is_read = TRUE
@@ -142,6 +142,11 @@ export async function initDatabase() {
       AND notifications.is_read = FALSE
       AND (memos.completed = TRUE OR memos.delivery_status = 'confirmed')
       AND notifications.type IN ('submit', 'urge')
+  `);
+  await query(`
+    UPDATE notifications
+    SET is_read = TRUE
+    WHERE is_read = FALSE AND memo_id IS NULL
   `);
 
   await query(
