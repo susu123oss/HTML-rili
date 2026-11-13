@@ -22,6 +22,7 @@ const state = {
   user: null,
   users: [],
   memos: [],
+  memoMonthCache: new Map(),
   reminders: [],
   reminderError: '',
   reminderRequestVersion: 0,
@@ -5788,6 +5789,7 @@ function resetMemoSnapshot() {
   state.memoRequestController = null;
   state.selectedMemoId = null;
   state.memos = [];
+  state.memoMonthCache?.clear();
   state.reminders = [];
   state.reminderError = '';
   state.reminderEtag = '';
@@ -6190,6 +6192,62 @@ function currentMemoRangeKey() {
   return `${startMonth}:${months}`;
 }
 
+function currentMemoCacheKey(rangeKey = currentMemoRangeKey()) {
+  const userId = canManageWorkspace() ? 'all' : String(state.user?.id || '');
+  return `${rangeKey}:${userId}`;
+}
+
+function isMonthInRange(targetMonth, startMonth, monthsCount) {
+  if (!targetMonth || !startMonth) return false;
+  const [startY, startM] = startMonth.split('-').map(Number);
+  const [targetY, targetM] = targetMonth.split('-').map(Number);
+  const diff = (targetY - startY) * 12 + (targetM - startM);
+  return diff >= 0 && diff < monthsCount;
+}
+
+let prefetchAdjacentTimer = null;
+function schedulePrefetchAdjacentMonths() {
+  if (prefetchAdjacentTimer) clearTimeout(prefetchAdjacentTimer);
+  prefetchAdjacentTimer = setTimeout(() => {
+    prefetchAdjacentTimer = null;
+    prefetchAdjacentMonths();
+  }, 350);
+}
+
+async function prefetchAdjacentMonths() {
+  if (!state.token || document.hidden || state.activeView !== 'calendar') return;
+  const current = new Date(state.currentDate);
+  const targetDates = [
+    new Date(current.getFullYear(), current.getMonth() - 1, 1),
+    new Date(current.getFullYear(), current.getMonth() + 1, 1)
+  ];
+  const userId = canManageWorkspace() ? 'all' : String(state.user?.id || '');
+  const months = state.monthsToShow;
+
+  for (const date of targetDates) {
+    const startMonth = monthKey(date);
+    const rangeKey = `${startMonth}:${months}`;
+    const cacheKey = `${rangeKey}:${userId}`;
+    if (!state.memoMonthCache?.has(cacheKey)) {
+      try {
+        const query = new URLSearchParams({
+          startMonth,
+          months: String(months),
+          userId
+        });
+        const data = await request(`/memos?${query.toString()}`);
+        if (Array.isArray(data?.memos)) {
+          state.memoMonthCache.set(cacheKey, {
+            memos: sortMemosForCalendar(data.memos),
+            etag: data.etag || '',
+            loadedAt: Date.now()
+          });
+        }
+      } catch (_) {}
+    }
+  }
+}
+
 function memoQueryParams() {
   const { startMonth, months } = currentMemoRange();
   return new URLSearchParams({
@@ -6203,12 +6261,30 @@ async function loadMemos({ force = false, sessionVersion = state.sessionVersion 
   if (!isCurrentSession(sessionVersion)) return false;
 
   const rangeKey = currentMemoRangeKey();
+  const cacheKey = currentMemoCacheKey(rangeKey);
   const requestVersion = ++state.memoRequestVersion;
   state.memoRequestController?.abort();
   const controller = new AbortController();
   state.memoRequestController = controller;
-  const headers = !force && state.memoRangeKey === rangeKey && state.memoEtag
-    ? { 'If-None-Match': state.memoEtag }
+
+  // 1. 内存缓存秒开：若已有该月缓存数据，0ms 立即渲染呈现全部当月日志
+  const cached = state.memoMonthCache?.get(cacheKey);
+  let renderedFromCache = false;
+  if (cached && !force) {
+    state.memos = cached.memos;
+    state.memoEtag = cached.etag || '';
+    state.memoRangeKey = rangeKey;
+    refreshMemoViews();
+    renderedFromCache = true;
+    // 15 秒内且非强制刷新，直接复用并触发预加载
+    if (Date.now() - (cached.loadedAt || 0) < 15000) {
+      schedulePrefetchAdjacentMonths();
+      return true;
+    }
+  }
+
+  const headers = (!force && (cached?.etag || (state.memoRangeKey === rangeKey && state.memoEtag)))
+    ? { 'If-None-Match': cached?.etag || state.memoEtag }
     : {};
 
   try {
@@ -6218,15 +6294,30 @@ async function loadMemos({ force = false, sessionVersion = state.sessionVersion 
     });
     if (!isCurrentSession(sessionVersion) || requestVersion !== state.memoRequestVersion) return false;
 
-    if (data.notModified) return false;
+    if (data.notModified) {
+      if (cached) cached.loadedAt = Date.now();
+      schedulePrefetchAdjacentMonths();
+      return true;
+    }
+
     if (!Array.isArray(data.memos)) throw new Error('日历数据格式无效');
-    state.memos = sortMemosForCalendar(data.memos);
+    const sorted = sortMemosForCalendar(data.memos);
+    state.memos = sorted;
     state.memoEtag = data.etag || '';
     state.memoRangeKey = rangeKey;
+    if (state.memoMonthCache) {
+      state.memoMonthCache.set(cacheKey, {
+        memos: sorted,
+        etag: data.etag || '',
+        loadedAt: Date.now()
+      });
+    }
     refreshMemoViews();
+    schedulePrefetchAdjacentMonths();
     return true;
   } catch (error) {
     if (error.name === 'AbortError') return false;
+    if (renderedFromCache) return true;
     throw error;
   } finally {
     if (state.memoRequestController === controller) state.memoRequestController = null;
@@ -6317,6 +6408,36 @@ function syncMemosLocally(memos) {
   if (!updates.length) return false;
 
   state.memos = upsertMemos(state.memos, updates, memoInVisibleMonths);
+
+  // 同步更新跨月份缓存池，保证所有已加载月份数据保持最新
+  if (state.memoMonthCache) {
+    for (const [key, cacheEntry] of state.memoMonthCache.entries()) {
+      cacheEntry.memos = upsertMemos(cacheEntry.memos, updates, (memo) => {
+        const [startMonth, monthsStr] = key.split(':');
+        const months = Number(monthsStr) || 1;
+        const memoMonth = String(memo?.date || '').slice(0, 7);
+        return isMonthInRange(memoMonth, startMonth, months);
+      });
+      cacheEntry.etag = '';
+    }
+  }
+
+  // 若事项已完成或成果已确认，即时消除该事项在顶部的未读通知
+  const completedIds = new Set(updates.filter(m => m.completed || m.deliveryStatus === 'confirmed').map(m => String(m.id)));
+  if (completedIds.size && Array.isArray(state.engineerNotifications) && state.engineerNotifications.length) {
+    const nextNotifs = state.engineerNotifications.filter(n => n.memoId == null || !completedIds.has(String(n.memoId)));
+    if (nextNotifs.length !== state.engineerNotifications.length) {
+      state.engineerNotifications = nextNotifs;
+      state.notificationEtag = '';
+      state.notificationIdsKey = '';
+      if (state.engineerNotifications.length) {
+        showEngineerUrgeBanner(state.engineerNotifications);
+      } else {
+        dismissEngineerUrgeBanner();
+      }
+    }
+  }
+
   if (state.weeklyDataRangeKey) {
     const { monday, nextSunday } = getWeekRange(state.weeklyPlanDate);
     const start = dateKey(monday);
@@ -6340,7 +6461,8 @@ function removeMemosLocally(memoIds) {
     );
     if (nextNotifications.length !== state.engineerNotifications.length) {
       state.engineerNotifications = nextNotifications;
-      state.notificationsEtag = '';
+      state.notificationEtag = '';
+      state.notificationIdsKey = '';
       if (state.engineerNotifications.length) {
         showEngineerUrgeBanner(state.engineerNotifications);
       } else {
@@ -6348,6 +6470,15 @@ function removeMemosLocally(memoIds) {
       }
     }
   }
+
+  // 同步在跨月份缓存池中移除对应事项
+  if (state.memoMonthCache) {
+    for (const cacheEntry of state.memoMonthCache.values()) {
+      cacheEntry.memos = cacheEntry.memos.filter((memo) => !ids.has(String(memo.id)));
+      cacheEntry.etag = '';
+    }
+  }
+
   state.memos = state.memos.filter((memo) => !ids.has(String(memo.id))).map((memo) => {
     let changed = false;
     let next = { ...memo };
@@ -6449,6 +6580,23 @@ async function shiftVisibleMonth(delta) {
       ? `${startMonth.getFullYear()}年${startMonth.getMonth() + 1}月`
       : `${startMonth.getFullYear()}年${startMonth.getMonth() + 1}月 - ${endMonth.getFullYear()}年${endMonth.getMonth() + 1}月`;
   }
+
+  // 立即乐观刷新视图，消除月份标题与卡片脱节的视觉延迟
+  const targetRangeKey = currentMemoRangeKey();
+  const cached = state.memoMonthCache ? state.memoMonthCache.get(currentMemoCacheKey(targetRangeKey)) : null;
+  if (cached && Array.isArray(cached.memos)) {
+    // 缓存命中：0ms 瞬间显示当月全部日志与日历
+    state.memos = cached.memos;
+    state.memoEtag = cached.etag || '';
+    state.memoRangeKey = targetRangeKey;
+    refreshMemoViews();
+  } else {
+    // 缓存未命中：先渲染目标月份的日历卡片骨架与日期网格，避免画面停留在上一月份
+    state.memos = [];
+    state.memoRangeKey = targetRangeKey;
+    refreshMemoViews();
+  }
+
   await loadMemos();
 }
 
@@ -7694,12 +7842,27 @@ function getChineseCalendarDayInfo(dateInput) {
 function createMonthCalendar(monthDate, index) {
   const visibleMemos = getVisibleMemos();
   const calendarMemos = getCalendarMemos();
-  const monthMemos = visibleMemos.filter((memo) => memo.date.startsWith(monthKey(monthDate)));
+  const currentMonthKey = monthKey(monthDate);
+  const monthMemos = visibleMemos.filter((memo) => memo.date && memo.date.startsWith(currentMonthKey));
   const completed = monthMemos.filter((memo) => memo.completed).length;
   const progressPercent = monthMemos.length ? Math.round((completed / monthMemos.length) * 100) : 0;
   const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
   const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
   const today = dateKey(new Date());
+
+  // 预先建立按日期的 Map 索引，将日历每天渲染时的过滤性能由 O(31 * N) 提升至 O(1)
+  const memosByDate = new Map();
+  for (let i = 0; i < calendarMemos.length; i++) {
+    const memo = calendarMemos[i];
+    if (!memo?.date) continue;
+    const list = memosByDate.get(memo.date);
+    if (list) {
+      list.push(memo);
+    } else {
+      memosByDate.set(memo.date, [memo]);
+    }
+  }
+
   const cells = [];
 
   for (let i = firstDay.getDay(); i > 0; i--) {
@@ -7722,7 +7885,7 @@ function createMonthCalendar(monthDate, index) {
     const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), i);
     const key = dateKey(date);
     const cnInfo = getChineseCalendarDayInfo(date);
-    const dayMemos = sortCalendarDayMemos(calendarMemos.filter((memo) => memo.date === key));
+    const dayMemos = sortCalendarDayMemos(memosByDate.get(key) || []);
     const classes = ['calendar-day'];
     if (key === today) classes.push('today');
     if (cnInfo.badge === '休') classes.push('is-cn-rest');
@@ -12922,6 +13085,18 @@ function initEventListeners() {
       state.monthsToShow = Number(event.target.value);
       localStorage.setItem('calendarMonthCount', String(state.monthsToShow));
       renderCustomMonthOptions();
+      const targetRangeKey = currentMemoRangeKey();
+      const cached = state.memoMonthCache ? state.memoMonthCache.get(currentMemoCacheKey(targetRangeKey)) : null;
+      if (cached && Array.isArray(cached.memos)) {
+        state.memos = cached.memos;
+        state.memoEtag = cached.etag || '';
+        state.memoRangeKey = targetRangeKey;
+        refreshMemoViews();
+      } else {
+        state.memos = [];
+        state.memoRangeKey = targetRangeKey;
+        refreshMemoViews();
+      }
       await loadMemos();
     });
   }
@@ -12930,6 +13105,18 @@ function initEventListeners() {
   $('goTodayBtn')?.addEventListener('click', async () => {
     state.calendarStatusFilter = 'all';
     state.currentDate = new Date();
+    const targetRangeKey = currentMemoRangeKey();
+    const cached = state.memoMonthCache ? state.memoMonthCache.get(currentMemoCacheKey(targetRangeKey)) : null;
+    if (cached && Array.isArray(cached.memos)) {
+      state.memos = cached.memos;
+      state.memoEtag = cached.etag || '';
+      state.memoRangeKey = targetRangeKey;
+      refreshMemoViews();
+    } else {
+      state.memos = [];
+      state.memoRangeKey = targetRangeKey;
+      refreshMemoViews();
+    }
     await loadMemos();
     const todayEl = document.querySelector('.calendar-day.today');
     if (todayEl) {
