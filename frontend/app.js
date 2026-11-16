@@ -80,7 +80,7 @@ const state = {
   weeklyDataError: '',
   weeklyRequestVersion: 0,
   weeklyRequestController: null,
-  weeklyPlanView: 'personal',
+  weeklyPlanView: 'team',
   weeklyTargetUserId: null,
   highlightWeeklyMemoId: null,
   weeklyMobileDay: null,
@@ -5578,11 +5578,11 @@ function applyMainView() {
   }
 }
 
-function openWeeklyPlanPage(refDate) {
+function openWeeklyPlanPage(refDate, viewMode) {
   state.activeView = 'weeklyPlan';
   // Navigation opens this week; an explicit date still opens its requested week.
   state.weeklyPlanDate = refDate ? new Date(refDate) : new Date();
-  state.weeklyPlanView = state.weeklyPlanView || 'personal';
+  state.weeklyPlanView = viewMode || (canManageWorkspace() ? 'team' : 'personal');
   state.weeklyMobileDay = null;
   closeFunctionsModal();
   applyMainView();
@@ -6004,6 +6004,7 @@ function resetSessionViewState() {
   state.selectedUserId = canManageWorkspace() ? 'all' : String(state.user?.id || '');
   state.calendarStatusFilter = 'all';
   state.activeView = 'calendar';
+  state.weeklyPlanView = canManageWorkspace() ? 'team' : 'personal';
   state.selectedAgendaDate = dateKey(new Date());
   state.opsStatus = null;
   const searchInput = $('searchInput');
