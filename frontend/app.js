@@ -5489,18 +5489,11 @@ function injectUserBar() {
 
 function applyRoleScopedUi() {
   const visible = canManageWorkspace();
-  ['toolbarPublish', 'toolbarDashboard', 'toolbarImport', 'navDataManagement', 'floatingFunctions', 'viewRecentTasks'].forEach((id) => setElementVisible(id, visible));
-  setElementVisible('navSettings', Boolean(state.user));
+  ['toolbarPublish', 'toolbarDashboard', 'toolbarImport', 'navDataManagement', 'navSettings', 'floatingFunctions', 'viewRecentTasks'].forEach((id) => setElementVisible(id, visible));
   document.querySelectorAll('.admin-only-tab').forEach((tab) => {
     tab.hidden = state.user?.role !== 'admin';
     tab.style.display = state.user?.role === 'admin' ? '' : 'none';
   });
-  document.querySelectorAll('#functionsModal .admin-only-nav').forEach((el) => {
-    el.hidden = !visible;
-    el.style.display = visible ? '' : 'none';
-  });
-  const fnModal = $('functionsModal');
-  if (fnModal) fnModal.dataset.singleTab = String(!visible);
   setElementVisible('toolbarExport', state.user?.role === 'admin');
   setElementVisible('toolbarMore', visible);
 
@@ -5523,9 +5516,7 @@ function applyRoleScopedUi() {
   if (!visible) state.activeView = 'calendar';
   applyMainView();
   if (toolbarButtons) toolbarButtons.style.display = '';
-  if (!visible && fnModal?.classList.contains('active') && fnModal.dataset.section !== 'reminderSettings') {
-    closeFunctionsModal();
-  }
+  if (!visible && $('functionsModal')?.classList.contains('active')) closeFunctionsModal();
 }
 
 function applyMainView() {
@@ -11389,9 +11380,7 @@ function syncSettingsAccountPanel() {
 }
 
 function openFunctionsModal(tab = 'taskPublish') {
-  if (!state.user) return;
-  const isManager = canManageWorkspace();
-  const targetTab = (!isManager && tab !== 'reminderSettings') ? 'reminderSettings' : tab;
+  if (!canManageWorkspace()) return;
   functionsVisitedTabs.clear();
   functionsTabScroll.clear();
   editingManagedUserId = null;
@@ -11401,7 +11390,7 @@ function openFunctionsModal(tab = 'taskPublish') {
   syncReminderSettingsForm();
   syncSettingsAccountPanel();
   if ($('functionsReminderSaveStatus')) $('functionsReminderSaveStatus').textContent = '变更自动保存';
-  setActiveTab(targetTab);
+  setActiveTab(tab);
   showDialog('functionsModal', 'closeFunctionsModal');
   revealActiveFunctionsTab();
 }
@@ -11414,15 +11403,9 @@ function revealActiveFunctionsTab() {
   const modal = $('functionsModal');
   const active = modal?.querySelector('.tab.active');
   if (!active) return;
-  const isManager = canManageWorkspace();
-  modal.dataset.singleTab = String(!isManager);
+  delete modal.dataset.singleTab;
   const section = active.dataset.tab;
   const info = functionsSections[section];
-  if ($('functionsModalTitle')) {
-    $('functionsModalTitle').innerHTML = isManager
-      ? '<i class="fas fa-sliders-h"></i> 系统设置与管理'
-      : '<i class="fas fa-cog"></i> 个人与提醒设置';
-  }
   $('functionsSectionTitle').textContent = info.title;
   $('functionsSectionDescription').textContent = info.description;
   $('functionsSectionBadge').hidden = section !== 'reminderSettings';
@@ -11432,12 +11415,8 @@ function revealActiveFunctionsTab() {
   const select = $('functionsSectionSelect');
   if (select) {
     select.value = section;
-    ['taskPublish', 'dataManagement', 'userManagement', 'opsMonitor'].forEach((val) => {
-      const opt = select.querySelector(`[value="${val}"]`);
-      if (!opt) return;
-      const allowed = val === 'opsMonitor' ? state.user?.role === 'admin' : isManager;
-      opt.hidden = opt.disabled = !allowed;
-    });
+    const opsOption = select.querySelector('[value="opsMonitor"]');
+    if (opsOption) opsOption.hidden = opsOption.disabled = state.user?.role !== 'admin';
   }
   const footer = $('functionsWorkspaceFooter');
   if (footer) {
@@ -11451,9 +11430,8 @@ function revealActiveFunctionsTab() {
 }
 
 function setActiveTab(tabName) {
-  if (!state.user) return;
+  if (!canManageWorkspace()) return;
   if (!functionsSections[tabName]) return;
-  if (!canManageWorkspace() && tabName !== 'reminderSettings') return;
   if (tabName === 'opsMonitor' && state.user?.role !== 'admin') return;
   const modal = $('functionsModal');
   const scroll = $('functionsWorkspaceScroll');
