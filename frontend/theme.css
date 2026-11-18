@@ -8176,43 +8176,6 @@ html[data-theme='dark'] .btn-template-chip.chip-carryover {
   color: #34d399 !important;
 }
 
-/* ================= 顶栏快捷生成周报按钮 ================= */
-.btn-quick-report {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  height: 36px !important;
-  padding: 0 12px !important;
-  border-radius: 9px !important;
-  font-size: 0.85rem !important;
-  font-weight: 600 !important;
-  white-space: nowrap !important;
-  cursor: pointer !important;
-  border: 1px solid var(--ui-border, #cbd5e1) !important;
-  background: var(--ui-surface, #ffffff) !important;
-  color: var(--ui-primary, #2563eb) !important;
-  transition: all 0.15s ease !important;
-  flex-shrink: 0 !important;
-}
-.btn-quick-report:hover {
-  background: rgba(37, 99, 235, 0.08) !important;
-  border-color: var(--ui-primary, #2563eb) !important;
-  transform: translateY(-1px) !important;
-}
-html[data-theme='dark'] .btn-quick-report {
-  background: #182433 !important;
-  border-color: #2b3d56 !important;
-  color: #60a5fa !important;
-}
-html[data-theme='dark'] .btn-quick-report:hover {
-  background: rgba(59, 130, 246, 0.18) !important;
-  border-color: #3b82f6 !important;
-}
-@media (max-width: 768px) {
-  .btn-quick-report {
-    display: none !important;
-  }
-}
 
 /* ================= 每日事项卡片点赞与已阅图章 ================= */
 .task-stamp {

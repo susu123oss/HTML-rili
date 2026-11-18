@@ -11258,27 +11258,6 @@ function copyWeeklyReportMarkdown() {
   preview.focus();
 }
 
-async function openQuickWeeklyReportFromTopbar() {
-  if (!state.weeklyPlanDate) {
-    state.weeklyPlanDate = new Date();
-  }
-  const { monday, nextSunday } = getWeekRange(state.weeklyPlanDate);
-  const start = dateKey(monday);
-  const end = dateKey(nextSunday);
-  if (!state.weeklyMemos || state.weeklyMemos.length === 0) {
-    state.weeklyMemos = (state.memos || []).filter(m => m.date >= start && m.date <= end);
-  }
-  try {
-    if (typeof loadWeeklyPlanData === 'function') {
-      await loadWeeklyPlanData();
-    }
-  } catch (e) {
-    console.warn('loadWeeklyPlanData fallback', e);
-  }
-  copyWeeklyReportMarkdown();
-}
-
-
 async function confirmCopyWeeklyReport() {
   const preview = $('wpReportPreview');
   const report = preview?.value || '';
@@ -13431,7 +13410,6 @@ function initEventListeners() {
   $('memoContent').addEventListener('keydown', continueOrderedMemoLine);
   $('memoTextToolbar')?.addEventListener('click', handleMemoTextToolbarClick);
   $('memoTemplateChipsBar')?.addEventListener('click', handleMemoTemplateChipsClick);
-  $('btnQuickWeeklyReport')?.addEventListener('click', openQuickWeeklyReportFromTopbar);
   $('memoTabEdit')?.addEventListener('click', () => switchMemoContentTab('edit'));
   $('memoTabPreview')?.addEventListener('click', () => switchMemoContentTab('preview'));
   $('quickDueChips')?.addEventListener('click', handleQuickDueChipClick);
