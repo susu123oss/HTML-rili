@@ -7404,12 +7404,19 @@ function memoDisplayTitle(memo) {
 }
 
 function sortCalendarDayMemos(memos) {
-  return [...memos].sort((a, b) => (
-    Number(Boolean(a.completed)) - Number(Boolean(b.completed))
-    || String(a.ownerName || '').localeCompare(String(b.ownerName || ''), 'zh-CN')
-    || String(a.title || '').localeCompare(String(b.title || ''), 'zh-CN')
-    || Number(a.id || 0) - Number(b.id || 0)
-  ));
+  return [...memos].sort((a, b) => {
+    const aDone = Number(Boolean(a.completed));
+    const bDone = Number(Boolean(b.completed));
+    if (aDone !== bDone) return aDone - bDone;
+    if (!aDone) {
+      const aOverdue = Number(Boolean(isOverdueMemo(a)));
+      const bOverdue = Number(Boolean(isOverdueMemo(b)));
+      if (aOverdue !== bOverdue) return bOverdue - aOverdue;
+    }
+    return String(a.ownerName || '').localeCompare(String(b.ownerName || ''), 'zh-CN')
+      || String(a.title || '').localeCompare(String(b.title || ''), 'zh-CN')
+      || Number(a.id || 0) - Number(b.id || 0);
+  });
 }
 
 function createProgressCircle(percent, index) {
@@ -11021,6 +11028,55 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
     return name.slice(0, 2);
   }
 
+  const nowMs = Date.now();
+  const maxVisiblePills = 5;
+  const memberCards = users.map(u => {
+    const uMemos = thisWeekMemos.filter(m => Number(m.ownerId) === Number(u.id));
+    const summary = weeklySummaryFor(u.id, monKey);
+    const done = uMemos.filter(m => m.completed).length;
+    const overdueCount = uMemos.filter(m => !m.completed && !m.rolloverToId
+      && m.dueTime && new Date(m.dueTime).getTime() < nowMs).length;
+    const total = uMemos.length;
+    const pendingCount = total - done;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const hasGoal = Boolean(summary.goals?.trim());
+    const isIdleAdmin = u.role === 'admin' && !hasGoal && total === 0;
+    const statusClass = isIdleAdmin
+      ? 'idle-admin'
+      : (!hasGoal ? 'no-goal' : overdueCount ? 'has-overdue' : done === total && total > 0 ? 'all-done' : 'in-progress');
+    const statusLabel = isIdleAdmin
+      ? '管理视角'
+      : (!hasGoal ? '未设目标' : overdueCount ? `${overdueCount} 项逾期` : done === total && total > 0 ? '全部完成' : '进行中');
+    const statusIcon = isIdleAdmin
+      ? 'fa-user-shield'
+      : (!hasGoal ? 'fa-minus-circle' : overdueCount ? 'fa-exclamation-circle' : done === total && total > 0 ? 'fa-check-circle' : 'fa-spinner');
+    const sortRank = statusClass === 'has-overdue' ? 0
+      : statusClass === 'in-progress' ? 1
+      : statusClass === 'all-done' ? 2
+      : (total > 0 ? 3 : (isIdleAdmin ? 5 : 4));
+
+    const sortedMemos = [...uMemos].sort((a, b) => {
+      const rankOf = (m) => {
+        if (m.completed) return 3;
+        if (m.rolloverToId) return 2;
+        if (m.dueTime && new Date(m.dueTime).getTime() < nowMs) return 0;
+        return 1;
+      };
+      return rankOf(a) - rankOf(b) || String(a.date || '').localeCompare(String(b.date || ''));
+    });
+
+    return {
+      u, summary, done, overdueCount, total, pendingCount, pct,
+      hasGoal, isIdleAdmin, statusClass, statusLabel, statusIcon, sortRank, sortedMemos
+    };
+  }).sort((a, b) => (
+    a.sortRank - b.sortRank
+    || b.overdueCount - a.overdueCount
+    || b.pendingCount - a.pendingCount
+    || b.total - a.total
+    || String(a.u.displayName || a.u.username || '').localeCompare(String(b.u.displayName || b.u.username || ''), 'zh-CN')
+  ));
+
   container.innerHTML = `
     <div class="wp-team-header">
       <div class="wp-team-header-left">
@@ -11054,22 +11110,13 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
       </div>
     </div>
     <div class="wp-team-grid">
-      ${users.map(u => {
-        const uMemos = thisWeekMemos.filter(m => Number(m.ownerId) === Number(u.id));
-        const summary = weeklySummaryFor(u.id, monKey);
-        const done = uMemos.filter(m => m.completed).length;
-        const overdueCount = uMemos.filter(m => !m.completed && !m.rolloverToId
-          && m.dueTime && new Date(m.dueTime).getTime() < Date.now()).length;
-        const total = uMemos.length;
-        const pct = total ? Math.round((done / total) * 100) : 0;
-        const hasGoal = Boolean(summary.goals?.trim());
+      ${memberCards.map(({ u, summary, done, total, pct, hasGoal, isIdleAdmin, statusClass, statusLabel, statusIcon, sortedMemos }) => {
         const color = getAvatarColor(u.id);
-        const statusClass = !hasGoal ? 'no-goal' : overdueCount ? 'has-overdue' : done === total && total > 0 ? 'all-done' : 'in-progress';
-        const statusLabel = !hasGoal ? '未设目标' : overdueCount ? `${overdueCount} 项逾期` : done === total && total > 0 ? '全部完成' : '进行中';
-        const statusIcon = !hasGoal ? 'fa-minus-circle' : overdueCount ? 'fa-exclamation-circle' : done === total && total > 0 ? 'fa-check-circle' : 'fa-spinner';
+        const visibleMemos = sortedMemos.slice(0, maxVisiblePills);
+        const hiddenCount = Math.max(0, sortedMemos.length - visibleMemos.length);
 
         return `
-          <div class="wp-team-card wp-team-status-${statusClass}" data-user-id="${u.id}" tabindex="0" role="button" aria-label="查看 ${escapeHtml(u.displayName || u.username)} 的周计划" title="点击进入查看 ${escapeHtml(u.displayName || u.username)} 的完整周计划">
+          <div class="wp-team-card wp-team-status-${statusClass}" data-user-id="${u.id}" tabindex="0" role="button" aria-label="查看 ${escapeHtml(u.displayName || u.username)} 的周计划" title="点击查看 ${escapeHtml(u.displayName || u.username)} 的完整周计划">
             <div class="wp-team-card-head">
               <div class="wp-team-avatar" style="background:${color}" ${userAvatarAttributes(u)}>${getInitials(u)}</div>
               <div class="wp-team-user-info">
@@ -11079,7 +11126,7 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
               <div class="wp-team-status-badge wp-team-status-${statusClass}">
                 <i class="fas ${statusIcon}"></i> ${statusLabel}
               </div>
-              <span class="wp-team-card-enter"><i class="fas fa-calendar-alt"></i> 查看周计划 <i class="fas fa-chevron-right"></i></span>
+              <span class="wp-team-card-arrow" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
             </div>
 
             ${hasGoal ? `
@@ -11093,7 +11140,9 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
                 <span class="wp-team-goal-label"><i class="fas fa-box"></i> 交付</span>
                 <span class="wp-team-goal-val">${escapeHtml(summary.deliverables.split('\n')[0])}</span>
               </div>` : ''}
-            </div>` : `<div class="wp-team-no-goal"><i class="fas fa-exclamation-triangle"></i> 本周暂未设定目标</div>`}
+            </div>` : (isIdleAdmin
+              ? `<div class="wp-team-no-goal is-idle-admin">管理全局看板 · 本周未排个人目标</div>`
+              : `<div class="wp-team-no-goal"><i class="fas fa-exclamation-triangle"></i> 本周暂未设定目标</div>`)}
 
             <div class="wp-team-progress-row">
               <div class="wp-team-progress-bar">
@@ -11104,18 +11153,18 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
 
             <div class="wp-team-task-pills">
               ${total === 0
-                ? '<span class="wp-team-no-tasks">本周暂无事项</span>'
-                : uMemos.map(m => {
-                    const cls = m.completed ? 'done' : m.rolloverToId ? 'rolled' : !m.completed && m.dueTime && new Date(m.dueTime).getTime() < Date.now() ? 'overdue' : 'open';
+                ? `<span class="wp-team-no-tasks">${isIdleAdmin ? '点击可切换查看个人周计划' : '本周暂无事项'}</span>`
+                : visibleMemos.map(m => {
+                    const cls = m.completed ? 'done' : m.rolloverToId ? 'rolled' : !m.completed && m.dueTime && new Date(m.dueTime).getTime() < nowMs ? 'overdue' : 'open';
                     const icon = m.completed ? 'fa-check' : m.rolloverToId ? 'fa-share' : cls === 'overdue' ? 'fa-exclamation' : 'fa-circle';
                     const kind = m.planKind === 'plan' ? 'plan' : 'calendar';
                     const kindLabel = kind === 'plan' ? '周计划' : '日历';
                     return `<span class="wp-team-pill wp-team-pill-${cls}" data-memo-id="${m.id}" data-user-id="${u.id}" title="${escapeHtml(m.title)} · ${kindLabel} · ${m.date}（点击进入并定位）">
                       <span class="wp-team-kind-tag wp-team-kind-${kind}">${kindLabel}</span>
                       <i class="fas ${icon}"></i>
-                      <span class="wp-team-pill-title">${escapeHtml(m.title.length > 18 ? m.title.slice(0, 18) + '…' : m.title)}</span>
+                      <span class="wp-team-pill-title">${escapeHtml(m.title.length > 22 ? m.title.slice(0, 22) + '…' : m.title)}</span>
                     </span>`;
-                  }).join('')
+                  }).join('') + (hiddenCount > 0 ? `<span class="wp-team-more-pill">+${hiddenCount} 项更多 · 查看全部</span>` : '')
               }
             </div>
           </div>
