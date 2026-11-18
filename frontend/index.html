@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20261118_ui_polish_v86" defer></script>
+    <script src="./app.js?v=20261118_settings_ui_v87" defer></script>
     <style>
         * {
             margin: 0;
@@ -3919,8 +3919,8 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261118_ui_polish_v86" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <link rel="stylesheet" href="./functions-panel.css?v=20261102_perf_stability_v82">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261118_settings_ui_v87" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link rel="stylesheet" href="./functions-panel.css?v=20261118_settings_ui_v87">
     <link rel="stylesheet" href="./dashboard-panel.css?v=20261102_perf_stability_v82">
     <link rel="stylesheet" href="./avatar-profile.css?v=20261102_perf_stability_v82">
 </head>
@@ -4595,39 +4595,42 @@
         </div>
     </div>
 
-    <!-- 功能面板模态窗口 -->
+    <!-- 系统设置与工作台管理模态窗口 -->
     <div class="modal function-workspace" id="functionsModal" aria-labelledby="functionsModalTitle">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title" id="functionsModalTitle"><i class="fas fa-sliders-h"></i> 功能面板</div>
+                <div class="modal-title" id="functionsModalTitle"><i class="fas fa-sliders-h"></i> 系统设置与管理</div>
                 <button class="close-modal" id="closeFunctionsModal" title="关闭" aria-label="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
             <div class="modal-body fn-workspace-body">
-                <aside class="fn-workspace-nav" aria-label="功能分类">
-                <div class="fn-nav-caption">工作台工具</div>
-                <div class="tabs" role="tablist" aria-label="功能分类" aria-orientation="vertical">
-                    <button class="tab active" id="fnTabTaskPublish" data-tab="taskPublish" role="tab" aria-controls="taskPublishTab" aria-selected="true"><span>任务发布<small>安排当日工作</small></span></button>
-                    <button class="tab" id="fnTabDataManagement" data-tab="dataManagement" role="tab" aria-controls="dataManagementTab" aria-selected="false" tabindex="-1"><span>数据管理<small>导出报表与备份</small></span></button>
-                    <button class="tab" id="fnTabUserManagement" data-tab="userManagement" role="tab" aria-controls="userManagementTab" aria-selected="false" tabindex="-1"><span>人员管理<small>维护团队成员</small></span></button>
-                    <button class="tab admin-only-tab" id="fnTabOpsMonitor" data-tab="opsMonitor" role="tab" aria-controls="opsMonitorTab" aria-selected="false" tabindex="-1"><span>运维监控<small>查看服务状态</small></span></button>
-                    <button class="tab" id="fnTabReminderSettings" data-tab="reminderSettings" role="tab" aria-controls="reminderSettingsTab" aria-selected="false" tabindex="-1"><span>提醒设置<small>设置提醒方式</small></span></button>
-                </div>
-                <p class="fn-nav-tip">选择一项功能，<br>在右侧完成操作。</p>
+                <aside class="fn-workspace-nav" id="functionsWorkspaceNav" aria-label="设置与管理分类">
+                    <div class="fn-nav-caption">个人偏好</div>
+                    <div class="tabs" role="tablist" aria-label="功能分类" aria-orientation="vertical">
+                        <button class="tab" id="fnTabReminderSettings" data-tab="reminderSettings" role="tab" aria-controls="reminderSettingsTab" aria-selected="false" tabindex="-1"><span>提醒与账号<small>通知偏好与密码安全</small></span></button>
+                        <div class="fn-nav-group-divider admin-only-nav">团队与系统</div>
+                        <button class="tab admin-only-nav" id="fnTabUserManagement" data-tab="userManagement" role="tab" aria-controls="userManagementTab" aria-selected="false" tabindex="-1"><span>人员管理<small>成员编制与权限</small></span></button>
+                        <button class="tab admin-only-nav" id="fnTabDataManagement" data-tab="dataManagement" role="tab" aria-controls="dataManagementTab" aria-selected="false" tabindex="-1"><span>数据与报表<small>月报导出与备份</small></span></button>
+                        <button class="tab admin-only-tab admin-only-nav" id="fnTabOpsMonitor" data-tab="opsMonitor" role="tab" aria-controls="opsMonitorTab" aria-selected="false" tabindex="-1"><span>运维监控<small>服务健康与磁盘</small></span></button>
+                        <button class="tab active admin-only-nav" id="fnTabTaskPublish" data-tab="taskPublish" role="tab" aria-controls="taskPublishTab" aria-selected="true"><span>任务发布<small>批量下发当日工作</small></span></button>
+                    </div>
                 </aside>
                 <main class="fn-workspace-main">
-                <div class="fn-mobile-nav">
-                    <label for="functionsSectionSelect">功能分类</label>
+                <div class="fn-mobile-nav" id="functionsMobileNav">
+                    <label for="functionsSectionSelect">分类</label>
                     <select class="form-control" id="functionsSectionSelect">
-                        <option value="taskPublish">任务发布</option>
-                        <option value="dataManagement">数据管理</option>
+                        <option value="reminderSettings">提醒与账号</option>
                         <option value="userManagement">人员管理</option>
+                        <option value="dataManagement">数据与报表</option>
                         <option value="opsMonitor">运维监控</option>
-                        <option value="reminderSettings">提醒设置</option>
+                        <option value="taskPublish">任务发布</option>
                     </select>
                 </div>
                 <div class="fn-workspace-heading">
                     <div><h2 id="functionsSectionTitle">任务发布</h2><p id="functionsSectionDescription">填写工作内容，选择接收人，直接下发当日任务。</p></div>
-                    <span class="fn-context-badge" id="functionsSectionBadge" hidden>当前浏览器</span>
+                    <div class="fn-heading-right">
+                        <span class="fn-context-badge" id="functionsSectionBadge" hidden><i class="fas fa-check-circle"></i> <span id="functionsReminderSaveStatus">变更自动保存</span></span>
+                        <button class="btn btn-secondary btn-sm" id="refreshOpsStatus" type="button" hidden><i class="fas fa-sync-alt"></i> 刷新状态</button>
+                    </div>
                 </div>
                 <div class="fn-workspace-scroll" id="functionsWorkspaceScroll">
                 
@@ -4677,17 +4680,18 @@
                         <label for="taskDescription"><i class="fas fa-align-left"></i> 任务描述（支持 Markdown）</label>
                         <textarea class="form-control" id="taskDescription" placeholder="输入任务背景、要求或注意事项..." rows="3"></textarea>
                     </div>
-                    
                 </div>
 
-                
                 <!-- 数据管理选项卡 -->
                 <div class="tab-content" id="dataManagementTab">
                     <div class="data-stats-card fn-stats-banner">
-                        <div class="fn-stats-heading"><h3>当前查看范围</h3><button class="btn btn-secondary" id="viewStats" type="button"><i class="fas fa-sync-alt"></i> 刷新统计</button></div>
-                        <div class="fn-stats-grid">
+                        <div class="fn-stats-heading">
+                            <h3>当前视图数据概览</h3>
+                            <button class="btn btn-secondary" id="viewStats" type="button"><i class="fas fa-sync-alt"></i> 刷新统计</button>
+                        </div>
+                        <div class="fn-stats-grid fn-stats-grid-4">
                             <div class="fn-stat-item">
-                                <span class="fn-stat-label">总备忘录</span>
+                                <span class="fn-stat-label">事项总数</span>
                                 <strong class="fn-stat-value" id="totalMemosStat">0</strong>
                             </div>
                             <div class="fn-stat-item is-success">
@@ -4698,23 +4702,23 @@
                                 <span class="fn-stat-label">待完成</span>
                                 <strong class="fn-stat-value" id="pendingMemosStat">0</strong>
                             </div>
-                            <div class="fn-stat-item">
-                                <span class="fn-stat-label">最早记录</span>
-                                <strong class="fn-stat-value fn-stat-text" id="oldestMemoStat">无</strong>
-                            </div>
-                            <div class="fn-stat-item">
-                                <span class="fn-stat-label">最近更新</span>
-                                <strong class="fn-stat-value fn-stat-text" id="latestUpdateStat">无</strong>
+                            <div class="fn-stat-item fn-stat-span">
+                                <span class="fn-stat-label">记录跨度与最近更新</span>
+                                <div class="fn-stat-meta-lines">
+                                    <span>最早：<strong id="oldestMemoStat">无</strong></span>
+                                    <span>更新：<strong id="latestUpdateStat">无</strong></span>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="excel-export-panel" id="excelExportPanel" hidden>
-                        <div class="fn-card-head">
+                    <div class="fn-surface-box excel-export-panel" id="excelExportPanel" hidden>
+                        <div class="fn-card-head fn-card-head-inline">
                             <div>
-                                <h4><i class="fas fa-file-excel"></i> 导出工作日历</h4>
-                                <p>单人导出一个工作表，多人自动合并至同一 Excel 并按姓名分表，保留每月统计。</p>
+                                <h4><i class="fas fa-file-excel text-success"></i> Excel 工作日历报表导出</h4>
+                                <p>单人导出独立工作表，多人自动合并至同一工作簿并按姓名分表。</p>
                             </div>
+                            <button class="btn btn-primary fn-primary-cta" id="exportExcel" type="button"><i class="fas fa-download"></i> 导出 Excel 报表</button>
                         </div>
                         <div class="excel-export-grid">
                             <label>
@@ -4753,26 +4757,71 @@
                         </div>
                     </div>
                     
-                    <details class="fn-backup-section">
-                        <summary><span><i class="fas fa-database"></i> 数据备份与恢复</span><span class="fn-summary-caption">JSON 文件</span></summary>
-                        <p class="fn-subtext">导出当前查看范围内的完整备忘录；导入备份时可选择追加或替换。正文和关联事项会一起保留。</p>
-                        <div class="data-management-buttons">
-                            <input type="file" id="importFileInput" accept="application/json,.json">
-                            <button class="btn btn-primary" id="exportData" type="button">
-                                <i class="fas fa-file-export"></i> 导出 JSON
-                            </button>
-                            <button class="btn btn-secondary" id="importData" type="button">
-                                <i class="fas fa-file-import"></i> 导入 JSON
-                            </button>
-                            <button class="btn btn-danger" id="clearData" type="button" hidden>
-                                <i class="fas fa-trash-alt"></i> 清空数据
-                            </button>
+                    <div class="fn-surface-box fn-backup-card">
+                        <div class="fn-card-head fn-card-head-inline">
+                            <div>
+                                <h4><i class="fas fa-database"></i> JSON 数据备份与恢复</h4>
+                                <p class="fn-subtext">导出当前查看范围内的完整记录；导入 JSON 备份时可选追加或覆盖，完整保留正文与关联关系。</p>
+                            </div>
+                            <div class="data-management-buttons">
+                                <input type="file" id="importFileInput" accept="application/json,.json">
+                                <button class="btn btn-secondary" id="exportData" type="button">
+                                    <i class="fas fa-file-export"></i> 导出 JSON
+                                </button>
+                                <button class="btn btn-secondary" id="importData" type="button">
+                                    <i class="fas fa-file-import"></i> 导入 JSON
+                                </button>
+                                <button class="btn btn-danger" id="clearData" type="button" hidden>
+                                    <i class="fas fa-trash-alt"></i> 清空数据
+                                </button>
+                            </div>
                         </div>
-                    </details>
+                    </div>
                 </div>
                 
                 <!-- 人员管理选项卡 -->
                 <div class="tab-content" id="userManagementTab">
+                    <div class="fn-user-toolbar">
+                        <div class="fn-user-search-wrap">
+                            <i class="fas fa-search"></i>
+                            <input type="search" class="form-control" id="userManageSearchInput" placeholder="搜索姓名、岗位或部门..." autocomplete="off">
+                            <span class="fn-user-count-pill" id="userManageCountBadge">0 人</span>
+                        </div>
+                        <button class="btn btn-primary" id="toggleAddUserFormBtn" type="button">
+                            <i class="fas fa-user-plus"></i> 新增成员
+                        </button>
+                    </div>
+
+                    <div class="fn-surface-box fn-add-user-panel" id="addUserPanel" hidden>
+                        <div class="fn-add-user-head">
+                            <strong><i class="fas fa-user-plus"></i> 创建新成员账号</strong>
+                            <span>创建后成员可使用姓名与初始密码直接登录工作台</span>
+                        </div>
+                        <div class="fn-add-user-grid">
+                            <label>
+                                <span>成员姓名（登录账号）</span>
+                                <input type="text" class="form-control" id="newUserName" placeholder="如：王明" maxlength="32" autocomplete="off">
+                            </label>
+                            <label>
+                                <span>岗位</span>
+                                <select class="form-control" id="newUserJob"></select>
+                            </label>
+                            <label>
+                                <span>所属部门</span>
+                                <input type="text" class="form-control" id="newUserDept" value="研发部" autocomplete="off">
+                            </label>
+                            <label>
+                                <span>初始密码</span>
+                                <input type="password" class="form-control" id="newUserPass" placeholder="至少 4 位" autocomplete="new-password">
+                            </label>
+                        </div>
+                        <div class="fn-add-user-actions">
+                            <div id="addUserFeedback" class="operation-feedback" role="status" hidden></div>
+                            <button class="btn btn-secondary" id="cancelAddUserBtn" type="button">取消</button>
+                            <button class="btn btn-primary" id="submitAddUserBtn" type="button"><i class="fas fa-check"></i> 确认创建</button>
+                        </div>
+                    </div>
+
                     <div class="task-list fn-user-grid" id="userManagementList">
                         <div class="empty-state">
                             <i class="fas fa-users"></i>
@@ -4786,115 +4835,115 @@
                     <div id="opsMonitorContent" class="ops-monitor-content">
                         <div class="empty-state">
                             <i class="fas fa-server"></i>
-                            <p>点击刷新状态获取服务器信息</p>
+                            <p>点击右上角刷新状态获取服务器信息</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- 提醒设置选项卡 -->
+                <!-- 提醒与账号设置选项卡 -->
                 <div class="tab-content" id="reminderSettingsTab">
-                    <section class="fn-settings-section" aria-labelledby="fnReminderScopeTitle">
-                    <h3 id="fnReminderScopeTitle">提醒对象与范围</h3>
-                    <div class="fn-settings-grid">
-                        <div class="fn-field-card" id="reminderScopeField">
-                            <label for="reminderScope"><i class="fas fa-user-shield"></i> 提醒对象范围</label>
-                            <select class="form-control" id="reminderScope">
-                                <option value="mine">仅提醒我的事项（推荐）</option>
-                                <option value="all">提醒全员事项（管理员）</option>
-                            </select>
-                            <span class="fn-field-hint">默认仅在本人负责的事项到期时提醒，避免被其他成员日常打扰</span>
-                        </div>
-                    </div>
-                    </section>
-
                     <section class="fn-settings-section" aria-labelledby="fnReminderTimingTitle">
-                    <h3 id="fnReminderTimingTitle">提醒时机</h3>
-                    <div class="fn-settings-grid">
-                        <div class="fn-field-card">
-                            <label for="reminderCheckInterval"><i class="fas fa-stopwatch"></i> 检查频率</label>
-                            <select class="form-control" id="reminderCheckInterval">
-                                <option value="1">每 1 分钟</option>
-                                <option value="5">每 5 分钟</option>
-                                <option value="10">每 10 分钟</option>
-                                <option value="15">每 15 分钟</option>
-                                <option value="30">每 30 分钟</option>
-                                <option value="60">每小时</option>
-                            </select>
-                            <span class="fn-field-hint">页面打开时，多久检查一次未完成事项</span>
+                        <div class="fn-section-bar">
+                            <h3 id="fnReminderTimingTitle">提醒时机与范围</h3>
                         </div>
-                        
-                        <div class="fn-field-card">
-                            <label for="reminderAdvanceTime"><i class="fas fa-hourglass-half"></i> 提前提醒时间</label>
-                            <select class="form-control" id="reminderAdvanceTime">
-                                <option value="0">到期时提醒</option>
-                                <option value="15">提前 15 分钟</option>
-                                <option value="30">提前 30 分钟</option>
-                                <option value="60">提前 1 小时</option>
-                                <option value="1440">提前 1 天</option>
-                            </select>
-                            <span class="fn-field-hint">在事项截止前多久发出首次提醒</span>
+                        <div class="fn-settings-grid fn-settings-grid-compact">
+                            <div class="fn-field-card" id="reminderScopeField">
+                                <label for="reminderScope"><i class="fas fa-user-shield"></i> 提醒对象范围</label>
+                                <select class="form-control" id="reminderScope">
+                                    <option value="mine">仅我的事项（推荐）</option>
+                                    <option value="all">全员事项（管理员）</option>
+                                </select>
+                            </div>
+                            <div class="fn-field-card">
+                                <label for="reminderCheckInterval"><i class="fas fa-stopwatch"></i> 检查频率</label>
+                                <select class="form-control" id="reminderCheckInterval">
+                                    <option value="1">每 1 分钟</option>
+                                    <option value="5">每 5 分钟</option>
+                                    <option value="10">每 10 分钟</option>
+                                    <option value="15">每 15 分钟</option>
+                                    <option value="30">每 30 分钟</option>
+                                    <option value="60">每小时</option>
+                                </select>
+                            </div>
+                            <div class="fn-field-card">
+                                <label for="reminderAdvanceTime"><i class="fas fa-hourglass-half"></i> 提前提醒时间</label>
+                                <select class="form-control" id="reminderAdvanceTime">
+                                    <option value="0">到期时提醒</option>
+                                    <option value="15">提前 15 分钟</option>
+                                    <option value="30">提前 30 分钟</option>
+                                    <option value="60">提前 1 小时</option>
+                                    <option value="1440">提前 1 天</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
                     </section>
                     
                     <section class="fn-settings-section" aria-labelledby="fnReminderMethodTitle">
-                    <h3 id="fnReminderMethodTitle">提醒方式与类型</h3>
-                    <div class="fn-switch-grid">
-                        <label class="fn-switch-card" for="enableSoundReminder">
-                            <div class="fn-switch-icon"><i class="fas fa-volume-up"></i></div>
-                            <div class="fn-switch-info">
-                                <strong>声音提醒</strong>
-                                <span>触发到期或催办提醒时同步播放提示音</span>
-                            </div>
-                            <input type="checkbox" id="enableSoundReminder" role="switch" checked>
-                        </label>
-                        
-                        <label class="fn-switch-card" for="enableDesktopNotification">
-                            <div class="fn-switch-icon"><i class="fas fa-desktop"></i></div>
-                            <div class="fn-switch-info">
-                                <strong>系统桌面通知</strong>
-                                <span id="desktopNotificationStatus">支持时同步弹出操作系统级通知横幅</span>
-                            </div>
-                            <input type="checkbox" id="enableDesktopNotification" role="switch">
-                        </label>
+                        <div class="fn-section-bar">
+                            <h3 id="fnReminderMethodTitle">通知方式</h3>
+                            <button class="btn btn-secondary btn-sm fn-inline-test-btn" id="testReminder" type="button"><i class="fas fa-bell"></i> 发送测试提醒</button>
+                        </div>
+                        <div class="fn-switch-grid">
+                            <label class="fn-switch-card" for="enableSoundReminder">
+                                <div class="fn-switch-icon"><i class="fas fa-volume-up"></i></div>
+                                <div class="fn-switch-info">
+                                    <strong>声音提醒</strong>
+                                    <span>事项到期或收到催办通知时播放提示音</span>
+                                </div>
+                                <input type="checkbox" id="enableSoundReminder" role="switch" checked>
+                            </label>
+                            
+                            <label class="fn-switch-card" for="enableDesktopNotification">
+                                <div class="fn-switch-icon"><i class="fas fa-desktop"></i></div>
+                                <div class="fn-switch-info">
+                                    <strong>系统桌面通知</strong>
+                                    <span id="desktopNotificationStatus">支持时同步弹出操作系统通知横幅</span>
+                                </div>
+                                <input type="checkbox" id="enableDesktopNotification" role="switch">
+                            </label>
 
-                        <label class="fn-switch-card" for="reminderIncludeWeeklyPlans">
-                            <div class="fn-switch-icon"><i class="fas fa-tasks"></i></div>
-                            <div class="fn-switch-info">
-                                <strong>周计划到期提醒</strong>
-                                <span>默认关闭（周计划为宏观规划免打扰，仅提醒普通备忘与日程）</span>
+                            <label class="fn-switch-card" for="reminderIncludeWeeklyPlans">
+                                <div class="fn-switch-icon"><i class="fas fa-tasks"></i></div>
+                                <div class="fn-switch-info">
+                                    <strong>周计划到期提醒</strong>
+                                    <span>默认关闭（周计划保持免打扰，仅提醒日常备忘与日程）</span>
+                                </div>
+                                <input type="checkbox" id="reminderIncludeWeeklyPlans" role="switch">
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="fn-settings-section" aria-labelledby="fnAccountSecurityTitle">
+                        <div class="fn-section-bar">
+                            <h3 id="fnAccountSecurityTitle">个人资料与密码安全</h3>
+                        </div>
+                        <div class="fn-surface-box fn-account-card">
+                            <div class="fn-account-profile-row">
+                                <div class="fn-account-user-meta">
+                                    <strong id="settingsAccountName">当前用户</strong>
+                                    <span id="settingsAccountRoleDept">研发部</span>
+                                </div>
+                                <button class="btn btn-secondary btn-sm" id="settingsOpenAvatarBtn" type="button"><i class="fas fa-camera"></i> 更换个人头像</button>
                             </div>
-                            <input type="checkbox" id="reminderIncludeWeeklyPlans" role="switch">
-                        </label>
-                    </div>
+                            <div class="fn-account-pass-row">
+                                <input type="password" class="form-control" id="selfOldPassword" placeholder="输入原密码" autocomplete="current-password">
+                                <input type="password" class="form-control" id="selfNewPassword" placeholder="输入新密码（至少 4 位）" autocomplete="new-password">
+                                <button class="btn btn-primary" id="saveSelfPasswordBtn" type="button"><i class="fas fa-key"></i> 更新密码</button>
+                            </div>
+                            <div id="selfPasswordFeedback" class="operation-feedback" role="status" hidden></div>
+                        </div>
                     </section>
                     
                     <details class="fn-reminder-help">
-                        <summary><i class="fas fa-info-circle"></i> 提醒如何生效</summary>
-                        <ul><li>设置保存在当前浏览器。保持工作台页面打开，后台标签页也会检查提醒，浏览器可能延迟检查。</li><li>关闭页面或退出浏览器后不会继续推送。系统桌面通知需要授予浏览器通知权限。</li><li>每项任务在提前提醒时仅提醒一次；已完成事项自动跳过，点击系统通知可定位事项。</li></ul>
+                        <summary><i class="fas fa-info-circle"></i> 提醒生效说明</summary>
+                        <ul><li>提醒偏好保存在当前浏览器并实时生效；保持工作台页面打开即可自动巡检。</li><li>每项任务到期前仅提醒一次，已完成事项自动跳过；点击桌面通知可快速定位对应事项。</li></ul>
                     </details>
                 </div>
                 </div>
-                <footer class="fn-workspace-actions" aria-label="当前功能操作">
+                <footer class="fn-workspace-actions" id="functionsWorkspaceFooter" aria-label="当前功能操作">
                     <div class="fn-footer-group" data-functions-actions="taskPublish">
                         <div class="fn-footer-copy"><span>每位接收人将收到一条当日任务</span><div id="taskPublishFeedback" class="operation-feedback" role="status" hidden></div></div>
                         <button class="btn btn-primary fn-primary-cta" id="publishTask" type="button"><i class="fas fa-paper-plane"></i> 发布任务</button>
-                    </div>
-                    <div class="fn-footer-group" data-functions-actions="dataManagement" hidden>
-                        <span class="fn-footer-copy">按所选月份和人员生成报表</span>
-                        <button class="btn btn-primary fn-primary-cta" id="exportExcel" type="button"><i class="fas fa-download"></i> 导出 Excel 报表</button>
-                    </div>
-                    <div class="fn-footer-group" data-functions-actions="userManagement" hidden>
-                        <span class="fn-footer-copy">每位成员的修改需单独保存</span>
-                        <button class="btn btn-secondary" id="closeFunctionsModalBtn" type="button">完成</button>
-                    </div>
-                    <div class="fn-footer-group" data-functions-actions="opsMonitor" hidden>
-                        <span class="fn-footer-copy">手动刷新可获取最新服务状态</span>
-                        <button class="btn btn-primary fn-primary-cta" id="refreshOpsStatus" type="button"><i class="fas fa-sync-alt"></i> 刷新状态</button>
-                    </div>
-                    <div class="fn-footer-group" data-functions-actions="reminderSettings" hidden>
-                        <span class="fn-footer-copy" id="functionsReminderSaveStatus" role="status">保存后在当前浏览器生效</span>
-                        <div class="fn-footer-buttons"><button class="btn btn-secondary" id="testReminder" type="button"><i class="fas fa-bell"></i> 测试提醒</button><button class="btn btn-primary fn-primary-cta" id="saveReminderSettings" type="button"><i class="fas fa-save"></i> 保存设置</button></div>
                     </div>
                 </footer>
                 </main>

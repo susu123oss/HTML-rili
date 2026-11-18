@@ -41,6 +41,61 @@ usersRouter.get('/', authRequired, asyncHandler(async (req, res) => {
   return res.json({ users: result.rows.map(toPublicUser) });
 }));
 
+usersRouter.post('/', authRequired, asyncHandler(async (req, res) => {
+  if (!canManageUsers(req.user)) {
+    return res.status(403).json({ message: '没有人员管理权限' });
+  }
+
+  const displayName = normalizeText(req.body?.displayName || req.body?.username);
+  const jobTitle = normalizeText(req.body?.jobTitle);
+  const departmentName = normalizeText(req.body?.departmentName) || '研发部';
+  const rawPassword = String(req.body?.password ?? '').trim();
+
+  if (!displayName || !jobTitle || !rawPassword) {
+    return res.status(400).json({ message: '请完整填写成员姓名、岗位和初始密码' });
+  }
+
+  if (displayName.length < 2 || displayName.length > 32) {
+    return res.status(400).json({ message: '成员姓名长度应为 2-32 位' });
+  }
+
+  if (!editableJobTitles.has(jobTitle)) {
+    return res.status(400).json({ message: '请选择有效的岗位' });
+  }
+
+  if (rawPassword.length < 4) {
+    return res.status(400).json({ message: '初始密码至少需要 4 位' });
+  }
+
+  const exists = await query('SELECT id FROM users WHERE username = $1', [displayName]);
+  if (exists.rowCount > 0) {
+    return res.status(409).json({ message: '该成员账号已存在' });
+  }
+
+  await query('INSERT INTO departments(name) VALUES($1) ON CONFLICT(name) DO NOTHING', [departmentName]);
+  const passwordHash = await bcrypt.hash(rawPassword, 10);
+  const result = await query(
+    `
+    INSERT INTO users(username, password_hash, display_name, role, job_title, department_id)
+    SELECT $1, $2, $3, 'staff', $4, departments.id
+    FROM departments
+    WHERE departments.name = $5
+    ON CONFLICT(username) DO NOTHING
+    RETURNING id, username, display_name AS "displayName", role, job_title AS "jobTitle",
+              department_id AS "departmentId", avatar_key AS "avatarKey"
+    `,
+    [displayName, passwordHash, displayName, jobTitle, departmentName]
+  );
+
+  if (result.rowCount === 0) {
+    return res.status(409).json({ message: '该成员账号已存在' });
+  }
+
+  return res.status(201).json({
+    user: toPublicUser({ ...result.rows[0], departmentName })
+  });
+}));
+
 usersRouter.patch('/:id', authRequired, asyncHandler(async (req, res) => {
   if (!canManageUsers(req.user)) {
     return res.status(403).json({ message: '没有人员管理权限' });

@@ -5489,11 +5489,18 @@ function injectUserBar() {
 
 function applyRoleScopedUi() {
   const visible = canManageWorkspace();
-  ['toolbarPublish', 'toolbarDashboard', 'toolbarImport', 'navDataManagement', 'navSettings', 'floatingFunctions', 'viewRecentTasks'].forEach((id) => setElementVisible(id, visible));
+  ['toolbarPublish', 'toolbarDashboard', 'toolbarImport', 'navDataManagement', 'floatingFunctions', 'viewRecentTasks'].forEach((id) => setElementVisible(id, visible));
+  setElementVisible('navSettings', Boolean(state.user));
   document.querySelectorAll('.admin-only-tab').forEach((tab) => {
     tab.hidden = state.user?.role !== 'admin';
     tab.style.display = state.user?.role === 'admin' ? '' : 'none';
   });
+  document.querySelectorAll('#functionsModal .admin-only-nav').forEach((el) => {
+    el.hidden = !visible;
+    el.style.display = visible ? '' : 'none';
+  });
+  const fnModal = $('functionsModal');
+  if (fnModal) fnModal.dataset.singleTab = String(!visible);
   setElementVisible('toolbarExport', state.user?.role === 'admin');
   setElementVisible('toolbarMore', visible);
 
@@ -5516,7 +5523,9 @@ function applyRoleScopedUi() {
   if (!visible) state.activeView = 'calendar';
   applyMainView();
   if (toolbarButtons) toolbarButtons.style.display = '';
-  if (!visible && $('functionsModal')?.classList.contains('active')) closeFunctionsModal();
+  if (!visible && fnModal?.classList.contains('active') && fnModal.dataset.section !== 'reminderSettings') {
+    closeFunctionsModal();
+  }
 }
 
 function applyMainView() {
@@ -11356,22 +11365,43 @@ function openDetailedMemoFromDaily() {
 
 const functionsSections = {
   taskPublish: { title: '任务发布', description: '填写工作内容，选择接收人，直接下发当日任务。' },
-  dataManagement: { title: '数据管理', description: '选择月份与人员导出工作日历，也可以备份或恢复数据。' },
-  userManagement: { title: '人员管理', description: '维护成员岗位、部门与账号权限；修改后在对应成员下保存。' },
-  opsMonitor: { title: '运维监控', description: '查看服务运行情况、资源使用量与最近检查结果。' },
-  reminderSettings: { title: '提醒设置', description: '设置事项何时提醒，以及用什么方式提醒。' }
+  dataManagement: { title: '数据与报表', description: '按月份与人员导出 Excel 报表，或备份恢复 JSON 记录。' },
+  userManagement: { title: '人员管理', description: '查看团队编制、添加新成员，点击编辑可修改岗位、部门或重置密码。' },
+  opsMonitor: { title: '运维监控', description: '实时查看服务器运行指标、数据库规模与磁盘容量。' },
+  reminderSettings: { title: '提醒与账号设置', description: '管理浏览器到期通知偏好、个人头像与登录密码安全。' }
 };
 const functionsVisitedTabs = new Set();
 const functionsTabScroll = new Map();
+let editingManagedUserId = null;
+let userManageSearchQuery = '';
+
+function syncSettingsAccountPanel() {
+  if (!state.user) return;
+  if ($('settingsAccountName')) {
+    $('settingsAccountName').textContent = `${state.user.displayName || state.user.username}（账号：${state.user.username}）`;
+  }
+  if ($('settingsAccountRoleDept')) {
+    $('settingsAccountRoleDept').textContent = displayUserRoleDept(state.user);
+  }
+  if ($('selfOldPassword')) $('selfOldPassword').value = '';
+  if ($('selfNewPassword')) $('selfNewPassword').value = '';
+  setOperationFeedback('selfPasswordFeedback', '');
+}
 
 function openFunctionsModal(tab = 'taskPublish') {
-  if (!canManageWorkspace()) return;
+  if (!state.user) return;
+  const isManager = canManageWorkspace();
+  const targetTab = (!isManager && tab !== 'reminderSettings') ? 'reminderSettings' : tab;
   functionsVisitedTabs.clear();
   functionsTabScroll.clear();
+  editingManagedUserId = null;
   setOperationFeedback('taskPublishFeedback', '');
+  setOperationFeedback('addUserFeedback', '');
+  if ($('addUserPanel')) $('addUserPanel').hidden = true;
   syncReminderSettingsForm();
-  if ($('functionsReminderSaveStatus')) $('functionsReminderSaveStatus').textContent = '保存后在当前浏览器生效';
-  setActiveTab(tab);
+  syncSettingsAccountPanel();
+  if ($('functionsReminderSaveStatus')) $('functionsReminderSaveStatus').textContent = '变更自动保存';
+  setActiveTab(targetTab);
   showDialog('functionsModal', 'closeFunctionsModal');
   revealActiveFunctionsTab();
 }
@@ -11384,24 +11414,46 @@ function revealActiveFunctionsTab() {
   const modal = $('functionsModal');
   const active = modal?.querySelector('.tab.active');
   if (!active) return;
+  const isManager = canManageWorkspace();
+  modal.dataset.singleTab = String(!isManager);
   const section = active.dataset.tab;
   const info = functionsSections[section];
+  if ($('functionsModalTitle')) {
+    $('functionsModalTitle').innerHTML = isManager
+      ? '<i class="fas fa-sliders-h"></i> 系统设置与管理'
+      : '<i class="fas fa-cog"></i> 个人与提醒设置';
+  }
   $('functionsSectionTitle').textContent = info.title;
   $('functionsSectionDescription').textContent = info.description;
   $('functionsSectionBadge').hidden = section !== 'reminderSettings';
-  $('functionsSectionSelect').value = section;
-  const opsOption = $('functionsSectionSelect').querySelector('[value="opsMonitor"]');
-  opsOption.hidden = opsOption.disabled = state.user?.role !== 'admin';
+  if ($('refreshOpsStatus')) {
+    $('refreshOpsStatus').hidden = !(section === 'opsMonitor' && state.user?.role === 'admin');
+  }
+  const select = $('functionsSectionSelect');
+  if (select) {
+    select.value = section;
+    ['taskPublish', 'dataManagement', 'userManagement', 'opsMonitor'].forEach((val) => {
+      const opt = select.querySelector(`[value="${val}"]`);
+      if (!opt) return;
+      const allowed = val === 'opsMonitor' ? state.user?.role === 'admin' : isManager;
+      opt.hidden = opt.disabled = !allowed;
+    });
+  }
+  const footer = $('functionsWorkspaceFooter');
+  if (footer) {
+    footer.hidden = section !== 'taskPublish';
+  }
   modal.querySelectorAll('[data-functions-actions]').forEach((group) => {
     group.hidden = group.dataset.functionsActions !== section;
   });
-  $('exportExcel').hidden = state.user?.role !== 'admin';
+  if ($('exportExcel')) $('exportExcel').hidden = state.user?.role !== 'admin';
   modal.dataset.section = section;
 }
 
 function setActiveTab(tabName) {
-  if (!canManageWorkspace()) return;
+  if (!state.user) return;
   if (!functionsSections[tabName]) return;
+  if (!canManageWorkspace() && tabName !== 'reminderSettings') return;
   if (tabName === 'opsMonitor' && state.user?.role !== 'admin') return;
   const modal = $('functionsModal');
   const scroll = $('functionsWorkspaceScroll');
@@ -11419,6 +11471,10 @@ function setActiveTab(tabName) {
   });
   const content = $(`${tabName}Tab`);
   if (content) content.classList.add('active');
+  if (tabName === 'reminderSettings') {
+    syncReminderSettingsForm();
+    syncSettingsAccountPanel();
+  }
   if (tabName === 'dataManagement') {
     updateStats();
     renderExcelExportPanel({ preserveDraft: !firstVisit });
@@ -11546,79 +11602,109 @@ function updateRecentTasks() {
 function renderUserManagement() {
   const list = $('userManagementList');
   if (!list) return;
-  let users = state.users.filter((user) => user.username !== 'admin');
-  if (state.user?.username !== 'admin' && !users.some((user) => Number(user.id) === Number(state.user?.id))) {
-    users = [state.user, ...users];
+  const newUserJobSelect = $('newUserJob');
+  if (newUserJobSelect && !newUserJobSelect.options.length) {
+    newUserJobSelect.innerHTML = jobTitles.map((title) => optionHtml(title, title, jobTitles[0])).join('');
   }
+
+  let allUsers = state.users.filter((user) => user.username !== 'admin');
+  if (state.user?.username !== 'admin' && !allUsers.some((user) => Number(user.id) === Number(state.user?.id))) {
+    allUsers = [state.user, ...allUsers];
+  }
+
+  const kw = userManageSearchQuery.trim().toLowerCase();
+  const filteredUsers = kw
+    ? allUsers.filter((u) => [u.displayName, u.username, displayUserRole(u), u.departmentName]
+        .some((val) => String(val || '').toLowerCase().includes(kw)))
+    : allUsers;
+
+  if ($('userManageCountBadge')) {
+    $('userManageCountBadge').textContent = kw
+      ? `${filteredUsers.length} / ${allUsers.length} 人`
+      : `${allUsers.length} 人`;
+  }
+
   const canEditRoleDepartment = state.user?.role === 'admin';
-  list.innerHTML = users.length
-    ? users.map((user) => {
+  const avatarColors = ['#4361ee','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#db2777','#0284c7'];
+
+  list.innerHTML = filteredUsers.length
+    ? filteredUsers.map((user) => {
       const isCurrentUser = Number(user.id) === Number(state.user?.id);
       const canEditPassword = canEditRoleDepartment || isCurrentUser;
+      const isEditing = Number(editingManagedUserId) === Number(user.id);
+      const color = avatarColors[Number(user.id || 0) % avatarColors.length];
+      const initials = (user.displayName || user.username || '?').slice(0, 2);
+      const showAccount = user.username && user.username !== user.displayName;
+
       return `
-      <div class="task-item user-management-item" data-user-id="${user.id}">
-        <div class="task-header user-management-header">
-          <div>
-            <div class="task-title">${escapeHtml(user.displayName)}</div>
-            <div class="user-management-meta">
-              <span>账号：${escapeHtml(user.username)}</span>
-              <span>当前岗位：${escapeHtml(displayUserRole(user))}</span>
-              <span>当前角色：${escapeHtml(roleName(user.role))}</span>
-              <span>当前部门：${escapeHtml(user.departmentName || '')}</span>
-            </div>
+      <div class="task-item user-management-item ${isEditing ? 'is-editing' : ''}" data-user-id="${user.id}">
+        <div class="user-row-summary">
+          <div class="user-row-avatar" style="background:${color}" ${userAvatarAttributes(user)}>${escapeHtml(initials)}</div>
+          <div class="user-row-identity">
+            <span class="user-row-name">${escapeHtml(user.displayName || user.username)}</span>
+            ${showAccount ? `<span class="user-row-account">@${escapeHtml(user.username)}</span>` : ''}
+            ${isCurrentUser ? '<span class="user-management-current">当前登录</span>' : ''}
           </div>
-          ${isCurrentUser ? '<span class="user-management-current">当前账号</span>' : ''}
+          <div class="user-row-badges">
+            <span class="user-role-chip">${escapeHtml(displayUserRole(user))}</span>
+            <span class="user-dept-chip">${escapeHtml(user.departmentName || '研发部')}</span>
+          </div>
+          <div class="user-row-btns">
+            <button class="user-toggle-edit-btn" data-user-id="${user.id}" type="button">
+              <i class="fas ${isEditing ? 'fa-chevron-up' : 'fa-pen'}"></i> ${isEditing ? '收起' : '编辑'}
+            </button>
+            <button class="user-delete-btn user-icon-delete-btn" data-user-id="${user.id}" type="button" title="${isCurrentUser ? '不能删除当前登录账号' : '删除该成员'}" aria-label="删除 ${escapeHtml(user.displayName)}" ${isCurrentUser ? 'disabled' : ''}>
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
         </div>
-        <div class="user-edit-grid">
-          <label>
-            <span>岗位</span>
-            <select class="user-edit-job" data-user-id="${user.id}">
-              ${jobTitles.map((title) => optionHtml(title, title, user.jobTitle || displayUserRole(user))).join('')}
-            </select>
-          </label>
-          <label>
-            <span>角色</span>
-            <select class="user-edit-role" data-user-id="${user.id}" ${canEditRoleDepartment ? '' : 'disabled'}>
-              ${editableRoles.map((role) => optionHtml(role, roleName(role), user.role)).join('')}
-            </select>
-          </label>
-          <label>
-            <span>部门</span>
-            <input class="user-edit-department" data-user-id="${user.id}" value="${escapeHtml(user.departmentName || '')}" ${canEditRoleDepartment ? '' : 'disabled'}>
-          </label>
-          <label>
-            <span>新密码</span>
-            <input class="user-edit-password" data-user-id="${user.id}" type="password" placeholder="留空不修改" ${canEditPassword ? '' : 'disabled'} autocomplete="new-password">
-          </label>
-        </div>
-        <div class="task-actions user-management-actions">
-          <button class="task-btn user-save-btn" data-user-id="${user.id}">
-            <i class="fas fa-save"></i> 保存修改
-          </button>
-          <button class="task-btn task-btn-delete user-delete-btn" data-user-id="${user.id}" ${isCurrentUser ? 'disabled' : ''}>
-            <i class="fas fa-user-minus"></i> 删除人员
-          </button>
-        </div>
+        ${isEditing ? `
+        <div class="user-row-drawer">
+          <div class="user-edit-grid user-edit-grid-compact">
+            <label>
+              <span>岗位名称</span>
+              <select class="user-edit-job" data-user-id="${user.id}">
+                ${jobTitles.map((title) => optionHtml(title, title, user.jobTitle || displayUserRole(user))).join('')}
+              </select>
+            </label>
+            <label>
+              <span>所属部门</span>
+              <input class="user-edit-department" data-user-id="${user.id}" value="${escapeHtml(user.departmentName || '研发部')}" ${canEditRoleDepartment ? '' : 'disabled'}>
+            </label>
+            <label>
+              <span>重置登录密码</span>
+              <input class="user-edit-password" data-user-id="${user.id}" type="password" placeholder="留空保持原密码" ${canEditPassword ? '' : 'disabled'} autocomplete="new-password">
+            </label>
+          </div>
+          <div class="task-actions user-management-actions">
+            <button class="btn btn-secondary btn-sm user-cancel-edit-btn" data-user-id="${user.id}" type="button">取消</button>
+            <button class="task-btn user-save-btn" data-user-id="${user.id}" type="button">
+              <i class="fas fa-check"></i> 保存修改
+            </button>
+          </div>
+        </div>` : ''}
       </div>
     `;
     }).join('')
-    : '<div class="empty-state"><i class="fas fa-users"></i><p>暂无可管理人员</p></div>';
+    : `<div class="empty-state"><i class="fas fa-users"></i><p>${kw ? '未找到匹配的团队成员' : '暂无可管理人员'}</p></div>`;
 }
 
 async function saveUserById(userId) {
   const card = document.querySelector(`.user-management-item[data-user-id="${Number(userId)}"]`);
   if (!card) return;
+  const targetUser = state.users.find((u) => Number(u.id) === Number(userId));
   const payload = {
     jobTitle: card.querySelector('.user-edit-job')?.value,
-    role: card.querySelector('.user-edit-role')?.value,
+    role: card.querySelector('.user-edit-role')?.value || targetUser?.role || 'staff',
     departmentName: card.querySelector('.user-edit-department')?.value.trim(),
     newPassword: card.querySelector('.user-edit-password')?.value.trim()
   };
-  if (!payload.jobTitle || !payload.role || !payload.departmentName) {
-    alert('岗位、角色、部门都不能为空');
+  if (!payload.jobTitle || !payload.departmentName) {
+    showGlobalToast('岗位和所属部门不能为空', 'error');
     return;
   }
   await request(`/users/${userId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  editingManagedUserId = null;
   await loadUsers();
   const updatedCurrentUser = state.users.find((user) => Number(user.id) === Number(state.user?.id));
   if (updatedCurrentUser) {
@@ -11626,10 +11712,47 @@ async function saveUserById(userId) {
     $('serverUserName').textContent = state.user.displayName;
     $('serverUserRole').textContent = displayUserRoleDept(state.user);
     renderCurrentUserAvatar();
+    syncSettingsAccountPanel();
   }
   renderUserManagement();
   renderTaskAssignees();
-  alert('人员信息已保存');
+  showGlobalToast(`成员 ${targetUser?.displayName || ''} 信息已保存`, 'success');
+}
+
+async function createNewUserFromPanel() {
+  if (!canManageWorkspace()) return;
+  const displayName = $('newUserName')?.value.trim() || '';
+  const jobTitle = $('newUserJob')?.value || '';
+  const departmentName = $('newUserDept')?.value.trim() || '研发部';
+  const password = $('newUserPass')?.value.trim() || '';
+  if (!displayName || !jobTitle || !password) {
+    setOperationFeedback('addUserFeedback', '请填写成员姓名、岗位和初始密码');
+    return;
+  }
+  if (password.length < 4) {
+    setOperationFeedback('addUserFeedback', '初始密码至少需要 4 位');
+    return;
+  }
+  const btn = $('submitAddUserBtn');
+  if (btn) btn.disabled = true;
+  setOperationFeedback('addUserFeedback', '');
+  try {
+    await request('/users', {
+      method: 'POST',
+      body: JSON.stringify({ displayName, jobTitle, departmentName, password })
+    });
+    if ($('newUserName')) $('newUserName').value = '';
+    if ($('newUserPass')) $('newUserPass').value = '';
+    if ($('addUserPanel')) $('addUserPanel').hidden = true;
+    await loadUsers();
+    renderUserManagement();
+    renderTaskAssignees();
+    showGlobalToast(`新成员 ${displayName} 创建成功`, 'success');
+  } catch (error) {
+    setOperationFeedback('addUserFeedback', error.message || '创建成员失败');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function deleteUserById(userId) {
@@ -11763,36 +11886,40 @@ function renderOpsStatus() {
       ${opsSummaryCard('fas fa-database', '数据库', formatBytes(database.databaseSizeBytes), `${database.userCount || 0} 个用户 · ${database.memoCount || 0} 条任务`)}
     </div>
 
-    ${renderOpsStorageLocations(storage)}
-
     <div class="ops-section">
-      <h4><i class="fas fa-hdd"></i> ${storage.scope === 'host' ? `服务器磁盘（${disks.length}）` : '容器可见文件系统'}</h4>
+      <h4><i class="fas fa-hdd"></i> ${storage.scope === 'host' ? `服务器磁盘容量（${disks.length}）` : '容器可见文件系统'}</h4>
       <div class="ops-disk-list">
         ${disks.map(renderOpsDisk).join('')}
       </div>
     </div>
 
-    <div class="ops-section">
-      <h4><i class="fas fa-server"></i> 运行环境</h4>
-      <div class="ops-info-grid">
-        ${opsInfoRow('容器主机名', runtime.hostname || '-')}
-        ${opsInfoRow('系统', `${runtime.platform || '-'} ${runtime.arch || ''} ${runtime.release || ''}`)}
-        ${opsInfoRow('系统运行时间', formatDuration(runtime.uptimeSeconds))}
-        ${opsInfoRow('后端进程运行时间', formatDuration(processInfo.uptimeSeconds))}
-        ${opsInfoRow('Node 版本', processInfo.nodeVersion || '-')}
-        ${opsInfoRow('后端进程内存', formatBytes(processInfo.memoryUsage?.rss))}
-        ${opsInfoRow('数据库连接池', `总 ${connectionPool.totalConnections || 0} · 空闲 ${connectionPool.idleConnections || 0} · 等待 ${connectionPool.waitingRequests || 0}`)}
-        ${opsInfoRow('部门数量', String(database.departmentCount || 0))}
-        ${opsInfoRow(storage.scope === 'host' ? '服务器挂载目录' : '容器目录', (data.mounts || []).map((item) => item.target).join('、') || '-')}
+    <details class="fn-ops-details">
+      <summary><i class="fas fa-sliders-h"></i> 查看底层运行环境与存储路径详情</summary>
+      <div class="fn-ops-details-body">
+        ${renderOpsStorageLocations(storage)}
+        <div class="ops-section">
+          <h4><i class="fas fa-server"></i> 运行环境参数</h4>
+          <div class="ops-info-grid">
+            ${opsInfoRow('容器主机名', runtime.hostname || '-')}
+            ${opsInfoRow('系统', `${runtime.platform || '-'} ${runtime.arch || ''} ${runtime.release || ''}`)}
+            ${opsInfoRow('系统运行时间', formatDuration(runtime.uptimeSeconds))}
+            ${opsInfoRow('后端进程运行时间', formatDuration(processInfo.uptimeSeconds))}
+            ${opsInfoRow('Node 版本', processInfo.nodeVersion || '-')}
+            ${opsInfoRow('后端进程内存', formatBytes(processInfo.memoryUsage?.rss))}
+            ${opsInfoRow('数据库连接池', `总 ${connectionPool.totalConnections || 0} · 空闲 ${connectionPool.idleConnections || 0} · 等待 ${connectionPool.waitingRequests || 0}`)}
+            ${opsInfoRow('部门数量', String(database.departmentCount || 0))}
+            ${opsInfoRow(storage.scope === 'host' ? '服务器挂载目录' : '容器目录', (data.mounts || []).map((item) => item.target).join('、') || '-')}
+          </div>
+        </div>
+        ${(data.notes || []).length ? `
+        <div class="ops-section">
+          <h4><i class="fas fa-info-circle"></i> 监控说明</h4>
+          <ul class="ops-note-list">
+            ${(data.notes || []).map((note) => `<li>${escapeHtml(note)}</li>`).join('')}
+          </ul>
+        </div>` : ''}
       </div>
-    </div>
-
-    <div class="ops-section">
-      <h4><i class="fas fa-info-circle"></i> 说明</h4>
-      <ul class="ops-note-list">
-        ${(data.notes || []).map((note) => `<li>${escapeHtml(note)}</li>`).join('')}
-      </ul>
-    </div>
+    </details>
   `;
 }
 
@@ -13057,7 +13184,7 @@ function initEventListeners() {
   $('closeReminderModal').addEventListener('click', closeReminderModal);
   $('floatingFunctions').addEventListener('click', () => openFunctionsModal('taskPublish'));
   $('closeFunctionsModal').addEventListener('click', closeFunctionsModal);
-  $('closeFunctionsModalBtn').addEventListener('click', closeFunctionsModal);
+  $('closeFunctionsModalBtn')?.addEventListener('click', closeFunctionsModal);
   $('refreshOpsStatus')?.addEventListener('click', refreshOpsStatus);
   $('wpBackToCalendar')?.addEventListener('click', closeWeeklyPlanPage);
   $('wpPagePrevWeek')?.addEventListener('click', () => shiftWeeklyPlanWeek(-1));
@@ -13316,6 +13443,21 @@ function initEventListeners() {
       closeDailyDetailModal();
       closeReminderModal();
       await openMemoModal(taskTitleTarget.dataset.memoId);
+      return;
+    }
+    const userToggleEditBtn = event.target.closest('.user-toggle-edit-btn');
+    if (userToggleEditBtn) {
+      event.stopPropagation();
+      const uid = Number(userToggleEditBtn.dataset.userId);
+      editingManagedUserId = Number(editingManagedUserId) === uid ? null : uid;
+      renderUserManagement();
+      return;
+    }
+    const userCancelEditBtn = event.target.closest('.user-cancel-edit-btn');
+    if (userCancelEditBtn) {
+      event.stopPropagation();
+      editingManagedUserId = null;
+      renderUserManagement();
       return;
     }
     const userSaveBtn = event.target.closest('.user-save-btn');
@@ -13623,7 +13765,7 @@ function startDueReminderTimer() {
   state.dueReminderTimer = window.setInterval(checkDueRemindersNow, intervalMinutes * 60 * 1000);
 }
 
-async function saveReminderSettingsFromPanel() {
+async function saveReminderSettingsFromPanel({ silent = false } = {}) {
   const settings = {
     checkInterval: Math.max(1, Number($('reminderCheckInterval')?.value || 5)),
     advanceMinutes: Math.max(0, Number($('reminderAdvanceTime')?.value || 0)),
@@ -13640,12 +13782,49 @@ async function saveReminderSettingsFromPanel() {
   updateReminderBadge();
   startDueReminderTimer();
   dispatchPendingDueReminders();
-  if ($('functionsReminderSaveStatus')) $('functionsReminderSaveStatus').textContent = '设置已保存';
+  const timeStr = new Date().toTimeString().slice(0, 8);
+  if ($('functionsReminderSaveStatus')) {
+    $('functionsReminderSaveStatus').textContent = `已自动保存 · ${timeStr}`;
+  }
 
   if (settings.desktop && !systemEnabled) {
-    showGlobalToast('提醒设置已保存；当前环境将使用页面提醒 + 声音。', 'info');
-  } else {
+    showGlobalToast('提醒偏好已生效；当前浏览器环境将使用页面提醒与声音。', 'info');
+  } else if (!silent) {
     showGlobalToast('提醒设置已保存', 'success');
+  }
+}
+
+async function changeSelfPasswordFromSettings() {
+  if (!state.user) return;
+  const oldPassword = $('selfOldPassword')?.value || '';
+  const newPassword = $('selfNewPassword')?.value.trim() || '';
+  if (!oldPassword || !newPassword) {
+    setOperationFeedback('selfPasswordFeedback', '请输入原密码和新密码');
+    return;
+  }
+  if (newPassword.length < 4) {
+    setOperationFeedback('selfPasswordFeedback', '新密码至少需要 4 位');
+    return;
+  }
+  const btn = $('saveSelfPasswordBtn');
+  if (btn) btn.disabled = true;
+  setOperationFeedback('selfPasswordFeedback', '');
+  try {
+    await request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: state.user.username,
+        oldPassword,
+        newPassword
+      })
+    });
+    if ($('selfOldPassword')) $('selfOldPassword').value = '';
+    if ($('selfNewPassword')) $('selfNewPassword').value = '';
+    showGlobalToast('登录密码已成功更新', 'success');
+  } catch (error) {
+    setOperationFeedback('selfPasswordFeedback', error.message || '密码修改失败');
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -13675,8 +13854,35 @@ async function testReminderFromPanel() {
 
 function initReminderSettings() {
   syncReminderSettingsForm();
-  $('saveReminderSettings')?.addEventListener('click', saveReminderSettingsFromPanel);
+  $('saveReminderSettings')?.addEventListener('click', () => saveReminderSettingsFromPanel({ silent: false }));
   $('testReminder')?.addEventListener('click', testReminderFromPanel);
+  ['reminderScope', 'reminderCheckInterval', 'reminderAdvanceTime', 'enableSoundReminder', 'enableDesktopNotification', 'reminderIncludeWeeklyPlans']
+    .forEach((id) => {
+      $(id)?.addEventListener('change', () => {
+        void saveReminderSettingsFromPanel({ silent: true });
+      });
+    });
+  $('settingsOpenAvatarBtn')?.addEventListener('click', () => {
+    closeFunctionsModal();
+    openAvatarProfile();
+  });
+  $('saveSelfPasswordBtn')?.addEventListener('click', changeSelfPasswordFromSettings);
+  $('userManageSearchInput')?.addEventListener('input', (e) => {
+    userManageSearchQuery = e.target.value || '';
+    renderUserManagement();
+  });
+  $('toggleAddUserFormBtn')?.addEventListener('click', () => {
+    const panel = $('addUserPanel');
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    setOperationFeedback('addUserFeedback', '');
+    if (!panel.hidden) $('newUserName')?.focus();
+  });
+  $('cancelAddUserBtn')?.addEventListener('click', () => {
+    if ($('addUserPanel')) $('addUserPanel').hidden = true;
+    setOperationFeedback('addUserFeedback', '');
+  });
+  $('submitAddUserBtn')?.addEventListener('click', createNewUserFromPanel);
 }
 
 function patchStaticText() {
