@@ -7516,6 +7516,10 @@ function renderTeamLeaderboard() {
         <span>展开榜单</span> <i class="fas fa-chevron-down"></i>
       </button>
     `;
+    stripBar.querySelector('.lb-strip-expand-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setLeaderboardMode('cards');
+    });
   }
 
   if (isStrip) return;

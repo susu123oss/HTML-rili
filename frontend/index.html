@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20261118_calendar_ux_v91" defer></script>
+    <script src="./app.js?v=20261118_leaderboard_fix_v92" defer></script>
     <style>
         * {
             margin: 0;
@@ -2572,6 +2572,7 @@
             height: 220px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.08);
+            pointer-events: none;
         }
 
         .leaderboard-header {
@@ -3919,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261118_calendar_ux_v91" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261118_leaderboard_fix_v92" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
     <link rel="stylesheet" href="./functions-panel.css?v=20261118_staff_settings_v89">
     <link rel="stylesheet" href="./dashboard-panel.css?v=20261118_dashboard_v90">
     <link rel="stylesheet" href="./avatar-profile.css?v=20261102_perf_stability_v82">
@@ -4307,7 +4308,7 @@
                                 <strong>等待任务完成</strong>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-secondary leaderboard-mode-btn" id="leaderboardCollapseToStripBtn" title="收起为紧凑单行人员条">
+                        <button type="button" class="btn btn-sm btn-secondary leaderboard-mode-btn" id="leaderboardCollapseToStripBtn" data-lb-mode="strip" title="收起为紧凑单行人员条">
                             <i class="fas fa-compress-alt"></i> 收为简条
                         </button>
                     </div>

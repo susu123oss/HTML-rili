@@ -11668,19 +11668,33 @@ html[data-theme='dark'] .app-confirm-modal .btn-secondary:hover {
 /* ================= 2026-11 工作日历四合一体验与布局升级 (v91) ================= */
 
 /* 1. 团队完成榜：默认单行紧凑胶囊快筛条 + 展开荣誉卡片双模式 */
+.team-leaderboard::before,
+.team-leaderboard::after {
+  pointer-events: none !important;
+}
 html[data-theme] #teamLeaderboard.is-strip-mode {
   padding: 8px 14px !important;
   border-radius: 12px !important;
+}
+html[data-theme] #teamLeaderboard.is-strip-mode::after {
+  display: none !important;
 }
 html[data-theme] #teamLeaderboard:not(.is-strip-mode) .leaderboard-strip-bar {
   display: none !important;
 }
 html[data-theme] .leaderboard-strip-bar {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   min-height: 32px;
+}
+.leaderboard-cards-panel,
+.leaderboard-toggle-wrap {
+  position: relative;
+  z-index: 2;
 }
 .lb-strip-label {
   display: inline-flex;
