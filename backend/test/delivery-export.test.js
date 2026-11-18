@@ -74,11 +74,20 @@ test('staff frontend normal save preserves confirmed state',async()=>{
   vm.createContext(ctx);vm.runInContext(tail.slice(0,end+1),ctx);await ctx.saveMemo();
   assert.equal(payload.completed,true);assert.equal(payload.deliveryStatus,'confirmed');assert.equal(payload.expectedDeliverable,undefined);
 });
-test('export rejects invalid weeks and builds a genuine ZIP XLSX',()=>{
+test('export rejects invalid weeks and builds a genuine ZIP XLSX with next-week P column',()=>{
   assert.equal(parseReportWeek('2026-09-29'),null);assert.equal(parseReportWeek('2026-02-30'),null);
   assert.equal(parseReportWeek('2026-09-28')[14],'2026-10-12');
   assert.equal(parseReportWeek('2026-12-28')[7],'2027-01-04');
-  const data=buildWeeklyReport({weekStart:'2026-09-28',users:[],memos:[],summaries:[]});
+  const data=buildWeeklyReport({
+    weekStart:'2026-09-28',
+    users:[{id:1,displayName:'张工',departmentName:'研发部'},{id:2,displayName:'李工',departmentName:'研发部'}],
+    memos:[
+      {id:1,ownerId:1,date:'2026-09-28',title:'本周任务A',content:'',completed:true,planKind:'plan'},
+      {id:2,ownerId:1,date:'2026-10-05',title:'下周测试验证',content:'温升与循环测试',expectedDeliverable:'测试报告',completed:false,planKind:'memo'},
+      {id:3,ownerId:1,date:'2026-10-06',title:'下周测试验证',content:'温升与循环测试',expectedDeliverable:'测试报告',completed:false,planKind:'memo'}
+    ],
+    summaries:[{ownerId:1,weekStart:'2026-10-05',goals:'完成SW10测试',deliverables:'温升报告'}]
+  });
   assert.equal(data.readUInt32LE(0),0x04034b50);
 });
 

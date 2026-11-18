@@ -50,6 +50,62 @@ const status = (memo) => memo.rolloverToId ? '已顺延' : memo.completed ? (mem
   : memo.deliveryStatus === 'submitted' ? '待确认' : memo.deliveryStatus === 'returned' ? '退回修改' : '进行中';
 const uniqueText = (values) => [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))].join('\n');
 
+function compactDateSpans(dates) {
+  const sorted = [...new Set(dates.filter(Boolean))].sort();
+  if (!sorted.length) return '';
+  const ranges = [];
+  let start = sorted[0], prev = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    const cur = sorted[i];
+    if (Date.parse(`${cur}T00:00:00Z`) - Date.parse(`${prev}T00:00:00Z`) === dayMs) {
+      prev = cur;
+    } else {
+      ranges.push(start === prev ? start.slice(5) : `${start.slice(5)}~${prev.slice(5)}`);
+      start = prev = cur;
+    }
+  }
+  ranges.push(start === prev ? start.slice(5) : `${start.slice(5)}~${prev.slice(5)}`);
+  return ranges.join('、');
+}
+
+function formatNextWeekPlan(nextWeek, nextSummary) {
+  const goals = String(nextSummary?.goals || '').trim();
+  const deliverables = String(nextSummary?.deliverables || '').trim();
+  const hasSummary = Boolean(goals || deliverables);
+
+  const grouped = new Map();
+  for (const m of nextWeek) {
+    const title = String(m.title || '').trim();
+    if (!title) continue;
+    const content = String(m.content || '').trim();
+    const expected = String(m.expectedDeliverable || '').trim();
+    const key = JSON.stringify([title, content, expected]);
+    if (!grouped.has(key)) grouped.set(key, { title, content, expected, dates: [] });
+    grouped.get(key).dates.push(m.date);
+  }
+
+  const itemLines = [...grouped.values()].map((item, idx) => {
+    const dateSpan = compactDateSpans(item.dates);
+    const head = `${idx + 1}. ${dateSpan ? `[${dateSpan}] ` : ''}${item.title}`;
+    const sub = [];
+    if (item.content && item.content !== item.title) {
+      sub.push(`   ${item.content.replace(/\r?\n+/g, '\n   ')}`);
+    }
+    if (item.expected && item.expected !== '日常事务（无需交付物）') {
+      sub.push(`   预期交付：${item.expected}`);
+    }
+    return [head, ...sub].join('\n');
+  });
+
+  const sections = [];
+  if (goals) sections.push(itemLines.length || deliverables ? `【下周目标】\n${goals}` : `下周目标：\n${goals}`);
+  if (deliverables) sections.push(`【预期交付】\n${deliverables}`);
+  if (itemLines.length) {
+    sections.push(hasSummary ? `【下周排期】\n${itemLines.join('\n')}` : itemLines.join('\n'));
+  }
+  return sections.join('\n\n');
+}
+
 function sheetXml(rows, widths, merges = [], lastRow = rows.length, headerRows = 5) {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -67,23 +123,25 @@ ${merges.length ? `<mergeCells count="${merges.length}">${merges.map(m => `<merg
 export function buildWeeklyReport({ weekStart, users, memos, summaries }) {
   const days = parseReportWeek(weekStart);
   if (!days) throw new Error('请选择有效的周一日期');
-  const widths = [6, 14, 52, 9, 14, 10, 10, 12, 11, 11, 11, 11, 11, 11, 11, 44];
-  const merges = ['A1:P1', 'A2:P2', 'A3:A5', 'B3:B5', 'C3:C5', 'D3:G3', 'H3:H5', 'I3:O3', 'I4:O4', 'P3:P5', 'D4:D5', 'E4:E5', 'F4:F5', 'G4:G5'];
+  const widths = [6, 14, 52, 9, 14, 10, 10, 12, 11, 11, 11, 11, 11, 11, 11, 46];
+  const merges = ['A1:P1', 'A2:P2', 'A3:A5', 'B3:B5', 'C3:C5', 'D3:G3', 'H3:H5', 'I3:O3', 'I4:O4', 'P4:P5', 'D4:D5', 'E4:E5', 'F4:F5', 'G4:G5'];
   const rows = [
     row(1, ['全员周工作计划表', ...Array(15).fill('')], 30, Array(16).fill(1)),
-    row(2, [`${days[0]} 至 ${days[6]}；每日进度按事项所属日期展示当前状态；工作分类未录入时留空供补填`, ...Array(15).fill('')], 26, Array(16).fill(2)),
+    row(2, [`本周：${days[0]} 至 ${days[6]}  |  下周计划：${days[7]} 至 ${days[13]}（自动汇总下周周计划、日历预排事项及下周目标）`, ...Array(15).fill('')], 26, Array(16).fill(2)),
     row(3, ['序号', '项目小组（部门）', '工作任务', '工作分类', '', '', '', '负责人', '进度控制', '', '', '', '', '', '', '下周计划'], 26, Array(16).fill(3)),
-    row(4, ['', '', '', '预研', '新设计和测试任务', '团队管理', '沟通协作', '', `${days[0]} 至 ${days[6]}`, '', '', '', '', '', '', ''], 30, Array(16).fill(3)),
+    row(4, ['', '', '', '预研', '新设计和测试任务', '团队管理', '沟通协作', '', `${days[0]} 至 ${days[6]}`, '', '', '', '', '', '', `${days[7]} 至 ${days[13]}`], 30, Array(16).fill(3)),
     row(5, ['', '', '', '', '', '', '', '', ...days.slice(0, 7).map(d => (Date.parse(`${d}T00:00:00Z`) - Date.UTC(1899, 11, 30)) / dayMs), ''], 24, [...Array(8).fill(3), ...Array(7).fill(4), 3])
   ];
+  const baseWidths = widths.slice(0, 15);
   let seq = 0, r = 6;
   for (const user of users) {
     const mine = memos.filter(m => Number(m.ownerId) === Number(user.id));
     const thisWeek = mine.filter(m => m.date >= days[0] && m.date < days[7]);
     const nextWeek = mine.filter(m => m.date >= days[7] && m.date < days[14]);
     const nextSummary = summaries.find(s => Number(s.ownerId) === Number(user.id) && s.weekStart === days[7]);
-    const nextText = uniqueText([nextSummary?.goals && `下周目标：${nextSummary.goals}`, nextSummary?.deliverables && `预期交付：${nextSummary.deliverables}`,
-      ...nextWeek.map(m => `${m.date.slice(5)} ${m.title}${m.expectedDeliverable ? `（交付：${m.expectedDeliverable}）` : ''}`)]);
+    const rawNextText = formatNextWeekPlan(nextWeek, nextSummary);
+    const hasNextPlan = Boolean(rawNextText);
+    const nextText = rawNextText || '暂未录入下周计划';
     const groups = new Map();
     for (const m of thisWeek) {
       const key = JSON.stringify([m.title, m.content || '', m.expectedDeliverable || '', m.planKind || 'memo']);
@@ -91,20 +149,37 @@ export function buildWeeklyReport({ weekStart, users, memos, summaries }) {
       groups.get(key).push(m);
     }
     const userStart = r;
+    const pendingUserRows = [];
     for (const group of groups.size ? groups.values() : [[]]) {
       const first = group[0];
       const task = first ? uniqueText([first.title, first.content, first.expectedDeliverable && `预期交付：${first.expectedDeliverable}`,
         ...group.map(m => m.actualDeliverable && `${m.date.slice(5)} 实际成果：${m.actualDeliverable}`),
         ...group.map(m => m.reviewComment && `${m.date.slice(5)} 验收意见：${m.reviewComment}`)]) : '本周未录入事项';
+      const rowNum = r++;
       const values = [++seq, user.departmentName || '', task, '', '', '', '', user.displayName || user.username || '',
-        ...days.slice(0, 7).map(d => uniqueText(group.filter(m => m.date === d).map(status))), r === userStart ? nextText : ''];
-      const styles = values.map((_, i) => i === 2 || i === 15 ? 0 : 5);
+        ...days.slice(0, 7).map(d => uniqueText(group.filter(m => m.date === d).map(status))), rowNum === userStart ? nextText : ''];
+      const styles = values.map((_, i) => {
+        if (i === 2) return first ? 0 : 9;
+        if (i === 15) return hasNextPlan ? 0 : 9;
+        return 5;
+      });
       for (let i = 8; i < 15; i++) {
         if (/退回/.test(values[i])) styles[i] = 8;
         else if (/待确认/.test(values[i])) styles[i] = 7;
         else if (/已确认|已完成/.test(values[i])) styles[i] = 6;
       }
-      rows.push(row(r++, values, height(values, widths), styles));
+      pendingUserRows.push({ rowNum, values, styles, rowHeight: height(values.slice(0, 15), baseWidths) });
+    }
+    const totalBaseHeight = pendingUserRows.reduce((sum, item) => sum + item.rowHeight, 0);
+    const nextRequiredHeight = Math.min(409 * pendingUserRows.length, Math.max(42, lines(nextText, widths[15]) * 15 + 12));
+    if (nextRequiredHeight > totalBaseHeight) {
+      const extraPerRow = Math.ceil((nextRequiredHeight - totalBaseHeight) / pendingUserRows.length);
+      for (const item of pendingUserRows) {
+        item.rowHeight = Math.min(409, item.rowHeight + extraPerRow);
+      }
+    }
+    for (const item of pendingUserRows) {
+      rows.push(row(item.rowNum, item.values, item.rowHeight, item.styles));
     }
     if (r - userStart > 1) for (const c of ['B', 'H', 'P']) merges.push(`${c}${userStart}:${c}${r - 1}`);
   }
@@ -118,10 +193,16 @@ export function buildWeeklyReport({ weekStart, users, memos, summaries }) {
     const values = [user.displayName || user.username, user.departmentName || '', current.goals || '', current.deliverables || '', current.actual || '', current.risks || '', next.goals || '', next.deliverables || ''];
     summaryRows.push(row(summaryRows.length + 1, values, height(values, summaryWidths)));
   }
-  const fonts = ['<font><sz val="10"/><name val="Microsoft YaHei"/><color rgb="FF1F2937"/></font>', '<font><b/><sz val="16"/><name val="Microsoft YaHei"/></font>', '<font><b/><sz val="10"/><name val="Microsoft YaHei"/></font>'];
+  const fonts = [
+    '<font><sz val="10"/><name val="Microsoft YaHei"/><color rgb="FF1F2937"/></font>',
+    '<font><b/><sz val="16"/><name val="Microsoft YaHei"/></font>',
+    '<font><b/><sz val="10"/><name val="Microsoft YaHei"/></font>',
+    '<font><sz val="10"/><name val="Microsoft YaHei"/><color rgb="FF94A3B8"/></font>'
+  ];
   const fills = ['<fill><patternFill patternType="none"/></fill>', '<fill><patternFill patternType="gray125"/></fill>', ...['E2F0D9', 'F1F5F9', 'DCFCE7', 'FEF3C7', 'FEE2E2'].map(c => `<fill><patternFill patternType="solid"><fgColor rgb="FF${c}"/><bgColor indexed="64"/></patternFill></fill>`)];
   const xf = (font, fill, border, align = 'left', numFmt = 0) => `<xf numFmtId="${numFmt}" fontId="${font}" fillId="${fill}" borderId="${border}" xfId="0" applyAlignment="1" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"><alignment horizontal="${align}" vertical="top" wrapText="1"/></xf>`;
-  const styles = `<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="m/d"/></numFmts><fonts count="3">${fonts.join('')}</fonts><fills count="7">${fills.join('')}</fills><borders count="2"><border/><border>${['left', 'right', 'top', 'bottom'].map(s => `<${s} style="thin"><color rgb="FFD1D5DB"/></${s}>`).join('')}<diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="9">${[xf(0, 0, 1), xf(1, 0, 0, 'center'), xf(0, 3, 0), xf(2, 2, 1, 'center'), xf(2, 2, 1, 'center', 164), xf(0, 0, 1, 'center'), xf(0, 4, 1, 'center'), xf(0, 5, 1, 'center'), xf(0, 6, 1, 'center')].join('')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const xfs = [xf(0, 0, 1), xf(1, 0, 0, 'center'), xf(0, 3, 0), xf(2, 2, 1, 'center'), xf(2, 2, 1, 'center', 164), xf(0, 0, 1, 'center'), xf(0, 4, 1, 'center'), xf(0, 5, 1, 'center'), xf(0, 6, 1, 'center'), xf(3, 0, 1, 'left')];
+  const styles = `<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="m/d"/></numFmts><fonts count="${fonts.length}">${fonts.join('')}</fonts><fills count="${fills.length}">${fills.join('')}</fills><borders count="2"><border/><border>${['left', 'right', 'top', 'bottom'].map(s => `<${s} style="thin"><color rgb="FFD1D5DB"/></${s}>`).join('')}<diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.length}">${xfs.join('')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   const sheets = [sheetXml(rows, widths, merges, r - 1), sheetXml(summaryRows, summaryWidths, ['A1:H1', 'A2:H2'], summaryRows.length, 3)];
   const files = {
     '[Content_Types].xml': `<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`,

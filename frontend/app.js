@@ -10721,7 +10721,7 @@ function renderWeeklyPlanPage() {
   const userMemos = state.weeklyMemos.filter(m => Number(m.ownerId) === targetUserId);
   const scopedMemos = teamView ? state.weeklyMemos : userMemos;
   const thisWeekMemos = scopedMemos.filter(m => m.planKind === 'plan' && m.date >= monKey && m.date <= sunKey);
-  const nextWeekMemos = scopedMemos.filter(m => m.planKind === 'plan' && m.date >= nextMonKey && m.date <= nextSunKey);
+  const nextWeekMemos = scopedMemos.filter(m => m.date >= nextMonKey && m.date <= nextSunKey);
 
   const completed = thisWeekMemos.filter(m => m.completed);
   const open = thisWeekMemos.filter(m => !m.completed && !m.rolloverToId);
@@ -10739,7 +10739,7 @@ function renderWeeklyPlanPage() {
       ${overdue.length ? `<span class="wp-stat-chip pending" title="已过截止时间"><i class="fas fa-exclamation-circle"></i> 逾期 <strong>${overdue.length}</strong></span>` : ''}
       ${rolledOver.length ? `<span class="wp-stat-chip" title="保留原记录的顺延计划">顺延 <strong>${rolledOver.length}</strong></span>` : ''}
       <span class="wp-stat-chip rate" title="本周计划完成率；无计划时不计算"><i class="fas fa-chart-line"></i> 达成 <strong>${planRate}</strong></span>
-      <span class="wp-stat-chip next" title="下周已预排计划数"><i class="far fa-calendar-check"></i> <span class="hide-mobile">下周</span>预排 <strong>${nextWeekMemos.length}</strong></span>
+      <span class="wp-stat-chip next" role="button" tabindex="0" style="cursor:pointer;" onclick="shiftWeeklyPlanWeek(1)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();shiftWeeklyPlanWeek(1);}" title="下周（${nextMonKey} ~ ${nextSunKey}）已预排事项数（含周计划与日历），点击切换查看下周"><i class="far fa-calendar-check"></i> <span class="hide-mobile">下周</span>预排 <strong>${nextWeekMemos.length}</strong></span>
     `;
   }
 
@@ -11108,13 +11108,11 @@ function buildWeeklyReportMarkdown() {
   const allCandidateMemos = (state.weeklyMemos && state.weeklyMemos.length)
     ? state.weeklyMemos
     : (state.memos || []);
-  let userMemos = allCandidateMemos.filter(m => !targetUserId || Number(m.ownerId) === targetUserId);
-  const planOnly = userMemos.filter(m => m.planKind === 'plan');
-  if (planOnly.length > 0) {
-    userMemos = planOnly;
-  }
-  const thisWeekMemos = userMemos.filter(m => m.date >= monKey && m.date <= sunKey);
-  const nextWeekMemos = userMemos.filter(m => m.date >= nextMonKey && m.date <= nextSunKey);
+  const allUserMemos = allCandidateMemos.filter(m => !targetUserId || Number(m.ownerId) === targetUserId);
+  const thisWeekAll = allUserMemos.filter(m => m.date >= monKey && m.date <= sunKey);
+  const thisWeekPlans = thisWeekAll.filter(m => m.planKind === 'plan');
+  const thisWeekMemos = thisWeekPlans.length > 0 ? thisWeekPlans : thisWeekAll;
+  const nextWeekMemos = allUserMemos.filter(m => m.date >= nextMonKey && m.date <= nextSunKey);
 
   const completed = thisWeekMemos.filter(m => m.completed);
   const rolledOver = thisWeekMemos.filter(m => !m.completed && m.rolloverToId);
@@ -13186,8 +13184,10 @@ async function exportTeamWeeklyReport() {
   if (!canManageWorkspace()) return;
   const button = $('wpPageExportTeamReportBtn');
   if (button?.disabled) return;
-  const { monday } = getWeekRange(state.weeklyPlanDate);
+  const { monday, nextMonday, nextSunday } = getWeekRange(state.weeklyPlanDate);
   const weekStart = dateKey(monday);
+  const nextMonKey = dateKey(nextMonday);
+  const nextSunKey = dateKey(nextSunday);
   const originalHtml = button?.innerHTML;
   if (button) { button.disabled = true; button.textContent = '导出中…'; }
   try {
@@ -13203,7 +13203,13 @@ async function exportTeamWeeklyReport() {
     link.href = url; link.download = `全员周报-${weekStart}.xlsx`;
     document.body.appendChild(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showWeeklyFeedback('全员周报已导出');
+    const nextItemCount = (state.weeklyMemos || []).filter(m => m.date >= nextMonKey && m.date <= nextSunKey).length;
+    const hasNextSummary = (state.weeklySummaries || []).some(s => s.weekStart === nextMonKey && (s.goals?.trim() || s.deliverables?.trim()));
+    showWeeklyFeedback(
+      (nextItemCount > 0 || hasNextSummary)
+        ? `全员周报已导出（含下周 ${nextMonKey.slice(5)}~${nextSunKey.slice(5)} 预排 ${nextItemCount} 项，已汇总至 P 列）`
+        : `全员周报已导出（下周 ${nextMonKey.slice(5)}~${nextSunKey.slice(5)} 尚无预排记录，P 列已标注暂未录入）`
+    );
   } catch (error) { showWeeklyFeedback(error.message, 'error'); }
   finally { if (button) { button.disabled = false; button.innerHTML = originalHtml; } }
 }
