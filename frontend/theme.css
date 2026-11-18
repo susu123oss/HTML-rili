@@ -11664,3 +11664,323 @@ html[data-theme='dark'] .app-confirm-modal .btn-secondary:hover {
 
 
 
+
+/* ================= 2026-11 工作日历四合一体验与布局升级 (v91) ================= */
+
+/* 1. 团队完成榜：默认单行紧凑胶囊快筛条 + 展开荣誉卡片双模式 */
+html[data-theme] #teamLeaderboard.is-strip-mode {
+  padding: 8px 14px !important;
+  border-radius: 12px !important;
+}
+html[data-theme] #teamLeaderboard:not(.is-strip-mode) .leaderboard-strip-bar {
+  display: none !important;
+}
+html[data-theme] .leaderboard-strip-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 32px;
+}
+.lb-strip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ui-text);
+  white-space: nowrap;
+  padding-right: 8px;
+  border-right: 1px solid var(--ui-border);
+  flex-shrink: 0;
+}
+.lb-strip-label i {
+  color: #f59e0b;
+}
+.lb-strip-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: none !important;
+}
+.lb-strip-pills::-webkit-scrollbar {
+  display: none !important;
+  height: 0 !important;
+}
+button.lb-strip-pill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+button.lb-strip-pill:hover {
+  border-color: var(--ui-accent, #4361ee);
+  color: var(--ui-accent, #4361ee);
+  background: var(--ui-surface);
+}
+button.lb-strip-pill .lb-pill-rate {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ui-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+button.lb-strip-pill.is-100 .lb-pill-rate {
+  color: #059669;
+}
+html[data-theme='dark'] button.lb-strip-pill.is-100 .lb-pill-rate {
+  color: #34d399;
+}
+button.lb-strip-pill.active {
+  background: var(--ui-accent, #4361ee) !important;
+  border-color: var(--ui-accent, #4361ee) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(67, 97, 238, 0.28);
+}
+button.lb-strip-pill.active .lb-pill-rate {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+button.lb-strip-expand-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+button.lb-strip-expand-btn:hover {
+  border-color: var(--ui-accent, #4361ee);
+  color: var(--ui-accent, #4361ee);
+}
+.leaderboard-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.leaderboard-mode-btn {
+  min-height: 32px !important;
+  padding: 5px 11px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+  white-space: nowrap;
+}
+
+/* 2. 月历头部「待验收」琥珀色过滤胶囊 + 激活筛选恢复标签 + 「今天」单元格强视觉锚点 */
+html[data-theme] #multiMonthCalendar .month-stats .stat-item.submitted {
+  color: #b45309 !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.32) !important;
+}
+html[data-theme='dark'] #multiMonthCalendar .month-stats .stat-item.submitted {
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+html[data-theme] #multiMonthCalendar .month-stats .stat-item.submitted.active {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3) !important;
+}
+button.cal-reset-filter-pill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(67, 97, 238, 0.32);
+  background: rgba(67, 97, 238, 0.1);
+  color: var(--ui-accent, #4361ee);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+button.cal-reset-filter-pill:hover {
+  background: var(--ui-accent, #4361ee);
+  color: #ffffff;
+}
+html[data-theme] #multiMonthCalendar .calendar-day.today {
+  border-top: 3px solid var(--ui-accent, #4361ee) !important;
+  background: linear-gradient(180deg, rgba(67, 97, 238, 0.06) 0%, transparent 48px) !important;
+}
+html[data-theme='dark'] #multiMonthCalendar .calendar-day.today {
+  border-top: 3px solid #60a5fa !important;
+  background: linear-gradient(180deg, rgba(96, 165, 250, 0.12) 0%, transparent 52px) !important;
+}
+.cn-today-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  background: var(--ui-accent, #4361ee);
+  color: #ffffff;
+  margin-left: 2px;
+}
+
+/* 3. 顶部搜索框实时匹配计数徽章 */
+.header-search {
+  position: relative;
+}
+.search-match-badge {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(67, 97, 238, 0.12);
+  color: var(--ui-accent, #4361ee);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.search-match-badge.is-zero {
+  background: rgba(239, 68, 68, 0.14);
+  color: #dc2626;
+}
+html[data-theme='dark'] .search-match-badge.is-zero {
+  color: #fca5a5;
+}
+.header-search:has(#searchMatchBadge:not([hidden])) .search-input {
+  padding-right: 84px !important;
+}
+
+/* 4. 每日备忘录详情弹窗：左右翻天导航 + 秒级快添 + 状态快筛栏 */
+html[data-theme] #dailyDetailModal .daily-detail-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+html[data-theme] #dailyDetailModal .daily-day-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+html[data-theme] #dailyDetailModal .daily-nav-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+html[data-theme] #dailyDetailModal .daily-nav-btn:hover {
+  border-color: var(--ui-accent, #4361ee);
+  color: var(--ui-accent, #4361ee);
+  background: var(--ui-surface);
+}
+html[data-theme] #dailyDetailModal .daily-date-label {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ui-text);
+  padding: 0 2px;
+}
+html[data-theme] #dailyDetailModal .daily-today-chip {
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+html[data-theme] #dailyDetailModal .daily-today-chip:hover {
+  border-color: var(--ui-accent, #4361ee);
+  color: var(--ui-accent, #4361ee);
+}
+html[data-theme] #dailyDetailModal .daily-quick-add-box {
+  padding: 10px 12px !important;
+  margin-bottom: 12px !important;
+  border-radius: 10px !important;
+}
+html[data-theme] #dailyDetailModal .daily-quick-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+html[data-theme] #dailyDetailModal .daily-open-editor-btn {
+  min-height: 38px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+html[data-theme] #dailyDetailModal .daily-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+html[data-theme] #dailyDetailModal .daily-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+html[data-theme] #dailyDetailModal button.daily-filter-pill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+html[data-theme] #dailyDetailModal button.daily-filter-pill.active {
+  background: var(--ui-accent-soft, rgba(67, 97, 238, 0.12));
+  border-color: var(--ui-accent, #4361ee);
+  color: var(--ui-accent, #4361ee);
+}
+html[data-theme] #dailyDetailModal .daily-detail-scroll {
+  max-height: min(52vh, 450px);
+  overflow-y: auto;
+  padding-right: 4px;
+}

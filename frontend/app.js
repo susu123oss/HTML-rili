@@ -48,8 +48,10 @@ const state = {
   monthsToShow: Number(localStorage.getItem('calendarMonthCount') || 1),
   selectedUserId: 'all',
   calendarStatusFilter: 'all',
+  leaderboardMode: localStorage.getItem('calendarLeaderboardMode') || 'strip',
   selectedMemoId: null,
   dailyDetailDate: new Date(),
+  dailyDetailFilter: 'all',
   selectedAgendaDate: '',
   themePreference: localStorage.getItem('appThemePreference') || 'system',
   themeMode: 'light',
@@ -6638,13 +6640,49 @@ function getCalendarMemos() {
   const memos = getVisibleMemos();
   if (state.calendarStatusFilter === 'completed') return memos.filter((memo) => memo.completed);
   if (state.calendarStatusFilter === 'pending') return memos.filter((memo) => !memo.completed);
+  if (state.calendarStatusFilter === 'submitted') {
+    return memos.filter((memo) => !memo.completed && memoDeliveryStatus(memo) === 'submitted');
+  }
   return memos;
 }
 
 function setCalendarStatusFilter(filter) {
-  state.calendarStatusFilter = ['completed', 'pending'].includes(filter) ? filter : 'all';
+  state.calendarStatusFilter = ['completed', 'pending', 'submitted'].includes(filter) ? filter : 'all';
   renderMultiMonthCalendar();
   renderMobileAgenda();
+}
+
+function resetAllCalendarFilters() {
+  state.calendarStatusFilter = 'all';
+  if (canManageWorkspace() && state.selectedUserId !== 'all') {
+    state.selectedUserId = 'all';
+    const memberSelect = $('serverMemberSelect');
+    if (memberSelect) memberSelect.value = 'all';
+    renderCustomMemberOptions();
+  }
+  const searchInput = $('searchInput');
+  if (searchInput && searchInput.value) {
+    searchInput.value = '';
+    if ($('clearSearch')) $('clearSearch').style.display = 'none';
+  }
+  renderTeamLeaderboard();
+  renderMultiMonthCalendar();
+  renderMobileAgenda();
+}
+
+function updateSearchMatchBadge() {
+  const badge = $('searchMatchBadge');
+  const searchTerm = ($('searchInput')?.value || '').trim();
+  if (!badge) return;
+  if (!searchTerm) {
+    badge.hidden = true;
+    badge.classList.remove('is-zero');
+    return;
+  }
+  const matchedCount = getCalendarMemos().length;
+  badge.hidden = false;
+  badge.textContent = matchedCount > 0 ? `匹配 ${matchedCount} 条` : '0 条匹配';
+  badge.classList.toggle('is-zero', matchedCount === 0);
 }
 
 function latestMemoColor() {
@@ -6672,6 +6710,7 @@ function renderMultiMonthCalendar() {
     ? `${startMonth.getFullYear()}年${startMonth.getMonth() + 1}月`
     : `${startMonth.getFullYear()}年${startMonth.getMonth() + 1}月 - ${endMonth.getFullYear()}年${endMonth.getMonth() + 1}月`;
   container.innerHTML = months.map((monthDate, index) => createMonthCalendar(monthDate, index)).join('');
+  updateSearchMatchBadge();
 }
 
 function isRoutineDeliverableChoice(val) {
@@ -7423,12 +7462,24 @@ function renderDashboard() {
   if ($('dashboardTaskModal')?.classList.contains('active')) renderDashboardTaskList();
 }
 
+function setLeaderboardMode(mode) {
+  state.leaderboardMode = mode === 'cards' ? 'cards' : 'strip';
+  try { localStorage.setItem('calendarLeaderboardMode', state.leaderboardMode); } catch (_) {}
+  renderTeamLeaderboard();
+}
+
 function renderTeamLeaderboard() {
   const section = $('teamLeaderboard');
   if (!section) return;
-  const visible = canManageWorkspace() && state.activeView !== 'dashboard';
+  const visible = canManageWorkspace() && state.activeView === 'calendar';
   section.hidden = !visible;
   if (!visible) return;
+
+  const isStrip = state.leaderboardMode !== 'cards';
+  section.classList.toggle('is-strip-mode', isStrip);
+  const stripBar = $('leaderboardStripBar');
+  const cardsPanel = $('leaderboardCardsPanel');
+  if (cardsPanel) cardsPanel.hidden = isStrip;
 
   const rows = leaderboardRows();
   const body = $('leaderboardBody');
@@ -7437,7 +7488,37 @@ function renderTeamLeaderboard() {
   const subtitle = $('leaderboardSubtitle');
   const period = leaderboardPeriodText();
   if (title) title.textContent = `${period} 完成榜`;
-  if (subtitle) subtitle.textContent = '按当前显示月份统计，完成率最高的人排在最前面';
+  if (subtitle) subtitle.textContent = '点击成员筛选其日历，再次点击同一成员可恢复全员视图';
+
+  if (stripBar) {
+    const allActive = String(state.selectedUserId) === 'all';
+    const pillsHtml = rows.length
+      ? rows.map((row, idx) => {
+          const rank = idx + 1;
+          const medal = rank === 1 ? '👑 ' : rank === 2 ? '🥈 ' : rank === 3 ? '🥉 ' : '';
+          const isSelected = String(row.user.id) === String(state.selectedUserId);
+          return `<button type="button" class="lb-strip-pill ${isSelected ? 'active' : ''} ${row.rate === 100 ? 'is-100' : ''}" data-lb-user-id="${row.user.id}" title="${escapeHtml(row.user.displayName)}：已完成 ${row.completed}/${row.total} 项（待办 ${row.pending}）· 点击筛选/取消">
+            <span>${medal}${escapeHtml(row.user.displayName)}</span>
+            <span class="lb-pill-rate">${row.rate}%</span>
+          </button>`;
+        }).join('')
+      : '<span style="font-size:12px;color:var(--ui-text-muted);">当前月份暂无任务统计</span>';
+
+    stripBar.innerHTML = `
+      <span class="lb-strip-label"><i class="fas fa-trophy"></i> ${escapeHtml(period)}榜</span>
+      <div class="lb-strip-pills">
+        <button type="button" class="lb-strip-pill ${allActive ? 'active' : ''}" data-lb-user-id="all" title="显示全部成员的工作日历">
+          <span>全部成员</span>
+        </button>
+        ${pillsHtml}
+      </div>
+      <button type="button" class="lb-strip-expand-btn" data-lb-mode="cards" title="展开详细荣誉卡片榜单">
+        <span>展开榜单</span> <i class="fas fa-chevron-down"></i>
+      </button>
+    `;
+  }
+
+  if (isStrip) return;
 
   if (!rows.length) {
     if (body) body.className = 'leaderboard-body columns-1';
@@ -7461,7 +7542,7 @@ function renderTeamLeaderboard() {
   if (champion) {
     champion.classList.add('leaderboard-clickable');
     champion.dataset.userId = String(leader.user.id);
-    champion.title = `点击查看${leader.user.displayName}的日历`;
+    champion.title = `点击筛选/恢复 ${leader.user.displayName} 的日历`;
     champion.innerHTML = `
       <span class="champion-crown">🏆</span>
       <div>
@@ -7480,9 +7561,10 @@ function renderTeamLeaderboard() {
   const cardsHtml = displayRows.map((row, index) => {
     const rank = index + 1;
     const isComplete = row.rate === 100;
+    const isSelected = String(row.user.id) === String(state.selectedUserId);
     const medalIcon = rank === 1 ? '<span class="rank-crown-mini" title="第1名 冠军">👑</span>' : (rank === 2 ? '<span class="rank-crown-mini" title="第2名 亚军">🥈</span>' : (rank === 3 ? '<span class="rank-crown-mini" title="第3名 季军">🥉</span>' : ''));
     return `
-      <div class="leaderboard-card rank-${rank} ${isComplete ? 'is-complete' : ''} ${String(row.user.id) === String(state.selectedUserId) ? 'active' : ''}" data-user-id="${row.user.id}" title="点击查看${escapeHtml(row.user.displayName)}的日历" style="--leaderboard-rate:${row.rate}%">
+      <div class="leaderboard-card rank-${rank} ${isComplete ? 'is-complete' : ''} ${isSelected ? 'active' : ''}" data-user-id="${row.user.id}" title="${isSelected ? '再次点击恢复全部成员日历' : `点击查看 ${escapeHtml(row.user.displayName)} 的日历`}" style="--leaderboard-rate:${row.rate}%">
         <div class="leaderboard-card-head">
           <span class="leaderboard-rank">${rank}</span>
           <div class="leaderboard-person">
@@ -7502,10 +7584,10 @@ function renderTeamLeaderboard() {
 
   body.innerHTML = cardsHtml;
 
-  const existingToggle = section.querySelector('.leaderboard-toggle-wrap');
+  const existingToggle = cardsPanel?.querySelector('.leaderboard-toggle-wrap') || section.querySelector('.leaderboard-toggle-wrap');
   if (existingToggle) existingToggle.remove();
 
-  if (shouldFold) {
+  if (shouldFold && cardsPanel) {
     const toggleWrap = document.createElement('div');
     toggleWrap.className = 'leaderboard-toggle-wrap';
     toggleWrap.innerHTML = `
@@ -7513,7 +7595,7 @@ function renderTeamLeaderboard() {
         ${isExpanded ? '收起更多成员 <i class="fas fa-chevron-up"></i>' : `展开全部成员 (${rows.length}人) <i class="fas fa-chevron-down"></i>`}
       </button>
     `;
-    section.appendChild(toggleWrap);
+    cardsPanel.appendChild(toggleWrap);
     toggleWrap.querySelector('#btnToggleLeaderboard')?.addEventListener('click', (e) => {
       e.stopPropagation();
       state.leaderboardExpanded = !state.leaderboardExpanded;
@@ -7531,27 +7613,35 @@ async function openDashboardMemo(memoId) {
   if (!$('memoModal').classList.contains('active')) state.dashboardReturnScrollY = null;
 }
 
-function jumpToUserCalendar(userId) {
+function jumpToUserCalendar(userId, { allowToggleOff = false } = {}) {
   if (!canManageWorkspace()) return;
-  const user = state.users.find((item) => String(item.id) === String(userId));
-  if (!user) return;
-
+  const wasOnCalendar = state.activeView === 'calendar';
   state.activeView = 'calendar';
-  state.selectedUserId = String(user.id);
+
+  if (String(userId) === 'all' || (allowToggleOff && wasOnCalendar && String(state.selectedUserId) === String(userId))) {
+    state.selectedUserId = 'all';
+  } else {
+    const user = state.users.find((item) => String(item.id) === String(userId));
+    if (!user) return;
+    state.selectedUserId = String(user.id);
+  }
+
   const memberSelect = $('serverMemberSelect');
   if (memberSelect) memberSelect.value = state.selectedUserId;
   renderCustomMemberOptions();
 
   const searchInput = $('searchInput');
-  if (searchInput?.value) {
+  if (searchInput?.value && !wasOnCalendar) {
     searchInput.value = '';
     if ($('clearSearch')) $('clearSearch').style.display = 'none';
   }
 
   refreshMemoViews();
-  window.requestAnimationFrame(() => {
-    $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+  if (!wasOnCalendar) {
+    window.requestAnimationFrame(() => {
+      $('multiMonthCalendar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 }
 
 function memoOwnerSuffix(memo) {
@@ -8023,10 +8113,16 @@ function createMonthCalendar(monthDate, index) {
   const currentMonthKey = monthKey(monthDate);
   const monthMemos = visibleMemos.filter((memo) => memo.date && memo.date.startsWith(currentMonthKey));
   const completed = monthMemos.filter((memo) => memo.completed).length;
+  const submittedCount = monthMemos.filter((memo) => !memo.completed && memoDeliveryStatus(memo) === 'submitted').length;
   const progressPercent = monthMemos.length ? Math.round((completed / monthMemos.length) * 100) : 0;
   const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
   const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
   const today = dateKey(new Date());
+  const selectedMember = (canManageWorkspace() && state.selectedUserId !== 'all')
+    ? state.users.find((u) => String(u.id) === String(state.selectedUserId))
+    : null;
+  const searchVal = ($('searchInput')?.value || '').trim();
+  const hasAnyFilter = Boolean(selectedMember || state.calendarStatusFilter !== 'all' || searchVal);
 
   // 预先建立按日期的 Map 索引，将日历每天渲染时的过滤性能由 O(31 * N) 提升至 O(1)
   const memosByDate = new Map();
@@ -8073,6 +8169,7 @@ function createMonthCalendar(monthDate, index) {
         <div class="day-number">
           <div class="day-number-left" title="${escapeHtml(cnInfo.tooltip)}">
             <span class="day-number-text" data-date="${key}" role="button" tabindex="0" aria-label="查看${key}的${dayMemos.length}条事项">${i}</span>
+            ${key === today ? '<span class="cn-today-badge">今</span>' : ''}
             ${cnInfo.badge ? `<span class="cn-holiday-badge ${cnInfo.badge === '休' ? 'is-rest' : 'is-work'}">${cnInfo.badge}</span>` : ''}
             ${cnInfo.label ? `<span class="cn-day-sub is-${cnInfo.labelType}">${escapeHtml(cnInfo.label)}</span>` : ''}
           </div>
@@ -8133,8 +8230,10 @@ function createMonthCalendar(monthDate, index) {
       <div class="month-header card-header">
         <div class="month-title">${monthDate.getFullYear()}年 ${monthNames[monthDate.getMonth()]}</div>
         <div class="month-right-area">
+          ${index === 0 && hasAnyFilter ? `<button type="button" class="cal-reset-filter-pill" data-action="reset-calendar-filters" title="清除当前人员、状态及搜索筛选条件"><i class="fas fa-filter"></i> ${selectedMember ? escapeHtml(selectedMember.displayName) : '筛选中'} <i class="fas fa-times"></i></button>` : ''}
           <div class="month-stats" id="monthStats${index}">
             <button class="stat-item total ${state.calendarStatusFilter === 'all' ? 'active' : ''}" data-status-filter="all" title="显示全部任务" aria-label="显示全部${monthMemos.length}条任务" type="button"><i class="fas fa-tasks"></i><span class="stat-count-total">${monthMemos.length}</span></button>
+            ${(submittedCount > 0 || state.calendarStatusFilter === 'submitted') ? `<button class="stat-item submitted ${state.calendarStatusFilter === 'submitted' ? 'active' : ''}" data-status-filter="submitted" title="只显示已交成果待验收的任务" aria-label="只显示待验收${submittedCount}条任务" type="button"><i class="fas fa-box-open"></i><span class="stat-count-submitted">${submittedCount}</span></button>` : ''}
             <button class="stat-item completed ${state.calendarStatusFilter === 'completed' ? 'active' : ''}" data-status-filter="completed" title="只显示已完成任务" aria-label="只显示已完成${completed}条任务" type="button"><i class="fas fa-check-circle"></i><span class="stat-count-completed">${completed}</span></button>
             <button class="stat-item pending ${state.calendarStatusFilter === 'pending' ? 'active' : ''}" data-status-filter="pending" title="只显示未完成任务" aria-label="只显示未完成${monthMemos.length - completed}条任务" type="button"><i class="fas fa-clock"></i><span class="stat-count-pending">${monthMemos.length - completed}</span></button>
           </div>
@@ -10119,29 +10218,59 @@ async function deleteMemo() {
   }
 }
 
-function openDailyDetailModal(date) {
-  const targetDate = date instanceof Date ? date : new Date(date);
+function openDailyDetailModal(date, { allowEmpty = false, preserveFilter = false } = {}) {
+  const targetDate = date instanceof Date ? new Date(date) : new Date(date);
   state.dailyDetailDate = targetDate;
+  if (!preserveFilter) state.dailyDetailFilter = 'all';
   const key = dateKey(targetDate);
-  const memos = getCalendarMemos().filter((memo) => memo.date === key);
+  const memos = getVisibleMemos().filter((memo) => memo.date === key);
 
-  // 如果当天尚无任何备忘录，直接自动展开“添加详细备忘录”弹窗，跳过多余的空白中转窗
-  if (memos.length === 0) {
+  // 从日历点击空日期时直接展开详细新建窗；但在每日详情弹窗内左右翻天时保留弹窗
+  if (!allowEmpty && memos.length === 0) {
     openMemoModal(null, targetDate);
     return;
   }
 
+  const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
   const cnInfo = getChineseCalendarDayInfo(targetDate);
   const cnSuffix = [
+    weekNames[targetDate.getDay()],
     cnInfo.lunarFull,
     cnInfo.festival || cnInfo.solarTerm || '',
     cnInfo.badge === '休' ? `[休·${cnInfo.holidayName || '假期'}]` : (cnInfo.badge === '班' ? '[班·调休]' : '')
-  ].filter(Boolean).join(' ');
-  const dateStr = `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月${targetDate.getDate()}日${cnSuffix ? `（${cnSuffix}）` : ''}`;
+  ].filter(Boolean).join(' · ');
+  const dateStr = `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月${targetDate.getDate()}日（${cnSuffix}）`;
   const dateTitle = $('dailyDetailDate');
   if (dateTitle) dateTitle.textContent = dateStr;
   loadDailyDetailMemos(targetDate);
-  showDialog('dailyDetailModal', 'quickMemoTitle');
+  if (!$('dailyDetailModal')?.classList.contains('active')) {
+    showDialog('dailyDetailModal', 'quickMemoTitle');
+  }
+}
+
+async function shiftDailyDetailDay(delta) {
+  const cur = state.dailyDetailDate instanceof Date ? new Date(state.dailyDetailDate) : new Date();
+  if (delta === 0) {
+    cur.setTime(Date.now());
+  } else {
+    cur.setDate(cur.getDate() + delta);
+  }
+  const targetMonth = monthKey(cur);
+  const visibleKeys = visibleMonths().map(monthKey);
+  if (!visibleKeys.includes(targetMonth)) {
+    state.currentDate = new Date(cur.getFullYear(), cur.getMonth(), 1);
+    const targetRangeKey = currentMemoRangeKey();
+    const cached = state.memoMonthCache ? state.memoMonthCache.get(currentMemoCacheKey(targetRangeKey)) : null;
+    if (cached && Array.isArray(cached.memos)) {
+      state.memos = cached.memos;
+      state.memoEtag = cached.etag || '';
+      state.memoRangeKey = targetRangeKey;
+      refreshMemoViews();
+    } else {
+      await loadMemos();
+    }
+  }
+  openDailyDetailModal(cur, { allowEmpty: true, preserveFilter: true });
 }
 
 function closeDailyDetailModal() {
@@ -11505,14 +11634,85 @@ function createTaskItem(memo) {
 function loadDailyDetailMemos(date) {
   const key = dateKey(date);
   const list = $('dailyDetailList');
-  const memos = getCalendarMemos().filter((memo) => memo.date === key);
-  list.innerHTML = memos.length
-    ? memos.map(createTaskItem).join('')
-    : '<div class="empty-state"><i class="fas fa-clipboard"></i><p>这一天还没有备忘录，添加一个吧！</p></div>';
+  const filterBar = $('dailyDetailFilterBar');
+  if (!list) return;
+  const allDayMemos = sortCalendarDayMemos(getVisibleMemos().filter((memo) => memo.date === key));
+  const pendingCount = allDayMemos.filter((m) => !m.completed).length;
+  const submittedCount = allDayMemos.filter((m) => !m.completed && memoDeliveryStatus(m) === 'submitted').length;
+  const doneCount = allDayMemos.filter((m) => m.completed).length;
+
+  const curFilter = state.dailyDetailFilter || 'all';
+  if (filterBar) {
+    const tabs = [
+      { key: 'all', label: '全部', count: allDayMemos.length },
+      { key: 'pending', label: '待办', count: pendingCount },
+      ...(submittedCount > 0 || curFilter === 'submitted' ? [{ key: 'submitted', label: '待验收', count: submittedCount }] : []),
+      { key: 'completed', label: '已完成', count: doneCount }
+    ];
+    filterBar.innerHTML = tabs.map((t) => `
+      <button type="button" class="daily-filter-pill ${curFilter === t.key ? 'active' : ''}" data-daily-filter="${t.key}">
+        <span>${t.label}</span> <span>${t.count}</span>
+      </button>
+    `).join('');
+  }
+
+  const filtered = allDayMemos.filter((m) => {
+    if (curFilter === 'pending') return !m.completed;
+    if (curFilter === 'submitted') return !m.completed && memoDeliveryStatus(m) === 'submitted';
+    if (curFilter === 'completed') return Boolean(m.completed);
+    return true;
+  });
+
+  list.innerHTML = filtered.length
+    ? filtered.map(createTaskItem).join('')
+    : `<div class="empty-state"><i class="fas fa-clipboard"></i><p>${allDayMemos.length ? '当前筛选状态下暂无事项' : '这一天还没有事项，在上方输入标题回车即可秒级创建'}</p></div>`;
 }
 
-function quickAddMemo() {
-  openDetailedMemoFromDaily();
+async function quickAddMemo() {
+  const input = $('quickMemoTitle');
+  const btn = $('quickAddMemo');
+  const title = (input?.value || '').trim();
+  if (!title) {
+    input?.focus();
+    return;
+  }
+  const targetDate = state.dailyDetailDate instanceof Date ? state.dailyDetailDate : new Date();
+  const key = dateKey(targetDate);
+  const targetOwnerId = (canManageWorkspace() && state.selectedUserId !== 'all')
+    ? Number(state.selectedUserId)
+    : Number(state.user?.id);
+  const targetOwner = state.users.find((u) => Number(u.id) === targetOwnerId);
+
+  if (btn) btn.disabled = true;
+  try {
+    const data = await request('/memos', {
+      method: 'POST',
+      body: JSON.stringify({
+        ownerId: targetOwnerId,
+        date: key,
+        title,
+        content: '',
+        color: randomMemoColor(latestMemoColor()),
+        dueTime: `${key}T18:00`
+      })
+    });
+    if (input) input.value = '';
+    if (data?.memo) {
+      await syncMemoMutationOrReload({ memo: data.memo });
+    } else {
+      await loadMemos({ force: true });
+    }
+    loadDailyDetailMemos(targetDate);
+    const ownerHint = (targetOwner && Number(targetOwner.id) !== Number(state.user?.id))
+      ? `（已分配给 ${targetOwner.displayName}）`
+      : '';
+    showGlobalToast(`已添加事项${ownerHint}`, 'success');
+    input?.focus();
+  } catch (error) {
+    showGlobalToast(`快速添加失败：${error.message || '请稍后重试'}`, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function openDetailedMemoFromDaily() {
@@ -13339,8 +13539,34 @@ function initEventListeners() {
   $('closeDailyDetailModal').addEventListener('click', closeDailyDetailModal);
   $('closeDailyDetailModalBtn').addEventListener('click', closeDailyDetailModal);
   $('addNewMemoBtn').addEventListener('click', openDetailedMemoFromDaily);
-  $('quickAddMemo').addEventListener('click', quickAddMemo);
-  $('quickMemoTitle').addEventListener('keypress', (event) => { if (event.key === 'Enter') quickAddMemo(); });
+  $('openDetailedFromDailyBtn')?.addEventListener('click', openDetailedMemoFromDaily);
+  $('dailyPrevDayBtn')?.addEventListener('click', () => { void shiftDailyDetailDay(-1); });
+  $('dailyNextDayBtn')?.addEventListener('click', () => { void shiftDailyDetailDay(1); });
+  $('dailyTodayBtn')?.addEventListener('click', () => { void shiftDailyDetailDay(0); });
+  $('leaderboardCollapseToStripBtn')?.addEventListener('click', () => setLeaderboardMode('strip'));
+  $('quickAddMemo').addEventListener('click', () => { void quickAddMemo(); });
+  $('quickMemoTitle').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.isComposing) {
+      event.preventDefault();
+      void quickAddMemo();
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      if ($('memoModal')?.classList.contains('active') && !state.memoSaveBusy) {
+        event.preventDefault();
+        $('saveMemo')?.click();
+      }
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      if (state.activeView === 'calendar' && !$('memoModal')?.classList.contains('active') && !$('functionsModal')?.classList.contains('active')) {
+        event.preventDefault();
+        $('searchInput')?.focus();
+        $('searchInput')?.select();
+      }
+    }
+  });
   $('floatingReminder').addEventListener('click', showReminderModal);
   $('closeReminderModal').addEventListener('click', closeReminderModal);
   $('floatingFunctions').addEventListener('click', () => openFunctionsModal('taskPublish'));
@@ -13579,8 +13805,33 @@ function initEventListeners() {
       setCalendarStatusFilter(nextFilter);
       return;
     }
+    const resetCalBtn = event.target.closest('[data-action="reset-calendar-filters"]');
+    if (resetCalBtn) {
+      event.stopPropagation();
+      resetAllCalendarFilters();
+      return;
+    }
+    const dailyFilterBtn = event.target.closest('[data-daily-filter]');
+    if (dailyFilterBtn) {
+      event.stopPropagation();
+      state.dailyDetailFilter = dailyFilterBtn.dataset.dailyFilter || 'all';
+      if (state.dailyDetailDate) loadDailyDetailMemos(state.dailyDetailDate);
+      return;
+    }
+    const lbStripPill = event.target.closest('.lb-strip-pill[data-lb-user-id]');
+    if (lbStripPill) {
+      event.stopPropagation();
+      jumpToUserCalendar(lbStripPill.dataset.lbUserId, { allowToggleOff: true });
+      return;
+    }
+    const lbModeBtn = event.target.closest('[data-lb-mode]');
+    if (lbModeBtn) {
+      event.stopPropagation();
+      setLeaderboardMode(lbModeBtn.dataset.lbMode);
+      return;
+    }
     const leaderboardTarget = event.target.closest('.leaderboard-card[data-user-id], .leaderboard-champion[data-user-id]');
-    if (leaderboardTarget) { event.stopPropagation(); jumpToUserCalendar(leaderboardTarget.dataset.userId); return; }
+    if (leaderboardTarget) { event.stopPropagation(); jumpToUserCalendar(leaderboardTarget.dataset.userId, { allowToggleOff: true }); return; }
     const agendaStatus = event.target.closest('.mobile-agenda-status[data-id]');
     if (agendaStatus) {
       event.stopPropagation();
