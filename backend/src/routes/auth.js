@@ -19,6 +19,13 @@ const jobTitles = [
   '储备干部'
 ];
 
+const inferGroupByJobTitle = (jobTitle) => {
+  if (jobTitle === '结构工程师' || jobTitle === '助理结构工程师') return ['结构组', 10];
+  if (jobTitle === '电气工程师' || jobTitle === '助理电气工程师' || jobTitle === '测试工程师') return ['电气&测试组', 20];
+  if (jobTitle === '技术员') return ['样品组', 30];
+  return ['结构组', 10];
+};
+
 authRouter.post('/register', asyncHandler(async (req, res) => {
   const { username, password, displayName, jobTitle } = req.body || {};
   const cleanDisplayName = String(displayName || username || '').trim();
@@ -41,14 +48,15 @@ authRouter.post('/register', asyncHandler(async (req, res) => {
     return res.status(400).json({ message: '密码至少需要 4 位' });
   }
 
-  const exists = await query('SELECT id FROM users WHERE username = $1', [cleanUsername]);
+  const exists = await query('SELECT id FROM users WHERE username = $1 OR display_name = $1', [cleanUsername]);
   if (exists.rowCount > 0) {
     return res.status(409).json({ message: '该姓名已注册' });
   }
 
+  const [defaultDept, defaultDeptOrder] = inferGroupByJobTitle(cleanJobTitle);
   await query(
-    `INSERT INTO departments(name) VALUES($1) ON CONFLICT(name) DO NOTHING`,
-    ['研发部']
+    `INSERT INTO departments(name, sort_order) VALUES($1, $2) ON CONFLICT(name) DO NOTHING`,
+    [defaultDept, defaultDeptOrder]
   );
 
   const passwordHash = await bcrypt.hash(String(password), 10);
@@ -63,14 +71,14 @@ authRouter.post('/register', asyncHandler(async (req, res) => {
     RETURNING id, username, display_name AS "displayName", role, job_title AS "jobTitle",
               department_id AS "departmentId", avatar_key AS "avatarKey"
     `,
-    [cleanUsername, passwordHash, cleanDisplayName, systemRole, cleanJobTitle, '研发部']
+    [cleanUsername, passwordHash, cleanDisplayName, systemRole, cleanJobTitle, defaultDept]
   );
 
   if (result.rowCount === 0) {
     return res.status(409).json({ message: '该姓名已注册' });
   }
 
-  const user = { ...result.rows[0], departmentName: '研发部' };
+  const user = { ...result.rows[0], departmentName: defaultDept };
   const token = jwt.sign({ userId: user.id }, config.jwtSecret, { expiresIn: '7d' });
   return res.status(201).json({ token, user: toPublicUser(user) });
 }));
@@ -78,7 +86,8 @@ authRouter.post('/register', asyncHandler(async (req, res) => {
 authRouter.post('/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
 
-  if (!username || !password) {
+  const cleanUsername = String(username || '').trim();
+  if (!cleanUsername || !password) {
     return res.status(400).json({ message: '请输入用户名和密码' });
   }
 
@@ -90,9 +99,11 @@ authRouter.post('/login', asyncHandler(async (req, res) => {
            users.avatar_key AS "avatarKey"
     FROM users
     JOIN departments ON departments.id = users.department_id
-    WHERE users.username = $1
+    WHERE users.username = $1 OR users.display_name = $1
+    ORDER BY CASE WHEN users.username = $1 THEN 0 ELSE 1 END, users.id ASC
+    LIMIT 1
     `,
-    [username]
+    [cleanUsername]
   );
 
   if (result.rowCount === 0) {
@@ -126,7 +137,9 @@ authRouter.post('/change-password', asyncHandler(async (req, res) => {
     `
     SELECT id, password_hash AS "passwordHash"
     FROM users
-    WHERE username = $1
+    WHERE username = $1 OR display_name = $1
+    ORDER BY CASE WHEN username = $1 THEN 0 ELSE 1 END, id ASC
+    LIMIT 1
     `,
     [cleanUsername]
   );

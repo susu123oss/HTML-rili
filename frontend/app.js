@@ -11422,7 +11422,7 @@ function renderTeamWeeklyPlanView(container, monKey, sunKey) {
               <div class="wp-team-avatar" style="background:${color}" ${userAvatarAttributes(u)}>${getInitials(u)}</div>
               <div class="wp-team-user-info">
                 <strong>${escapeHtml(u.displayName || u.username)}</strong>
-                <span>${escapeHtml(u.jobTitle || '工程师')}</span>
+                <span>${escapeHtml([u.departmentName, u.jobTitle || '工程师'].filter(Boolean).join(' · '))}</span>
               </div>
               <div class="wp-team-status-badge wp-team-status-${statusClass}">
                 <i class="fas ${statusIcon}"></i> ${statusLabel}
@@ -11970,8 +11970,8 @@ function renderUserManagement() {
     newUserJobSelect.innerHTML = jobTitles.map((title) => optionHtml(title, title, jobTitles[0])).join('');
   }
 
-  let allUsers = state.users.filter((user) => user.username !== 'admin');
-  if (state.user?.username !== 'admin' && !allUsers.some((user) => Number(user.id) === Number(state.user?.id))) {
+  let allUsers = [...state.users];
+  if (state.user && !allUsers.some((user) => Number(user.id) === Number(state.user?.id))) {
     allUsers = [state.user, ...allUsers];
   }
 
@@ -12010,13 +12010,13 @@ function renderUserManagement() {
           </div>
           <div class="user-row-badges">
             <span class="user-role-chip">${escapeHtml(displayUserRole(user))}</span>
-            <span class="user-dept-chip">${escapeHtml(user.departmentName || '研发部')}</span>
+            <span class="user-dept-chip">${escapeHtml(user.departmentName || '结构组')}</span>
           </div>
           <div class="user-row-btns">
             <button class="user-toggle-edit-btn" data-user-id="${user.id}" type="button">
               <i class="fas ${isEditing ? 'fa-chevron-up' : 'fa-pen'}"></i> ${isEditing ? '收起' : '编辑'}
             </button>
-            <button class="user-delete-btn user-icon-delete-btn" data-user-id="${user.id}" type="button" title="${isCurrentUser ? '不能删除当前登录账号' : '删除该成员'}" aria-label="删除 ${escapeHtml(user.displayName)}" ${isCurrentUser ? 'disabled' : ''}>
+            <button class="user-delete-btn user-icon-delete-btn" data-user-id="${user.id}" type="button" title="${isCurrentUser || user.role === 'admin' ? '管理员或当前登录账号不可删除' : '删除该成员'}" aria-label="删除 ${escapeHtml(user.displayName)}" ${isCurrentUser || user.role === 'admin' ? 'disabled' : ''}>
               <i class="fas fa-trash-alt"></i>
             </button>
           </div>
@@ -12025,14 +12025,20 @@ function renderUserManagement() {
         <div class="user-row-drawer">
           <div class="user-edit-grid user-edit-grid-compact">
             <label>
-              <span>岗位名称</span>
-              <select class="user-edit-job" data-user-id="${user.id}">
-                ${jobTitles.map((title) => optionHtml(title, title, user.jobTitle || displayUserRole(user))).join('')}
-              </select>
+              <span>显示姓名</span>
+              <input class="user-edit-display-name" data-user-id="${user.id}" value="${escapeHtml(user.displayName || user.username || '')}" maxlength="32" ${canEditRoleDepartment ? '' : 'disabled'}>
             </label>
             <label>
-              <span>所属部门</span>
-              <input class="user-edit-department" data-user-id="${user.id}" value="${escapeHtml(user.departmentName || '研发部')}" ${canEditRoleDepartment ? '' : 'disabled'}>
+              <span>岗位名称</span>
+              ${user.role === 'admin'
+                ? `<input class="user-edit-job" data-user-id="${user.id}" value="${escapeHtml(user.jobTitle || '经理')}" disabled>`
+                : `<select class="user-edit-job" data-user-id="${user.id}">
+                    ${jobTitles.map((title) => optionHtml(title, title, user.jobTitle || displayUserRole(user))).join('')}
+                  </select>`}
+            </label>
+            <label>
+              <span>所属小组</span>
+              <input class="user-edit-department" list="teamGroupOptions" data-user-id="${user.id}" value="${escapeHtml(user.departmentName || '结构组')}" ${canEditRoleDepartment ? '' : 'disabled'}>
             </label>
             <label>
               <span>重置登录密码</span>
@@ -12057,13 +12063,14 @@ async function saveUserById(userId) {
   if (!card) return;
   const targetUser = state.users.find((u) => Number(u.id) === Number(userId));
   const payload = {
+    displayName: card.querySelector('.user-edit-display-name')?.value.trim() || targetUser?.displayName || '',
     jobTitle: card.querySelector('.user-edit-job')?.value,
     role: card.querySelector('.user-edit-role')?.value || targetUser?.role || 'staff',
     departmentName: card.querySelector('.user-edit-department')?.value.trim(),
     newPassword: card.querySelector('.user-edit-password')?.value.trim()
   };
-  if (!payload.jobTitle || !payload.departmentName) {
-    showGlobalToast('岗位和所属部门不能为空', 'error');
+  if (!payload.displayName || !payload.jobTitle || !payload.departmentName) {
+    showGlobalToast('姓名、岗位和所属小组不能为空', 'error');
     return;
   }
   await request(`/users/${userId}`, { method: 'PATCH', body: JSON.stringify(payload) });
@@ -12086,7 +12093,7 @@ async function createNewUserFromPanel() {
   if (!canManageWorkspace()) return;
   const displayName = $('newUserName')?.value.trim() || '';
   const jobTitle = $('newUserJob')?.value || '';
-  const departmentName = $('newUserDept')?.value.trim() || '研发部';
+  const departmentName = $('newUserDept')?.value.trim() || '结构组';
   const password = $('newUserPass')?.value.trim() || '';
   if (!displayName || !jobTitle || !password) {
     setOperationFeedback('addUserFeedback', '请填写成员姓名、岗位和初始密码');

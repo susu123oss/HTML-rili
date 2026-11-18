@@ -2,7 +2,14 @@ import bcrypt from 'bcryptjs';
 import { query } from './pool.js';
 
 const seedUsers = [
-  { username: 'admin', displayName: '系统管理员', role: 'admin', jobTitle: '经理', department: '研发部' }
+  { username: 'admin', displayName: '系统管理员', role: 'admin', jobTitle: '经理', department: '管理组' }
+];
+
+const standardGroups = [
+  ['结构组', 10],
+  ['电气&测试组', 20],
+  ['样品组', 30],
+  ['管理组', 40]
 ];
 
 export async function initDatabase() {
@@ -81,9 +88,15 @@ export async function initDatabase() {
   `);
 
   await query(`
+    ALTER TABLE departments
+    ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 100
+  `);
+
+  await query(`
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS job_title TEXT NOT NULL DEFAULT '技术员',
-    ADD COLUMN IF NOT EXISTS avatar_key TEXT NOT NULL DEFAULT ''
+    ADD COLUMN IF NOT EXISTS avatar_key TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 100
   `);
 
   await query(`
@@ -149,26 +162,18 @@ export async function initDatabase() {
     WHERE is_read = FALSE AND memo_id IS NULL
   `);
 
-  await query(
-    `INSERT INTO departments(name) VALUES($1) ON CONFLICT(name) DO NOTHING`,
-    ['研发部']
-  );
-
-  await query(
-    `
-    UPDATE users
-    SET department_id = target.id
-    FROM departments current, departments target
-    WHERE users.department_id = current.id
-      AND current.name = '办公室'
-      AND target.name = '研发部'
-    `
-  );
+  for (const [groupName, groupOrder] of standardGroups) {
+    await query(
+      `INSERT INTO departments(name, sort_order) VALUES($1, $2)
+       ON CONFLICT(name) DO UPDATE SET sort_order = EXCLUDED.sort_order`,
+      [groupName, groupOrder]
+    );
+  }
 
   await query(
     `
     DELETE FROM departments
-    WHERE name = '办公室'
+    WHERE name IN ('办公室', '研发部')
       AND NOT EXISTS (
         SELECT 1 FROM users WHERE users.department_id = departments.id
       )

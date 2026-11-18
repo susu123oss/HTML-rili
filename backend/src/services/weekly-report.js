@@ -134,7 +134,16 @@ export function buildWeeklyReport({ weekStart, users, memos, summaries }) {
   ];
   const baseWidths = widths.slice(0, 15);
   let seq = 0, r = 6;
+  let currentGroup = null, groupStartRow = null, groupEndRow = null;
   for (const user of users) {
+    const deptName = user.departmentName || '';
+    if (deptName !== currentGroup) {
+      if (currentGroup !== null && groupEndRow > groupStartRow) {
+        merges.push(`B${groupStartRow}:B${groupEndRow}`);
+      }
+      currentGroup = deptName;
+      groupStartRow = r;
+    }
     const mine = memos.filter(m => Number(m.ownerId) === Number(user.id));
     const thisWeek = mine.filter(m => m.date >= days[0] && m.date < days[7]);
     const nextWeek = mine.filter(m => m.date >= days[7] && m.date < days[14]);
@@ -156,9 +165,10 @@ export function buildWeeklyReport({ weekStart, users, memos, summaries }) {
         ...group.map(m => m.actualDeliverable && `${m.date.slice(5)} 实际成果：${m.actualDeliverable}`),
         ...group.map(m => m.reviewComment && `${m.date.slice(5)} 验收意见：${m.reviewComment}`)]) : '本周未录入事项';
       const rowNum = r++;
-      const values = [++seq, user.departmentName || '', task, '', '', '', '', user.displayName || user.username || '',
+      const values = [++seq, rowNum === groupStartRow ? deptName : '', task, '', '', '', '', rowNum === userStart ? (user.displayName || user.username || '') : '',
         ...days.slice(0, 7).map(d => uniqueText(group.filter(m => m.date === d).map(status))), rowNum === userStart ? nextText : ''];
       const styles = values.map((_, i) => {
+        if (i === 1) return 10;
         if (i === 2) return first ? 0 : 9;
         if (i === 15) return hasNextPlan ? 0 : 9;
         return 5;
@@ -181,12 +191,16 @@ export function buildWeeklyReport({ weekStart, users, memos, summaries }) {
     for (const item of pendingUserRows) {
       rows.push(row(item.rowNum, item.values, item.rowHeight, item.styles));
     }
-    if (r - userStart > 1) for (const c of ['B', 'H', 'P']) merges.push(`${c}${userStart}:${c}${r - 1}`);
+    groupEndRow = r - 1;
+    if (r - userStart > 1) for (const c of ['H', 'P']) merges.push(`${c}${userStart}:${c}${r - 1}`);
+  }
+  if (currentGroup !== null && groupEndRow > groupStartRow) {
+    merges.push(`B${groupStartRow}:B${groupEndRow}`);
   }
   const summaryWidths = [14, 14, 38, 38, 45, 38, 38, 38];
   const summaryRows = [row(1, ['全员目标与复盘', '', '', '', '', '', '', ''], 30, Array(8).fill(1)),
     row(2, [`${days[0]} 至 ${days[6]}`, '', '', '', '', '', '', ''], 24, Array(8).fill(2)),
-    row(3, ['负责人', '部门', '本周目标', '预期交付', '实际完成与偏差', '风险与支持', '下周目标', '下周预期交付'], 28, Array(8).fill(3))];
+    row(3, ['负责人', '项目小组', '本周目标', '预期交付', '实际完成与偏差', '风险与支持', '下周目标', '下周预期交付'], 28, Array(8).fill(3))];
   for (const user of users) {
     const current = summaries.find(s => Number(s.ownerId) === Number(user.id) && s.weekStart === days[0]) || {};
     const next = summaries.find(s => Number(s.ownerId) === Number(user.id) && s.weekStart === days[7]) || {};
@@ -200,8 +214,20 @@ export function buildWeeklyReport({ weekStart, users, memos, summaries }) {
     '<font><sz val="10"/><name val="Microsoft YaHei"/><color rgb="FF94A3B8"/></font>'
   ];
   const fills = ['<fill><patternFill patternType="none"/></fill>', '<fill><patternFill patternType="gray125"/></fill>', ...['E2F0D9', 'F1F5F9', 'DCFCE7', 'FEF3C7', 'FEE2E2'].map(c => `<fill><patternFill patternType="solid"><fgColor rgb="FF${c}"/><bgColor indexed="64"/></patternFill></fill>`)];
-  const xf = (font, fill, border, align = 'left', numFmt = 0) => `<xf numFmtId="${numFmt}" fontId="${font}" fillId="${fill}" borderId="${border}" xfId="0" applyAlignment="1" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"><alignment horizontal="${align}" vertical="top" wrapText="1"/></xf>`;
-  const xfs = [xf(0, 0, 1), xf(1, 0, 0, 'center'), xf(0, 3, 0), xf(2, 2, 1, 'center'), xf(2, 2, 1, 'center', 164), xf(0, 0, 1, 'center'), xf(0, 4, 1, 'center'), xf(0, 5, 1, 'center'), xf(0, 6, 1, 'center'), xf(3, 0, 1, 'left')];
+  const xf = (font, fill, border, align = 'left', numFmt = 0, valign = 'top') => `<xf numFmtId="${numFmt}" fontId="${font}" fillId="${fill}" borderId="${border}" xfId="0" applyAlignment="1" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"><alignment horizontal="${align}" vertical="${valign}" wrapText="1"/></xf>`;
+  const xfs = [
+    xf(0, 0, 1, 'left', 0, 'top'),
+    xf(1, 0, 0, 'center', 0, 'center'),
+    xf(0, 3, 0, 'left', 0, 'center'),
+    xf(2, 2, 1, 'center', 0, 'center'),
+    xf(2, 2, 1, 'center', 164, 'center'),
+    xf(0, 0, 1, 'center', 0, 'center'),
+    xf(0, 4, 1, 'center', 0, 'center'),
+    xf(0, 5, 1, 'center', 0, 'center'),
+    xf(0, 6, 1, 'center', 0, 'center'),
+    xf(3, 0, 1, 'left', 0, 'top'),
+    xf(2, 0, 1, 'center', 0, 'center')
+  ];
   const styles = `<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="m/d"/></numFmts><fonts count="${fonts.length}">${fonts.join('')}</fonts><fills count="${fills.length}">${fills.join('')}</fills><borders count="2"><border/><border>${['left', 'right', 'top', 'bottom'].map(s => `<${s} style="thin"><color rgb="FFD1D5DB"/></${s}>`).join('')}<diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.length}">${xfs.join('')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   const sheets = [sheetXml(rows, widths, merges, r - 1), sheetXml(summaryRows, summaryWidths, ['A1:H1', 'A2:H2'], summaryRows.length, 3)];
   const files = {

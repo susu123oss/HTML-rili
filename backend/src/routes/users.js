@@ -20,6 +20,13 @@ const editableJobTitles = new Set([
   '储备干部'
 ]);
 
+const defaultGroupOrders = new Map([
+  ['结构组', 10],
+  ['电气&测试组', 20],
+  ['样品组', 30],
+  ['管理组', 40]
+]);
+
 const normalizeText = (value) => String(value ?? '').trim();
 
 usersRouter.get('/', authRequired, asyncHandler(async (req, res) => {
@@ -31,10 +38,10 @@ usersRouter.get('/', authRequired, asyncHandler(async (req, res) => {
     `
     SELECT users.id, users.username, users.display_name AS "displayName", users.role,
            users.job_title AS "jobTitle", users.department_id AS "departmentId", departments.name AS "departmentName",
-           users.avatar_key AS "avatarKey"
+           users.avatar_key AS "avatarKey", users.sort_order AS "sortOrder"
     FROM users
     JOIN departments ON departments.id = users.department_id
-    ORDER BY users.role, users.display_name
+    ORDER BY departments.sort_order ASC, departments.id ASC, users.sort_order ASC, users.display_name ASC, users.id ASC
     `
   );
 
@@ -48,7 +55,7 @@ usersRouter.post('/', authRequired, asyncHandler(async (req, res) => {
 
   const displayName = normalizeText(req.body?.displayName || req.body?.username);
   const jobTitle = normalizeText(req.body?.jobTitle);
-  const departmentName = normalizeText(req.body?.departmentName) || '研发部';
+  const departmentName = normalizeText(req.body?.departmentName) || '结构组';
   const rawPassword = String(req.body?.password ?? '').trim();
 
   if (!displayName || !jobTitle || !rawPassword) {
@@ -67,12 +74,15 @@ usersRouter.post('/', authRequired, asyncHandler(async (req, res) => {
     return res.status(400).json({ message: '初始密码至少需要 4 位' });
   }
 
-  const exists = await query('SELECT id FROM users WHERE username = $1', [displayName]);
+  const exists = await query('SELECT id FROM users WHERE username = $1 OR display_name = $1', [displayName]);
   if (exists.rowCount > 0) {
     return res.status(409).json({ message: '该成员账号已存在' });
   }
 
-  await query('INSERT INTO departments(name) VALUES($1) ON CONFLICT(name) DO NOTHING', [departmentName]);
+  await query(
+    'INSERT INTO departments(name, sort_order) VALUES($1, $2) ON CONFLICT(name) DO NOTHING',
+    [departmentName, defaultGroupOrders.get(departmentName) ?? 100]
+  );
   const passwordHash = await bcrypt.hash(rawPassword, 10);
   const result = await query(
     `
@@ -108,7 +118,7 @@ usersRouter.patch('/:id', authRequired, asyncHandler(async (req, res) => {
 
   const targetResult = await query(
     `
-    SELECT users.id, users.username, users.role, users.job_title AS "jobTitle",
+    SELECT users.id, users.username, users.display_name AS "displayName", users.role, users.job_title AS "jobTitle",
            users.department_id AS "departmentId", departments.name AS "departmentName"
     FROM users
     JOIN departments ON departments.id = users.department_id
@@ -122,52 +132,66 @@ usersRouter.patch('/:id', authRequired, asyncHandler(async (req, res) => {
   }
 
   const target = targetResult.rows[0];
-  if (target.username === 'admin') {
-    return res.status(400).json({ message: '系统管理员不支持在人员管理中修改' });
-  }
-
-  const jobTitle = normalizeText(req.body?.jobTitle || target.jobTitle);
-  const role = normalizeText(req.body?.role || target.role);
+  const isAdminAccount = target.role === 'admin' || target.username === 'admin';
+  const nextDisplayName = normalizeText(req.body?.displayName || target.displayName);
+  const jobTitle = isAdminAccount ? target.jobTitle : normalizeText(req.body?.jobTitle || target.jobTitle);
+  const role = isAdminAccount ? 'admin' : normalizeText(req.body?.role || target.role);
   const departmentName = normalizeText(req.body?.departmentName || target.departmentName);
   const newPassword = normalizeText(req.body?.newPassword || '');
 
-  if (!editableJobTitles.has(jobTitle)) {
+  if (!nextDisplayName || nextDisplayName.length < 2 || nextDisplayName.length > 32) {
+    return res.status(400).json({ message: '成员姓名长度应为 2-32 位' });
+  }
+
+  if (!isAdminAccount && !editableJobTitles.has(jobTitle)) {
     return res.status(400).json({ message: '岗位不在可选范围内' });
   }
 
-  if (!editableRoles.has(role)) {
+  if (!isAdminAccount && !editableRoles.has(role)) {
     return res.status(400).json({ message: '角色不在可选范围内' });
   }
 
   if (!departmentName) {
-    return res.status(400).json({ message: '部门不能为空' });
+    return res.status(400).json({ message: '所属小组不能为空' });
   }
 
-  if (req.user.role !== 'admin' && (role !== target.role || departmentName !== target.departmentName)) {
-    return res.status(403).json({ message: '只有管理员可以修改角色和部门' });
-  }
-
-  if (newPassword && req.user.role !== 'admin') {
-    return res.status(403).json({ message: '只有管理员可以修改成员密码' });
+  if (nextDisplayName !== target.displayName) {
+    const nameCollision = await query(
+      'SELECT id FROM users WHERE id <> $1 AND (username = $2 OR display_name = $2)',
+      [targetId, nextDisplayName]
+    );
+    if (nameCollision.rowCount > 0) {
+      return res.status(409).json({ message: '该姓名已被其他成员占用' });
+    }
   }
 
   if (newPassword && newPassword.length < 4) {
     return res.status(400).json({ message: '新密码至少需要 4 位' });
   }
 
-  await query('INSERT INTO departments(name) VALUES($1) ON CONFLICT(name) DO NOTHING', [departmentName]);
+  await query(
+    'INSERT INTO departments(name, sort_order) VALUES($1, $2) ON CONFLICT(name) DO NOTHING',
+    [departmentName, defaultGroupOrders.get(departmentName) ?? 100]
+  );
   const passwordHash = newPassword ? await bcrypt.hash(newPassword, 10) : null;
   await query(
     `
     UPDATE users
-    SET role = $2,
-        job_title = $3,
+    SET display_name = $2,
+        role = $3,
+        job_title = $4,
         department_id = departments.id,
-        password_hash = COALESCE($5, password_hash)
+        password_hash = COALESCE($6, password_hash)
     FROM departments
-    WHERE users.id = $1 AND departments.name = $4
+    WHERE users.id = $1 AND departments.name = $5
     `,
-    [targetId, role, jobTitle, departmentName, passwordHash]
+    [targetId, nextDisplayName, role, jobTitle, departmentName, passwordHash]
+  );
+
+  await query(
+    `DELETE FROM departments
+     WHERE name = '研发部'
+       AND NOT EXISTS (SELECT 1 FROM users WHERE users.department_id = departments.id)`
   );
 
   invalidateUserAuthCache(targetId);

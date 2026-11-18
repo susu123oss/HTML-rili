@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20261118_weekly_export_v93" defer></script>
+    <script src="./app.js?v=20261118_team_groups_v94" defer></script>
     <style>
         * {
             margin: 0;
@@ -4827,9 +4827,15 @@
                                 <select class="form-control" id="newUserJob"></select>
                             </label>
                             <label>
-                                <span>所属部门</span>
-                                <input type="text" class="form-control" id="newUserDept" value="研发部" autocomplete="off">
+                                <span>所属小组</span>
+                                <input type="text" class="form-control" id="newUserDept" list="teamGroupOptions" value="结构组" autocomplete="off">
                             </label>
+                            <datalist id="teamGroupOptions">
+                                <option value="结构组"></option>
+                                <option value="电气&amp;测试组"></option>
+                                <option value="样品组"></option>
+                                <option value="管理组"></option>
+                            </datalist>
                             <label>
                                 <span>初始密码</span>
                                 <input type="password" class="form-control" id="newUserPass" placeholder="至少 4 位" autocomplete="new-password">

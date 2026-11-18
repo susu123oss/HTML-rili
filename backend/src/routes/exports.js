@@ -15,7 +15,7 @@ exportsRouter.get('/weekly-report', authRequired, async (req, res, next) => {
     const usersResult = await query(`SELECT users.id, users.username, users.display_name AS "displayName",
       users.job_title AS "jobTitle", departments.name AS "departmentName"
       FROM users JOIN departments ON departments.id = users.department_id
-      ORDER BY departments.name, users.display_name, users.id`);
+      ORDER BY departments.sort_order ASC, departments.id ASC, users.sort_order ASC, users.display_name ASC, users.id ASC`);
     const memosResult = await query(`SELECT id, owner_id AS "ownerId", to_char(date, 'YYYY-MM-DD') AS date,
       title, content, completed, plan_kind AS "planKind", rollover_to_id AS "rolloverToId",
       expected_deliverable AS "expectedDeliverable", actual_deliverable AS "actualDeliverable",
@@ -248,7 +248,7 @@ exportsRouter.get('/calendar', authRequired, asyncHandler(async (req, res) => {
     FROM users
     JOIN departments ON departments.id = users.department_id
     ${userWhere}
-    ORDER BY users.display_name ASC, users.id ASC
+    ORDER BY departments.sort_order ASC, departments.id ASC, users.sort_order ASC, users.display_name ASC, users.id ASC
     `,
     userParams
   );
