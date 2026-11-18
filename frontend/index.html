@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20261118_staff_settings_v89" defer></script>
+    <script src="./app.js?v=20261118_dashboard_v90" defer></script>
     <style>
         * {
             margin: 0;
@@ -3921,7 +3921,7 @@
     </style>
     <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261118_staff_settings_v89" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
     <link rel="stylesheet" href="./functions-panel.css?v=20261118_staff_settings_v89">
-    <link rel="stylesheet" href="./dashboard-panel.css?v=20261102_perf_stability_v82">
+    <link rel="stylesheet" href="./dashboard-panel.css?v=20261118_dashboard_v90">
     <link rel="stylesheet" href="./avatar-profile.css?v=20261102_perf_stability_v82">
 </head>
 <body>
@@ -4134,14 +4134,23 @@
 
         <section class="dashboard-page" id="dashboardPage" hidden>
             <div class="dashboard-hero">
-                <div>
+                <div class="dashboard-hero-copy">
                     <div class="dashboard-kicker"><span class="kicker-pulse-dot"></span><i class="fas fa-chart-line"></i> 研发数据大屏</div>
                     <h2 id="dashboardTitle">研发进度总览</h2>
                     <p id="dashboardSubtitle">基于当前显示月份，聚合研发任务、人员负载和风险提醒。</p>
                 </div>
                 <div class="dashboard-actions">
-                    <button class="btn btn-secondary" id="dashboardRefresh" type="button">
-                        <i class="fas fa-sync-alt"></i> 刷新数据
+                    <div class="dashboard-period-nav" role="group" aria-label="切换大屏统计月份">
+                        <button class="dash-nav-arrow" id="dashboardPrevMonth" type="button" title="上一个月" aria-label="上一个月"><i class="fas fa-chevron-left"></i></button>
+                        <span class="dash-period-label" id="dashboardPeriodLabel">加载中...</span>
+                        <button class="dash-nav-arrow" id="dashboardNextMonth" type="button" title="下一个月" aria-label="下一个月"><i class="fas fa-chevron-right"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary dash-this-month-btn" id="dashboardThisMonth" type="button" title="切回当前月份">本月</button>
+                    </div>
+                    <button class="btn btn-secondary" id="dashboardExportBtn" type="button" title="导出月度 Excel 报表">
+                        <i class="fas fa-file-excel text-success"></i> <span>导出月报</span>
+                    </button>
+                    <button class="btn btn-secondary" id="dashboardRefresh" type="button" title="强制刷新最新数据">
+                        <i class="fas fa-sync-alt"></i> <span>刷新</span>
                     </button>
                 </div>
             </div>
@@ -4152,7 +4161,7 @@
                 <div class="dashboard-card dashboard-card-wide">
                     <div class="dashboard-card-title">
                         <span><i class="fas fa-users"></i> 人员负载</span>
-                        <small>按未完成和风险优先排序</small>
+                        <small>点击成员可在右侧抽屉直接批阅或查看其事项</small>
                     </div>
                     <div class="dashboard-user-load" id="dashboardUserLoad"></div>
                 </div>
@@ -4160,17 +4169,17 @@
                 <div class="dashboard-card dashboard-risk-card">
                     <div class="dashboard-card-title">
                         <span><i class="fas fa-exclamation-triangle"></i> 待跟进事项</span>
-                        <button type="button" class="dashboard-link" data-dashboard-list-filter="risk">查看全部</button>
+                        <button type="button" class="dashboard-link" data-dashboard-list-filter="risk">查看全部 <i class="fas fa-angle-right"></i></button>
                     </div>
                     <div class="dashboard-risk-filters" id="dashboardRiskFilters" role="group" aria-label="待跟进事项分类"></div>
                     <div class="dashboard-risk-list" id="dashboardRiskList"></div>
                     <div class="dashboard-risk-footer" id="dashboardRiskFooter"></div>
                 </div>
 
-                <div class="dashboard-card">
+                <div class="dashboard-card dashboard-trend-card">
                     <div class="dashboard-card-title">
-                        <span><i class="fas fa-signal"></i> 完成趋势</span>
-                        <small>按任务日期统计最近 14 天</small>
+                        <span><i class="fas fa-chart-bar"></i> 近 14 天排期与达成趋势</span>
+                        <small id="dashboardTrendSummary">已完成 / 当日总排期（点击柱体看明细）</small>
                     </div>
                     <div class="dashboard-trend" id="dashboardTrend"></div>
                 </div>
@@ -4391,6 +4400,7 @@
                 <button class="close-modal" id="closeDashboardTaskModal" type="button" aria-label="关闭事项清单" title="关闭"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button>
             </div>
             <div class="dashboard-task-controls">
+                <div class="dashboard-task-context-bar" id="dashboardTaskContextBar" hidden></div>
                 <div class="dashboard-task-filters" id="dashboardTaskFilters" role="group" aria-label="事项分类"></div>
                 <label class="dashboard-task-mobile-filter" for="dashboardTaskFilterSelect"><span>事项分类</span><select class="form-control" id="dashboardTaskFilterSelect"></select></label>
                 <label class="dashboard-task-search" for="dashboardTaskSearch"><i class="fas fa-search" aria-hidden="true"></i><input class="form-control" id="dashboardTaskSearch" type="search" placeholder="搜索事项标题或负责人" autocomplete="off" aria-label="搜索事项标题或负责人"></label>

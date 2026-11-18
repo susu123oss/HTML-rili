@@ -61,6 +61,8 @@ const state = {
   activeView: 'calendar',
   dashboardRiskFilter: 'risk',
   dashboardTaskFilter: 'all',
+  dashboardTaskOwnerId: null,
+  dashboardTaskDate: '',
   dashboardTaskQuery: '',
   dashboardTaskLimit: 25,
   dashboardReturnScrollY: null,
@@ -5815,6 +5817,8 @@ function resetMemoSnapshot() {
   state.memoRangeKey = '';
   state.dashboardRiskFilter = 'risk';
   state.dashboardTaskFilter = 'all';
+  state.dashboardTaskOwnerId = null;
+  state.dashboardTaskDate = '';
   state.dashboardTaskQuery = '';
   state.dashboardTaskLimit = 25;
   state.dashboardReturnScrollY = null;
@@ -6921,34 +6925,65 @@ function dashboardSummary() {
 function renderDashboardMetrics(summary) {
   const metrics = $('dashboardMetrics');
   if (!metrics) return;
-  const todayText = summary.todayTotal > 0
-    ? `今日完成率 ${Math.round((summary.todayCompleted / summary.todayTotal) * 100)}%`
-    : '今日暂无排期任务';
-  const pendingSub = summary.submitted > 0
-    ? `含 ${summary.submitted} 项待确认成果`
-    : (summary.pending ? '仍需推进完成' : '当前已全部清零');
-  const cards = [
-    { filter: 'all', label: '总任务', value: summary.total, sub: `${summary.activeUsers} 人有分配任务`, icon: 'fas fa-layer-group', tone: 'total' },
-    { filter: 'completed', label: '已确认完成', value: summary.completed, sub: `整体完成率 ${summary.rate}%`, icon: 'fas fa-check-circle', tone: 'success' },
-    { filter: 'pending', label: '未完成事项', value: summary.pending, sub: pendingSub, icon: 'fas fa-hourglass-half', tone: summary.pending ? 'pending' : 'safe' },
-    { filter: 'submitted', label: '待验收', value: summary.submitted, sub: '已提交成果，等待确认', icon: 'fas fa-box-open', tone: summary.submitted ? 'warning' : 'safe' },
-    { filter: 'overdue', label: '逾期任务', value: summary.overdue, sub: summary.overdue ? '需优先跟进处理' : '无逾期风险', icon: 'fas fa-exclamation-triangle', tone: summary.overdue ? 'danger' : 'safe' },
-    { filter: 'returned', label: '退回修改', value: summary.returned, sub: summary.returned ? '需修改后重新提交成果' : '暂无退回事项', icon: 'fas fa-undo-alt', tone: summary.returned ? 'danger' : 'safe' },
-    { filter: 'dueSoon', label: '临近截止', value: summary.dueSoon, sub: summary.dueSoon ? '3天内即将到期' : '近期无临期', icon: 'far fa-clock', tone: summary.dueSoon ? 'warning' : 'safe' },
-    { filter: 'today', label: '今日进度', value: `${summary.todayCompleted} / ${summary.todayTotal}`, sub: todayText, icon: 'fas fa-calendar-check', tone: 'today' }
-  ];
-  metrics.innerHTML = cards.map((card) => `
-    <button type="button" class="dashboard-metric metric-${card.tone}" data-dashboard-list-filter="${card.filter}" aria-label="查看${escapeHtml(card.label)}：${escapeHtml(String(card.value))}">
+  const todayPart = summary.todayTotal > 0
+    ? `今日已完成 ${summary.todayCompleted}/${summary.todayTotal}`
+    : '今日暂无排期';
+  const dueSoonPart = summary.dueSoon > 0 ? ` · ${summary.dueSoon} 项3日内到期` : '';
+  const riskTotal = summary.overdue + summary.returned;
+  const riskFilter = summary.overdue > 0 ? 'overdue' : (summary.returned > 0 ? 'returned' : 'risk');
+  const riskSub = riskTotal > 0
+    ? `逾期 ${summary.overdue} 项 · 退回待改 ${summary.returned} 项`
+    : '无逾期与退回，运行健康';
+
+  metrics.innerHTML = `
+    <button type="button" class="dashboard-metric metric-total" data-dashboard-list-filter="all" aria-label="查看月度总任务：已完成 ${summary.completed}，共 ${summary.total}">
       <div class="dashboard-metric-top">
-        <span class="dashboard-metric-label">${escapeHtml(card.label)}</span>
-        <span class="dashboard-metric-icon"><i class="${card.icon}"></i></span>
+        <span class="dashboard-metric-label">月度总览与达成率</span>
+        <span class="dashboard-metric-icon"><i class="fas fa-chart-pie"></i></span>
       </div>
-      <div class="dashboard-metric-value">${escapeHtml(String(card.value))}</div>
+      <div class="dashboard-metric-value-row">
+        <div class="dashboard-metric-value">${summary.completed}<span class="metric-denom">/ ${summary.total}</span></div>
+        <span class="metric-rate-pill">${summary.rate}%</span>
+      </div>
+      <div class="metric-mini-bar" aria-hidden="true"><div class="metric-mini-fill" style="width:${summary.rate}%"></div></div>
       <div class="dashboard-metric-sub">
-        <span>${escapeHtml(card.sub)}</span><span class="dashboard-metric-open" aria-hidden="true">查看 <i class="fas fa-angle-right"></i></span>
+        <span>${summary.activeUsers} 名成员参与</span><span class="dashboard-metric-open" aria-hidden="true">明细 <i class="fas fa-angle-right"></i></span>
       </div>
     </button>
-  `).join('');
+
+    <button type="button" class="dashboard-metric metric-${summary.pending ? 'pending' : 'safe'}" data-dashboard-list-filter="pending" aria-label="查看推进中事项：${summary.pending}">
+      <div class="dashboard-metric-top">
+        <span class="dashboard-metric-label">推进中与今日动态</span>
+        <span class="dashboard-metric-icon"><i class="fas fa-hourglass-half"></i></span>
+      </div>
+      <div class="dashboard-metric-value">${summary.pending}</div>
+      <div class="dashboard-metric-sub">
+        <span>${escapeHtml(todayPart + dueSoonPart)}</span><span class="dashboard-metric-open" aria-hidden="true">查看 <i class="fas fa-angle-right"></i></span>
+      </div>
+    </button>
+
+    <button type="button" class="dashboard-metric metric-${summary.submitted ? 'warning' : 'safe'}" data-dashboard-list-filter="submitted" aria-label="查看待验收事项：${summary.submitted}">
+      <div class="dashboard-metric-top">
+        <span class="dashboard-metric-label">待您验收（成果确认）</span>
+        <span class="dashboard-metric-icon"><i class="fas fa-box-open"></i></span>
+      </div>
+      <div class="dashboard-metric-value">${summary.submitted}</div>
+      <div class="dashboard-metric-sub">
+        <span>${summary.submitted ? '已交成果，点击逐项批阅' : '待审成果已全部清零'}</span><span class="dashboard-metric-open" aria-hidden="true">批阅 <i class="fas fa-angle-right"></i></span>
+      </div>
+    </button>
+
+    <button type="button" class="dashboard-metric metric-${riskTotal ? 'danger' : 'safe'}" data-dashboard-list-filter="${riskFilter}" aria-label="查看逾期与退回预警：${riskTotal}">
+      <div class="dashboard-metric-top">
+        <span class="dashboard-metric-label">逾期与退回预警</span>
+        <span class="dashboard-metric-icon"><i class="fas ${riskTotal ? 'fa-exclamation-triangle' : 'fa-shield-alt'}"></i></span>
+      </div>
+      <div class="dashboard-metric-value">${riskTotal}</div>
+      <div class="dashboard-metric-sub">
+        <span>${escapeHtml(riskSub)}</span><span class="dashboard-metric-open" aria-hidden="true">跟进 <i class="fas fa-angle-right"></i></span>
+      </div>
+    </button>
+  `;
 }
 
 function renderDashboardActiveUserRow(row) {
@@ -6969,7 +7004,7 @@ function renderDashboardActiveUserRow(row) {
   if (row.dueSoon > 0) pills.push(`<span class="stat-pill pill-duesoon is-alert">临近 ${row.dueSoon}</span>`);
 
   return `
-    <div class="dashboard-user-row ${hasOverdue ? 'has-overdue' : ''}" data-dashboard-user-id="${row.user.id}" title="点击穿透查看 ${escapeHtml(row.user.displayName)} 的工作日历" style="--dashboard-rate:${row.rate}%">
+    <div class="dashboard-user-row ${hasOverdue ? 'has-overdue' : ''}" data-dashboard-user-id="${row.user.id}" title="点击在右侧抽屉查看或批阅 ${escapeHtml(row.user.displayName)} 的事项" style="--dashboard-rate:${row.rate}%">
       <div class="user-row-profile">
         <div class="user-row-avatar avatar-normal" ${userAvatarAttributes(row.user)}>
           ${escapeHtml(initial)}
@@ -7002,7 +7037,7 @@ function renderDashboardActiveUserRow(row) {
 function renderDashboardCompletedUserRow(row) {
   const initial = (row.user.displayName || '用').trim().charAt(0);
   return `
-    <div class="dashboard-user-row is-complete is-compact" data-dashboard-user-id="${row.user.id}" title="点击穿透查看 ${escapeHtml(row.user.displayName)} 的工作日历">
+    <div class="dashboard-user-row is-complete is-compact" data-dashboard-user-id="${row.user.id}" title="点击在右侧抽屉查看 ${escapeHtml(row.user.displayName)} 的已完成事项">
       <div class="user-row-profile">
         <div class="user-row-avatar avatar-complete" ${userAvatarAttributes(row.user)}>
           ${escapeHtml(initial)}
@@ -7094,6 +7129,31 @@ function dashboardDeadlineLabel(memo) {
   return deadline ? deadline.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '未设置截止时间';
 }
 
+function dashboardRelativeTimeInfo(memo, now = new Date()) {
+  const deadline = memoDeadlineDate(memo);
+  if (!deadline) return { text: memo.date || '未设限期', cls: '' };
+  const diffMs = deadline.getTime() - now.getTime();
+  if (!memo.completed && diffMs < 0) {
+    const absHours = Math.floor(Math.abs(diffMs) / 3600000);
+    const days = Math.floor(absHours / 24);
+    return {
+      text: days >= 1 ? `已逾期 ${days} 天` : `已逾期 ${Math.max(1, absHours)} 小时`,
+      cls: 'is-overdue-tag'
+    };
+  }
+  const todayStr = dateKey(now);
+  const dueDayStr = dateKey(deadline);
+  const hm = deadline.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (dueDayStr === todayStr) {
+    return { text: `今日 ${hm === '23:59' ? '截止' : `${hm} 截止`}`, cls: 'is-today-tag' };
+  }
+  const diffDays = Math.ceil(diffMs / 86400000);
+  if (!memo.completed && diffDays >= 1 && diffDays <= 3) {
+    return { text: diffDays === 1 ? '明日截止' : `${diffDays} 天后截止`, cls: 'is-soon-tag' };
+  }
+  return { text: `${deadline.getMonth() + 1}/${deadline.getDate()} ${hm === '23:59' ? '' : hm}`.trim(), cls: '' };
+}
+
 function dashboardRiskEntries(filter = 'risk', now = new Date()) {
   return dashboardMemos().filter((memo) => dashboardMatchesFilter(memo, filter, now)).map((memo) => {
     const kinds = dashboardMemoRisks(memo, now);
@@ -7113,40 +7173,62 @@ function dashboardStatusBadges(memo, now = new Date()) {
 function renderDashboardRisks() {
   const list = $('dashboardRiskList');
   if (!list) return;
+  const now = new Date();
   const filter = state.dashboardRiskFilter;
-  const counts = dashboardFilterCounts();
-  $('dashboardRiskFilters').innerHTML = dashboardRiskKinds.map((key) => `<button type="button" data-dashboard-risk-filter="${key}" class="dashboard-risk-filter ${key === filter ? 'active' : ''}" aria-pressed="${key === filter}">${key === 'risk' ? '全部' : dashboardTaskFilters[key]} <span>${counts[key]}</span></button>`).join('');
-  const allRisks = dashboardRiskEntries(filter);
+  const counts = dashboardFilterCounts(dashboardMemos(), now);
+  $('dashboardRiskFilters').innerHTML = dashboardRiskKinds.map((key) => `<button type="button" data-dashboard-risk-filter="${key}" class="dashboard-risk-filter ${key === filter ? 'active' : ''} ${counts[key] === 0 ? 'is-zero' : ''}" aria-pressed="${key === filter}">${key === 'risk' ? '全部' : dashboardTaskFilters[key]} <span>${counts[key]}</span></button>`).join('');
+  const allRisks = dashboardRiskEntries(filter, now);
   const risks = allRisks.slice(0, 6);
   list.innerHTML = risks.length
     ? risks.map(({ memo, level }) => {
+      const rel = dashboardRelativeTimeInfo(memo, now);
       return `
-      <button type="button" class="dashboard-risk-item risk-${level}" data-memo-id="${memo.id}" title="查看详情并处理">
+      <button type="button" class="dashboard-risk-item risk-${level}" data-memo-id="${memo.id}" title="${escapeHtml(memo.title || '无标题任务')} · 点击查看并处理">
         <div class="dashboard-risk-header">
           <span class="dashboard-risk-title">${escapeHtml(memo.title || '无标题任务')}</span>
-          <span class="dashboard-task-badges">${dashboardStatusBadges(memo)}</span>
+          <span class="dashboard-task-badges">${dashboardStatusBadges(memo, now)}</span>
         </div>
         <div class="dashboard-risk-meta">
-          <span class="risk-meta-user">${escapeHtml(dashboardOwnerName(memo))}</span>
-          <span class="risk-meta-time">${escapeHtml(dashboardDeadlineLabel(memo))}</span>
-          <span class="risk-meta-action">查看处理 <i class="fas fa-angle-right"></i></span>
+          <span class="risk-meta-user"><i class="far fa-user"></i> ${escapeHtml(dashboardOwnerName(memo))}</span>
+          <span class="risk-time-chip ${rel.cls}"><i class="far fa-clock"></i> ${escapeHtml(rel.text)}</span>
+          <span class="risk-meta-action">处理 <i class="fas fa-angle-right"></i></span>
         </div>
       </button>
     `;
     }).join('')
-    : `<div class="dashboard-empty">当前范围内暂无${filter === 'risk' ? '待跟进' : dashboardTaskFilters[filter]}事项</div>`;
-  $('dashboardRiskFooter').innerHTML = `<span>${allRisks.length > risks.length ? `显示前 ${risks.length} 项，共 ${allRisks.length} 项` : `共 ${allRisks.length} 项`} · 同一事项可命中多类</span><button type="button" class="dashboard-link" data-dashboard-list-filter="${filter}">查看完整清单 <i class="fas fa-angle-right" aria-hidden="true"></i></button>`;
+    : `<div class="dashboard-empty"><i class="fas fa-check-circle" style="font-size:1.5rem;margin-bottom:6px;color:#10b981;opacity:0.75;display:block;"></i>当前范围内暂无${filter === 'risk' ? '待跟进' : dashboardTaskFilters[filter]}事项</div>`;
+  $('dashboardRiskFooter').innerHTML = `<span>${allRisks.length > risks.length ? `前 ${risks.length} / 共 ${allRisks.length} 项` : `共 ${allRisks.length} 项`}</span><button type="button" class="dashboard-link" data-dashboard-list-filter="${filter}">打开完整清单 <i class="fas fa-angle-right" aria-hidden="true"></i></button>`;
 }
 
-function openDashboardTaskList(filter = 'all') {
+function openDashboardTaskList(filter = 'all', { ownerId = null, date = '' } = {}) {
   if (!canManageWorkspace() || !Object.hasOwn(dashboardTaskFilters, filter)) return;
   state.dashboardTaskFilter = filter;
+  state.dashboardTaskOwnerId = ownerId ? Number(ownerId) : null;
+  state.dashboardTaskDate = date ? String(date) : '';
   state.dashboardTaskQuery = '';
   state.dashboardTaskLimit = 25;
-  $('dashboardTaskSearch').value = '';
+  if ($('dashboardTaskSearch')) $('dashboardTaskSearch').value = '';
   renderDashboardTaskList();
   showDialog('dashboardTaskModal', 'closeDashboardTaskModal');
-  $('dashboardTaskList').scrollTop = 0;
+  if ($('dashboardTaskList')) $('dashboardTaskList').scrollTop = 0;
+}
+
+function openDashboardUserDrawer(userId) {
+  if (!canManageWorkspace()) return;
+  const uid = Number(userId);
+  if (!uid) return;
+  const now = new Date();
+  const uMemos = dashboardMemos().filter((m) => Number(m.ownerId) === uid);
+  const hasSubmitted = uMemos.some((m) => !m.completed && memoDeliveryStatus(m) === 'submitted');
+  const hasOverdue = uMemos.some((m) => isOverdueMemo(m, now));
+  const hasPending = uMemos.some((m) => !m.completed);
+  const initialFilter = hasSubmitted ? 'submitted' : hasOverdue ? 'overdue' : hasPending ? 'pending' : 'all';
+  openDashboardTaskList(initialFilter, { ownerId: uid });
+}
+
+function openDashboardDateDrawer(dateStr) {
+  if (!canManageWorkspace() || !dateStr) return;
+  openDashboardTaskList('all', { date: dateStr });
 }
 
 function closeDashboardTaskList() {
@@ -7168,30 +7250,69 @@ function renderDashboardTaskList() {
   const scrollTop = list.scrollTop;
   const focusedFilter = document.activeElement?.closest('#dashboardTaskFilters [data-dashboard-task-filter]')?.dataset.dashboardTaskFilter;
   const now = new Date();
-  const memos = dashboardMemos();
-  const counts = dashboardFilterCounts(memos, now);
+  let scopedMemos = dashboardMemos();
+  const ownerId = state.dashboardTaskOwnerId;
+  const targetDate = state.dashboardTaskDate;
+  const targetUser = ownerId ? state.users.find((u) => Number(u.id) === Number(ownerId)) : null;
+
+  if (ownerId) {
+    scopedMemos = scopedMemos.filter((m) => Number(m.ownerId) === Number(ownerId));
+  }
+  if (targetDate) {
+    scopedMemos = scopedMemos.filter((m) => m.date === targetDate);
+  }
+
+  const contextBar = $('dashboardTaskContextBar');
+  if (contextBar) {
+    if (ownerId && targetUser) {
+      contextBar.hidden = false;
+      contextBar.innerHTML = `
+        <span class="dash-ctx-info"><i class="fas fa-user-check"></i> ${escapeHtml(targetUser.displayName)}（${escapeHtml(displayUserRole(targetUser))}）</span>
+        <div class="dash-ctx-actions">
+          <button type="button" class="dash-ctx-btn" data-dash-ctx-action="weekly" data-user-id="${targetUser.id}"><i class="fas fa-calendar-week"></i> 查看TA周计划</button>
+          <button type="button" class="dash-ctx-btn" data-dash-ctx-action="calendar" data-user-id="${targetUser.id}"><i class="fas fa-calendar-alt"></i> 去TA月历</button>
+          <button type="button" class="dash-ctx-btn" data-dash-ctx-action="clear"><i class="fas fa-times"></i> 切换全员</button>
+        </div>
+      `;
+    } else if (targetDate) {
+      contextBar.hidden = false;
+      contextBar.innerHTML = `
+        <span class="dash-ctx-info"><i class="fas fa-calendar-day"></i> 日期筛选：${escapeHtml(targetDate)}</span>
+        <div class="dash-ctx-actions">
+          <button type="button" class="dash-ctx-btn" data-dash-ctx-action="clear"><i class="fas fa-times"></i> 查看全月</button>
+        </div>
+      `;
+    } else {
+      contextBar.hidden = true;
+      contextBar.innerHTML = '';
+    }
+  }
+
+  const counts = dashboardFilterCounts(scopedMemos, now);
   const filter = state.dashboardTaskFilter;
   const query = state.dashboardTaskQuery.toLocaleLowerCase();
-  const matches = memos.filter((memo) => dashboardMatchesFilter(memo, filter, now)
+  const matches = scopedMemos.filter((memo) => dashboardMatchesFilter(memo, filter, now)
     && (!query || [memo.title, dashboardOwnerName(memo)].some((value) => String(value || '').toLocaleLowerCase().includes(query))))
-    .sort((a, b) => (memoDeadlineDate(a)?.getTime() || 0) - (memoDeadlineDate(b)?.getTime() || 0) || Number(a.id) - Number(b.id));
+    .sort((a, b) => Number(Boolean(a.completed)) - Number(Boolean(b.completed)) || (memoDeadlineDate(a)?.getTime() || 0) - (memoDeadlineDate(b)?.getTime() || 0) || Number(a.id) - Number(b.id));
   const visible = matches.slice(0, state.dashboardTaskLimit);
-  $('dashboardTaskTitle').textContent = `${dashboardTaskFilters[filter]} · 事项清单`;
-  $('dashboardTaskSubtitle').textContent = `${leaderboardPeriodText()} · ${matches.length} 项${query ? '匹配搜索' : ''}`;
-  $('dashboardTaskFilters').innerHTML = Object.entries(dashboardTaskFilters).map(([key, label]) => `<button type="button" data-dashboard-task-filter="${key}" class="dashboard-risk-filter ${key === filter ? 'active' : ''}" aria-pressed="${key === filter}">${label} <span>${counts[key]}</span></button>`).join('');
+  const scopePrefix = targetUser ? `${targetUser.displayName} · ` : (targetDate ? `${targetDate} · ` : '');
+  $('dashboardTaskTitle').textContent = `${scopePrefix}${dashboardTaskFilters[filter]}清单`;
+  $('dashboardTaskSubtitle').textContent = `${leaderboardPeriodText()} · 共 ${matches.length} 项${query ? '匹配搜索' : ''}`;
+  $('dashboardTaskFilters').innerHTML = Object.entries(dashboardTaskFilters).map(([key, label]) => `<button type="button" data-dashboard-task-filter="${key}" class="dashboard-risk-filter ${key === filter ? 'active' : ''} ${counts[key] === 0 ? 'is-zero' : ''}" aria-pressed="${key === filter}">${label} <span>${counts[key]}</span></button>`).join('');
   const select = $('dashboardTaskFilterSelect');
   select.innerHTML = Object.entries(dashboardTaskFilters).map(([key, label]) => `<option value="${key}">${label}（${counts[key]}）</option>`).join('');
   select.value = filter;
   list.innerHTML = visible.length ? visible.map((memo) => {
     const status = memoDeliveryStatus(memo);
-    const note = status === 'submitted' && memo.actualDeliverable ? `已提交：${memo.actualDeliverable}`
-      : status === 'returned' && memo.reviewComment ? `修改要求：${memo.reviewComment}` : '';
+    const rel = dashboardRelativeTimeInfo(memo, now);
+    const note = status === 'submitted' && memo.actualDeliverable ? `已提交成果：${memo.actualDeliverable}`
+      : status === 'returned' && memo.reviewComment ? `退回修改意见：${memo.reviewComment}` : '';
     return `<div role="listitem"><button type="button" class="dashboard-task-row" id="dashboardTaskMemo${memo.id}" data-dashboard-memo-id="${memo.id}">
-      <span class="dashboard-task-row-top"><strong>${escapeHtml(memo.title || '无标题任务')}</strong><span class="dashboard-task-row-action">${memo.rolloverToId ? '查看详情' : '查看 / 处理'} <i class="fas fa-angle-right" aria-hidden="true"></i></span></span>
-      <span class="dashboard-task-row-meta">${escapeHtml(dashboardOwnerName(memo))}<span>截止 ${escapeHtml(dashboardDeadlineLabel(memo))}</span></span>
+      <span class="dashboard-task-row-top"><strong>${escapeHtml(memo.title || '无标题任务')}</strong><span class="dashboard-task-row-action">${memo.rolloverToId ? '查看详情' : '查看 / 批阅'} <i class="fas fa-angle-right" aria-hidden="true"></i></span></span>
+      <span class="dashboard-task-row-meta"><span><i class="far fa-user"></i> ${escapeHtml(dashboardOwnerName(memo))}</span><span>${escapeHtml(memo.date)}（${escapeHtml(rel.text)}）</span></span>
       <span class="dashboard-task-badges">${dashboardStatusBadges(memo, now)}${memo.rolloverToId ? '<span class="dashboard-task-badge badge-stale">已转期</span>' : ''}</span>
       ${note ? `<span class="dashboard-task-row-note">${escapeHtml(note)}</span>` : ''}</button></div>`;
-  }).join('') : `<div class="dashboard-task-empty"><i class="fas fa-${query ? 'search' : 'check-circle'}" aria-hidden="true"></i><strong>${query ? '没有匹配的事项' : '当前分类暂无事项'}</strong><span>${query ? '可以换一个标题或负责人重新搜索' : '切换分类可查看其他事项'}</span></div>`;
+  }).join('') : `<div class="dashboard-task-empty"><i class="fas fa-${query ? 'search' : 'check-circle'}" aria-hidden="true"></i><strong>${query ? '没有匹配的事项' : '当前分类暂无事项'}</strong><span>${query ? '可以换一个关键词重新搜索' : '可点击上方其他状态标签切换查看'}</span></div>`;
   list.scrollTop = scrollTop;
   $('dashboardTaskCount').textContent = `已显示 ${visible.length} / ${matches.length} 项`;
   $('dashboardTaskMore').hidden = visible.length >= matches.length;
@@ -7218,36 +7339,71 @@ function renderDashboardTrend() {
   const days = dashboardTrendDays();
   const today = new Date();
   const todayKey = dateKey(today);
+  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
   const rows = days.map((day) => {
     const key = dateKey(day);
     const total = memos.filter((memo) => memo.date === key).length;
     const completed = memos.filter((memo) => memo.date === key && memo.completed).length;
     const isToday = key === todayKey;
-    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-    const weekLabel = `周${weekDays[day.getDay()]}`;
-    return { key, label: `${day.getMonth() + 1}/${day.getDate()}`, weekLabel, total, completed, isToday };
+    const dow = day.getDay();
+    return {
+      key,
+      label: `${day.getMonth() + 1}/${day.getDate()}`,
+      weekLabel: `周${weekDays[dow]}`,
+      isWeekend: dow === 0 || dow === 6,
+      total,
+      completed,
+      isToday
+    };
   });
-  const max = Math.max(1, ...rows.map((row) => row.completed));
-  box.innerHTML = rows.some((row) => row.total > 0)
-    ? rows.map((row) => {
-      const rate = Math.round((row.completed / max) * 100);
-      const isAllDone = row.total > 0 && row.completed === row.total;
-      return `
-      <div class="dashboard-trend-row ${row.isToday ? 'is-today' : ''}">
-        <div class="trend-date-col">
-          <span class="trend-date">${escapeHtml(row.label)}</span>
-          <span class="trend-week">${row.isToday ? '<span class="today-chip">今天</span>' : escapeHtml(row.weekLabel)}</span>
+
+  const periodTotal = rows.reduce((sum, r) => sum + r.total, 0);
+  const periodDone = rows.reduce((sum, r) => sum + r.completed, 0);
+  const periodRate = periodTotal > 0 ? Math.round((periodDone / periodTotal) * 100) : 0;
+  if ($('dashboardTrendSummary')) {
+    $('dashboardTrendSummary').textContent = periodTotal > 0
+      ? `14日排期 ${periodTotal} 项 · 完成 ${periodDone} 项（${periodRate}%）`
+      : '近 14 天暂无排期记录';
+  }
+
+  const maxTotal = Math.max(1, ...rows.map((row) => row.total));
+  if (!rows.some((row) => row.total > 0)) {
+    box.innerHTML = '<div class="dashboard-empty"><i class="fas fa-chart-bar" style="font-size:2rem;margin-bottom:8px;opacity:0.4;display:block;"></i>当前范围内暂无可展示趋势</div>';
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="dash-vchart-wrap">
+      <div class="dash-vchart-legend">
+        <div class="dash-legend-items">
+          <span class="dash-legend-item"><span class="dash-legend-dot is-all"></span>当日全清</span>
+          <span class="dash-legend-item"><span class="dash-legend-dot is-done"></span>已完成</span>
+          <span class="dash-legend-item"><span class="dash-legend-dot is-gap"></span>未完缺口</span>
         </div>
-        <div class="dashboard-trend-bar" title="${row.label}: 已完成 ${row.completed} / 总 ${row.total}">
-          <div class="dashboard-trend-fill ${isAllDone ? 'fill-all-done' : ''}" style="--trend-rate:${rate}%"></div>
-        </div>
-        <div class="trend-stat-col">
-          <span class="trend-badge ${row.completed > 0 ? (isAllDone ? 'badge-all' : 'badge-done') : 'badge-zero'}">${row.completed}</span>
-        </div>
+        <span>点击柱体查看当日清单</span>
       </div>
-    `;
-    }).join('')
-    : '<div class="dashboard-empty"><i class="fas fa-chart-bar" style="font-size:2rem;margin-bottom:8px;opacity:0.4;display:block;"></i>当前范围内暂无可展示趋势</div>';
+      <div class="dash-vchart-grid">
+        ${rows.map((row) => {
+          const totalHeightPct = row.total > 0 ? Math.max(10, Math.round((row.total / maxTotal) * 100)) : 0;
+          const doneOfTotalPct = row.total > 0 ? Math.round((row.completed / row.total) * 100) : 0;
+          const isAllDone = row.total > 0 && row.completed === row.total;
+          const numText = row.total > 0 ? `${row.completed}/${row.total}` : '·';
+          return `
+            <button type="button" class="dash-vcol ${row.isToday ? 'is-today' : ''} ${isAllDone ? 'is-all-done' : ''} ${row.isWeekend ? 'is-weekend' : ''}" data-dashboard-date="${row.key}" title="${row.label}（${row.weekLabel}）：已完成 ${row.completed} / 总排期 ${row.total} 项（点击查看明细）">
+              <span class="dash-vcol-num">${numText}</span>
+              <span class="dash-vcol-stage">
+                <span class="dash-vbar-total ${row.total === 0 ? 'is-empty' : ''}" style="--total-h:${totalHeightPct}%">
+                  <span class="dash-vbar-done" style="--done-pct:${doneOfTotalPct}%"></span>
+                </span>
+              </span>
+              <span class="dash-vcol-date">${escapeHtml(row.label)}</span>
+              <span class="dash-vcol-week">${row.isToday ? '<span class="dash-today-pill">今</span>' : escapeHtml(row.weekLabel)}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
 }
 
 function renderDashboard() {
@@ -7256,8 +7412,9 @@ function renderDashboard() {
   const period = leaderboardPeriodText();
   const summary = dashboardSummary();
   if ($('dashboardTitle')) $('dashboardTitle').textContent = `${period} 研发进度总览`;
+  if ($('dashboardPeriodLabel')) $('dashboardPeriodLabel').textContent = period;
   if ($('dashboardSubtitle')) {
-    $('dashboardSubtitle').textContent = `共 ${summary.activeUsers} 名成员参与 · 已完成 ${summary.completed} / ${summary.total} 项（${summary.rate}%）`;
+    $('dashboardSubtitle').textContent = `共 ${summary.activeUsers} 名成员参与 · 已完成 ${summary.completed} / ${summary.total} 项（达成率 ${summary.rate}%）`;
   }
   renderDashboardMetrics(summary);
   renderDashboardUserLoad(dashboardUserRows());
@@ -13208,7 +13365,35 @@ function initEventListeners() {
   $('btnClearAssignees')?.addEventListener('click', clearTaskAssignees);
   $('toolbarDashboard')?.addEventListener('click', openDashboardPage);
   $('dashboardBackToCalendar')?.addEventListener('click', closeDashboardPage);
-  $('dashboardRefresh')?.addEventListener('click', async () => { await loadMemos(); });
+  $('dashboardPrevMonth')?.addEventListener('click', () => shiftVisibleMonth(-1));
+  $('dashboardNextMonth')?.addEventListener('click', () => shiftVisibleMonth(1));
+  $('dashboardThisMonth')?.addEventListener('click', async () => {
+    state.calendarStatusFilter = 'all';
+    state.currentDate = new Date();
+    const targetRangeKey = currentMemoRangeKey();
+    const cached = state.memoMonthCache ? state.memoMonthCache.get(currentMemoCacheKey(targetRangeKey)) : null;
+    if (cached && Array.isArray(cached.memos)) {
+      state.memos = cached.memos;
+      state.memoEtag = cached.etag || '';
+      state.memoRangeKey = targetRangeKey;
+      refreshMemoViews();
+    } else {
+      state.memos = [];
+      state.memoRangeKey = targetRangeKey;
+      refreshMemoViews();
+    }
+    await loadMemos();
+  });
+  $('dashboardExportBtn')?.addEventListener('click', openExcelExportPanel);
+  $('dashboardRefresh')?.addEventListener('click', async () => {
+    const icon = $('dashboardRefresh')?.querySelector('i');
+    icon?.classList.add('fa-spin');
+    try {
+      await loadMemos({ force: true });
+    } finally {
+      icon?.classList.remove('fa-spin');
+    }
+  });
   $('closeDashboardTaskModal')?.addEventListener('click', closeDashboardTaskList);
   $('closeDashboardTaskModalBtn')?.addEventListener('click', closeDashboardTaskList);
   $('dashboardTaskModal')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) closeDashboardTaskList(); });
@@ -13348,7 +13533,29 @@ function initEventListeners() {
     const assigneeTag = event.target.closest('.assignee-tag');
     if (assigneeTag) { event.stopPropagation(); toggleTaskAssignee(assigneeTag.dataset.userId); return; }
     const dashboardUserTarget = event.target.closest('.dashboard-user-row[data-dashboard-user-id]');
-    if (dashboardUserTarget) { event.stopPropagation(); jumpToUserCalendar(dashboardUserTarget.dataset.dashboardUserId); return; }
+    if (dashboardUserTarget) { event.stopPropagation(); openDashboardUserDrawer(dashboardUserTarget.dataset.dashboardUserId); return; }
+    const dashboardDateTarget = event.target.closest('[data-dashboard-date]');
+    if (dashboardDateTarget) { event.stopPropagation(); openDashboardDateDrawer(dashboardDateTarget.dataset.dashboardDate); return; }
+    const dashCtxActionBtn = event.target.closest('[data-dash-ctx-action]');
+    if (dashCtxActionBtn) {
+      event.stopPropagation();
+      const action = dashCtxActionBtn.dataset.dashCtxAction;
+      const uid = Number(dashCtxActionBtn.dataset.userId);
+      if (action === 'clear') {
+        state.dashboardTaskOwnerId = null;
+        state.dashboardTaskDate = '';
+        state.dashboardTaskLimit = 25;
+        renderDashboardTaskList();
+      } else if (action === 'weekly' && uid) {
+        closeDashboardTaskList();
+        state.weeklyTargetUserId = uid;
+        openWeeklyPlanPage(state.currentDate, 'personal');
+      } else if (action === 'calendar' && uid) {
+        closeDashboardTaskList();
+        jumpToUserCalendar(uid);
+      }
+      return;
+    }
     const dashboardRiskTarget = event.target.closest('.dashboard-risk-item[data-memo-id]');
     if (dashboardRiskTarget) { event.stopPropagation(); await openDashboardMemo(dashboardRiskTarget.dataset.memoId); return; }
     const dashboardListTarget = event.target.closest('[data-dashboard-list-filter]');
