@@ -11826,9 +11826,37 @@ html[data-theme='dark'] #multiMonthCalendar .calendar-day.today {
   margin-left: 2px;
 }
 
-/* 3. 顶部搜索框实时匹配计数徽章 */
+/* 3. 顶部搜索框实时匹配计数徽章与防自动填充外观一致 */
 .header-search {
   position: relative;
+  margin: 0;
+}
+#searchInput::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+#searchInput[readonly] {
+  background: var(--ui-surface-soft, #f8fafc) !important;
+  cursor: text !important;
+  opacity: 1 !important;
+}
+html[data-theme='dark'] #searchInput[readonly] {
+  background: #0f172a !important;
+}
+#selfOldPassword[readonly],
+#selfNewPassword[readonly],
+#newUserPass[readonly],
+.user-edit-password[readonly] {
+  background: var(--ui-surface, #ffffff) !important;
+  cursor: text !important;
+  opacity: 1 !important;
+}
+html[data-theme='dark'] #selfOldPassword[readonly],
+html[data-theme='dark'] #selfNewPassword[readonly],
+html[data-theme='dark'] #newUserPass[readonly],
+html[data-theme='dark'] .user-edit-password[readonly] {
+  background: var(--ui-surface-soft, #182433) !important;
 }
 .search-match-badge {
   position: absolute;

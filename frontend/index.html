@@ -31,7 +31,7 @@
     <script src="marked/marked.min.js" defer></script>
     <script src="libs/highlight.js/11.9.0/highlight.min.js" defer></script>
     <link id="tablerStylesheet" rel="stylesheet" href="./vendor/tabler-core/tabler.min.css" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
-    <script src="./app.js?v=20261118_clean_topbar_v95" defer></script>
+    <script src="./app.js?v=20261119_autofill_fix_v96" defer></script>
     <style>
         * {
             margin: 0;
@@ -3920,7 +3920,7 @@
             }
         }
     </style>
-    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261118_clean_topbar_v95" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
+    <link id="themeStylesheet" rel="stylesheet" href="./theme.css?v=20261119_autofill_fix_v96" media="print" onload="this.media='all';this.dataset.ready='true'" onerror="this.dataset.ready='error'">
     <link rel="stylesheet" href="./functions-panel.css?v=20261118_staff_settings_v89">
     <link rel="stylesheet" href="./dashboard-panel.css?v=20261118_dashboard_v90">
     <link rel="stylesheet" href="./avatar-profile.css?v=20261102_perf_stability_v82">
@@ -4070,14 +4070,14 @@
 
                 <div class="header-right">
                     <!-- 搜索框 -->
-                    <div class="header-search search-container">
+                    <form class="header-search search-container" role="search" autocomplete="off" onsubmit="return false">
                         <i class="fas fa-search search-icon"></i>
-                        <input type="text" class="search-input" id="searchInput" autocomplete="off" placeholder="搜索备忘录 (Ctrl+K)...">
+                        <input type="search" class="search-input" id="searchInput" name="calendar_memo_filter" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" readonly placeholder="搜索备忘录 (Ctrl+K)...">
                         <span class="search-match-badge" id="searchMatchBadge" hidden>0 条</span>
                         <button class="clear-search" id="clearSearch" title="清除搜索" type="button">
                             <i class="fas fa-times"></i>
                         </button>
-                    </div>
+                    </form>
 
                     <!-- 成员筛选下拉框 -->
                     <div class="topbar-member-selector" id="memberSelectWrap">
@@ -4812,10 +4812,10 @@
                             <strong><i class="fas fa-user-plus"></i> 创建新成员账号</strong>
                             <span>创建后成员可使用姓名与初始密码直接登录工作台</span>
                         </div>
-                        <div class="fn-add-user-grid">
+                        <form class="fn-add-user-grid" id="addUserForm" autocomplete="off" onsubmit="return false">
                             <label>
                                 <span>成员姓名（登录账号）</span>
-                                <input type="text" class="form-control" id="newUserName" placeholder="如：王明" maxlength="32" autocomplete="off">
+                                <input type="text" class="form-control" id="newUserName" name="new_member_name" placeholder="如：王明" maxlength="32" autocomplete="off">
                             </label>
                             <label>
                                 <span>岗位</span>
@@ -4823,7 +4823,7 @@
                             </label>
                             <label>
                                 <span>所属小组</span>
-                                <input type="text" class="form-control" id="newUserDept" list="teamGroupOptions" value="结构组" autocomplete="off">
+                                <input type="text" class="form-control" id="newUserDept" name="new_member_group" list="teamGroupOptions" value="结构组" autocomplete="off">
                             </label>
                             <datalist id="teamGroupOptions">
                                 <option value="结构组"></option>
@@ -4833,9 +4833,9 @@
                             </datalist>
                             <label>
                                 <span>初始密码</span>
-                                <input type="password" class="form-control" id="newUserPass" placeholder="至少 4 位" autocomplete="new-password">
+                                <input type="password" class="form-control" id="newUserPass" name="new_member_secret" placeholder="至少 4 位" autocomplete="new-password" readonly>
                             </label>
-                        </div>
+                        </form>
                         <div class="fn-add-user-actions">
                             <div id="addUserFeedback" class="operation-feedback" role="status" hidden></div>
                             <button class="btn btn-secondary" id="cancelAddUserBtn" type="button">取消</button>
@@ -4946,11 +4946,11 @@
                                 </div>
                                 <button class="btn btn-secondary btn-sm" id="settingsOpenAvatarBtn" type="button"><i class="fas fa-camera"></i> 更换个人头像</button>
                             </div>
-                            <div class="fn-account-pass-row">
-                                <input type="password" class="form-control" id="selfOldPassword" placeholder="输入原密码" autocomplete="current-password">
-                                <input type="password" class="form-control" id="selfNewPassword" placeholder="输入新密码（至少 4 位）" autocomplete="new-password">
+                            <form class="fn-account-pass-row" id="selfPasswordForm" autocomplete="off" onsubmit="return false">
+                                <input type="password" class="form-control" id="selfOldPassword" name="self_old_secret" placeholder="输入原密码" autocomplete="new-password" readonly>
+                                <input type="password" class="form-control" id="selfNewPassword" name="self_new_secret" placeholder="输入新密码（至少 4 位）" autocomplete="new-password" readonly>
                                 <button class="btn btn-primary" id="saveSelfPasswordBtn" type="button"><i class="fas fa-key"></i> 更新密码</button>
-                            </div>
+                            </form>
                             <div id="selfPasswordFeedback" class="operation-feedback" role="status" hidden></div>
                         </div>
                     </section>

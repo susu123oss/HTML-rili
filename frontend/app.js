@@ -1279,7 +1279,7 @@ function showLoginOverlay(message = '') {
             </div>
 
             <!-- 1. 登录面板 -->
-            <div class="server-auth-panel active" id="serverLoginPanel">
+            <form class="server-auth-panel active" id="serverLoginPanel" onsubmit="return false">
               <div class="server-form-field">
                 <label for="serverLoginUser">用户名 / 真实姓名</label>
                 <div class="server-input-box">
@@ -1313,10 +1313,10 @@ function showLoginOverlay(message = '') {
               </label>
 
               <button id="serverLoginButton" type="button">登 录 工 作 台</button>
-            </div>
+            </form>
 
             <!-- 2. 注册面板 -->
-            <div class="server-auth-panel" id="serverRegisterPanel">
+            <form class="server-auth-panel" id="serverRegisterPanel" autocomplete="off" onsubmit="return false">
               <div class="server-form-field">
                 <label>真实姓名 <span class="req-star">*</span></label>
                 <div class="server-input-box">
@@ -1341,14 +1341,14 @@ function showLoginOverlay(message = '') {
                     ${jobTitles.map((title) => `<option value="${escapeHtml(title)}">${escapeHtml(title)}</option>`).join('')}
                   </select>
                 </div>
-                <div class="server-hint-text">💡 注册后默认归入“研发部”，拥有个人独立日历权限。</div>
+                <div class="server-hint-text">💡 注册后默认按岗位自动归入对应小组，拥有个人独立日历权限。</div>
               </div>
 
               <button id="serverRegisterButton" type="button" class="btn-register-action">注册并进入工作台</button>
-            </div>
+            </form>
 
             <!-- 3. 修改密码面板 -->
-            <div class="server-auth-panel" id="serverPasswordPanel">
+            <form class="server-auth-panel" id="serverPasswordPanel" autocomplete="off" onsubmit="return false">
               <div class="server-form-field">
                 <label>用户名 / 真实姓名</label>
                 <div class="server-input-box">
@@ -1383,7 +1383,7 @@ function showLoginOverlay(message = '') {
               </div>
 
               <button id="serverChangePasswordButton" type="button">确认修改密码</button>
-            </div>
+            </form>
 
             <div id="serverLoginError" class="server-login-error"></div>
           </div>
@@ -6027,8 +6027,12 @@ function resetSessionViewState() {
   state.selectedAgendaDate = dateKey(new Date());
   state.opsStatus = null;
   const searchInput = $('searchInput');
-  if (searchInput) searchInput.value = '';
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.setAttribute('readonly', '');
+  }
   if ($('clearSearch')) $('clearSearch').style.display = 'none';
+  if ($('searchMatchBadge')) $('searchMatchBadge').hidden = true;
 }
 
 async function startApp(sessionVersion = state.sessionVersion) {
@@ -12001,7 +12005,7 @@ function renderUserManagement() {
           </div>
         </div>
         ${isEditing ? `
-        <div class="user-row-drawer">
+        <form class="user-row-drawer" autocomplete="off" onsubmit="return false">
           <div class="user-edit-grid user-edit-grid-compact">
             <label>
               <span>显示姓名</span>
@@ -12021,7 +12025,7 @@ function renderUserManagement() {
             </label>
             <label>
               <span>重置登录密码</span>
-              <input class="user-edit-password" data-user-id="${user.id}" type="password" placeholder="留空保持原密码" ${canEditPassword ? '' : 'disabled'} autocomplete="new-password">
+              <input class="user-edit-password" data-user-id="${user.id}" type="password" placeholder="留空保持原密码" ${canEditPassword ? '' : 'disabled'} autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')">
             </label>
           </div>
           <div class="task-actions user-management-actions">
@@ -12030,7 +12034,7 @@ function renderUserManagement() {
               <i class="fas fa-check"></i> 保存修改
             </button>
           </div>
-        </div>` : ''}
+        </form>` : ''}
       </div>
     `;
     }).join('')
@@ -13557,8 +13561,12 @@ function initEventListeners() {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       if (state.activeView === 'calendar' && !$('memoModal')?.classList.contains('active') && !$('functionsModal')?.classList.contains('active')) {
         event.preventDefault();
-        $('searchInput')?.focus();
-        $('searchInput')?.select();
+        const searchEl = $('searchInput');
+        if (searchEl) {
+          searchEl.removeAttribute('readonly');
+          searchEl.focus();
+          searchEl.select();
+        }
       }
     }
   });
@@ -13661,8 +13669,28 @@ function initEventListeners() {
   $('reminderBatchCompleteBtn')?.addEventListener('click', batchCompleteReminders);
   $('notificationHistoryBtn')?.addEventListener('click', openNotificationHistory);
   $('reminderUrgeBtn')?.addEventListener('click', batchUrgeReminders);
+  const guardAutofillInput = (el) => {
+    if (!el || el.dataset.autofillGuarded) return;
+    el.dataset.autofillGuarded = 'true';
+    const unlock = () => { el.removeAttribute('readonly'); };
+    el.addEventListener('pointerdown', unlock);
+    el.addEventListener('focus', unlock);
+    el.addEventListener('blur', () => {
+      if (!el.value) el.setAttribute('readonly', '');
+    });
+  };
+  ['searchInput', 'selfOldPassword', 'selfNewPassword', 'newUserPass'].forEach((id) => guardAutofillInput($(id)));
   $('searchInput').addEventListener('input', () => { $('clearSearch').style.display = $('searchInput').value.trim() ? 'block' : 'none'; renderMultiMonthCalendar(); renderMobileAgenda(); });
-  $('clearSearch').addEventListener('click', () => { $('searchInput').value = ''; $('clearSearch').style.display = 'none'; renderMultiMonthCalendar(); renderMobileAgenda(); });
+  $('clearSearch').addEventListener('click', () => {
+    const el = $('searchInput');
+    if (el) {
+      el.value = '';
+      if (document.activeElement !== el) el.setAttribute('readonly', '');
+    }
+    $('clearSearch').style.display = 'none';
+    renderMultiMonthCalendar();
+    renderMobileAgenda();
+  });
   const monthSelect = $('monthCountSelect');
   if (monthSelect) {
     monthSelect.value = String(state.monthsToShow);
